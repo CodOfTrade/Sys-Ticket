@@ -1,0 +1,75 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+
+// Modules
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { ClientsModule } from './modules/clients/clients.module';
+import { ContractsModule } from './modules/contracts/contracts.module';
+import { TicketsModule } from './modules/tickets/tickets.module';
+import { TimesheetsModule } from './modules/timesheets/timesheets.module';
+import { ServiceDesksModule } from './modules/service-desks/service-desks.module';
+import { SlaModule } from './modules/sla/sla.module';
+import { SignaturesModule } from './modules/signatures/signatures.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { SyncModule } from './modules/sync/sync.module';
+
+@Module({
+  imports: [
+    // Configuração global
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+
+    // TypeORM
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get('DB_HOST'),
+        port: +configService.get<number>('DB_PORT'),
+        username: configService.get('DB_USERNAME'),
+        password: configService.get('DB_PASSWORD'),
+        database: configService.get('DB_DATABASE'),
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        synchronize: configService.get('NODE_ENV') === 'development',
+        logging: configService.get('NODE_ENV') === 'development',
+        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+      }),
+      inject: [ConfigService],
+    }),
+
+    // Rate limiting
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minuto
+        limit: 100, // 100 requisições
+      },
+    ]),
+
+    // Agendamentos
+    ScheduleModule.forRoot(),
+
+    // Event Emitter
+    EventEmitterModule.forRoot(),
+
+    // Feature Modules
+    AuthModule,
+    UsersModule,
+    ClientsModule,
+    ContractsModule,
+    TicketsModule,
+    TimesheetsModule,
+    ServiceDesksModule,
+    SlaModule,
+    SignaturesModule,
+    WebhooksModule,
+    SyncModule,
+  ],
+})
+export class AppModule {}

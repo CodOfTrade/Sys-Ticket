@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "Sys-Ticket Mobile",
+    "slug": "sys-ticket-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0ea5e9"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.systicket.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Este app precisa acessar a câmera para capturar fotos de evidências dos atendimentos.",
+        "NSLocationWhenInUseUsageDescription": "Este app precisa acessar sua localização para registrar check-in/check-out nos atendimentos externos.",
+        "NSPhotoLibraryUsageDescription": "Este app precisa acessar suas fotos para anexar evidências aos tickets."
+      }
+    },
+    "android": {
+      "package": "com.systicket.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0ea5e9"
+      },
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-location",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir acesso à câmera para capturar fotos de evidências."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir acesso às fotos para anexar evidências aos tickets."
+        }
+      ]
+    ],
+    "extra": {
+      "apiUrl": "http://localhost:3000/api",
+      "eas": {
+        "projectId": "seu-projeto-id-aqui"
+      }
+    }
+  }
+}
