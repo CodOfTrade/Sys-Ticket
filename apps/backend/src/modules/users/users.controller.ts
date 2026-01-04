@@ -17,7 +17,7 @@ export class UsersController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Buscar usuário por ID' })
-  async findOne(@Param('id') id: string): Promise<User> {
+  async findOne(@Param('id') id: string): Promise<User | null> {
     return this.usersService.findOne(id);
   }
 
@@ -29,7 +29,7 @@ export class UsersController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar usuário' })
-  async update(@Param('id') id: string, @Body() userData: Partial<User>): Promise<User> {
+  async update(@Param('id') id: string, @Body() userData: Partial<User>): Promise<User | null> {
     return this.usersService.update(id, userData);
   }
 
