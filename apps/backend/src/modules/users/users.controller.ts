@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@n
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
@@ -10,6 +11,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
+  @Roles('admin')
   @ApiOperation({ summary: 'Listar todos os usuários' })
   async findAll(): Promise<User[]> {
     return this.usersService.findAll();
@@ -34,6 +36,7 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @Roles('admin')
   @ApiOperation({ summary: 'Remover usuário' })
   async remove(@Param('id') id: string): Promise<void> {
     return this.usersService.remove(id);

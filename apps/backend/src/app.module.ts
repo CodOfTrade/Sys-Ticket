@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { APP_GUARD } from '@nestjs/core';
 
 // Modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -17,6 +18,10 @@ import { SlaModule } from './modules/sla/sla.module';
 import { SignaturesModule } from './modules/signatures/signatures.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { SyncModule } from './modules/sync/sync.module';
+
+// Guards
+import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from './modules/auth/guards/roles.guard';
 
 @Module({
   imports: [
@@ -70,6 +75,16 @@ import { SyncModule } from './modules/sync/sync.module';
     SignaturesModule,
     WebhooksModule,
     SyncModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
   ],
 })
 export class AppModule {}
