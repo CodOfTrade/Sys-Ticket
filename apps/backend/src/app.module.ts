@@ -7,6 +7,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { APP_GUARD } from '@nestjs/core';
 
 // Modules
+import { SharedModule } from './shared/shared.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ClientsModule } from './modules/clients/clients.module';
@@ -62,6 +63,9 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
 
     // Event Emitter
     EventEmitterModule.forRoot(),
+
+    // Shared Module (Global)
+    SharedModule,
 
     // Feature Modules
     AuthModule,
