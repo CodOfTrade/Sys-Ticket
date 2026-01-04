@@ -18,7 +18,8 @@ export class SigeCloudService {
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
+        'Authorization-token': this.apiKey,
+        'App': 'API',
       },
     });
 
