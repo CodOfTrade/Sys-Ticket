@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UserRole, UserStatus } from '../users/entities/user.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -19,13 +20,10 @@ export class AuthService {
       throw new ConflictException('Email já cadastrado');
     }
 
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-
     const user = await this.usersService.create({
       ...registerDto,
-      password: hashedPassword,
-      role: registerDto.role || 'customer',
-      status: 'active',
+      role: (registerDto.role as UserRole) || UserRole.CLIENT,
+      status: UserStatus.ACTIVE,
     });
 
     const { password, ...userWithoutPassword } = user;
@@ -51,7 +49,7 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
-    if (user.status !== 'active') {
+    if (user.status !== UserStatus.ACTIVE) {
       throw new UnauthorizedException('Usuário inativo');
     }
 
@@ -68,7 +66,7 @@ export class AuthService {
   async validateUser(userId: string) {
     const user = await this.usersService.findOne(userId);
 
-    if (!user || user.status !== 'active') {
+    if (!user || user.status !== UserStatus.ACTIVE) {
       return null;
     }
 
