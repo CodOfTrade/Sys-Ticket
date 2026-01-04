@@ -14,11 +14,11 @@ export class UsersService {
     return this.usersRepository.find();
   }
 
-  async findOne(id: string): Promise<User> {
+  async findOne(id: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { id } });
   }
 
-  async findByEmail(email: string): Promise<User> {
+  async findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOne({
       where: { email },
       select: ['id', 'name', 'email', 'password', 'role', 'status'],
@@ -30,7 +30,7 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
-  async update(id: string, userData: Partial<User>): Promise<User> {
+  async update(id: string, userData: Partial<User>): Promise<User | null> {
     await this.usersRepository.update(id, userData);
     return this.findOne(id);
   }
