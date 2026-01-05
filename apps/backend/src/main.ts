@@ -19,15 +19,14 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Prefixo global
+  app.setGlobalPrefix('api');
+
   // Versionamento da API
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
-    prefix: 'api/v',
   });
-
-  // Prefixo global
-  app.setGlobalPrefix('api');
 
   // Validação global
   app.useGlobalPipes(

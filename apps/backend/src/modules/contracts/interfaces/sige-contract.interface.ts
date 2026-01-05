@@ -1,37 +1,35 @@
+export interface SigeLancamentoContrato {
+  CodigoLancamento: number;
+  Valor: number;
+  Pago: boolean;
+}
+
 export interface SigeContract {
-  id: string;
-  client_id: string;
-  name: string;
-  description: string;
-  contract_number: string;
-  status: 'active' | 'inactive' | 'suspended' | 'expired';
-  start_date: string;
-  end_date: string;
-
-  // Valores
-  monthly_value: number;
-  hourly_rate: number;
-  included_hours: number;
-
-  // SLA
-  sla_response_time: number; // em minutos
-  sla_resolution_time: number; // em minutos
-
-  // Serviços incluídos
-  services: {
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-  }[];
-
-  created_at: string;
-  updated_at: string;
+  Codigo: number;
+  Empresa: string;
+  Cliente: string;
+  Tipo: string;
+  PlanoDeContas: string;
+  FormaDePagamento: string;
+  CentroDeCustos: string | null;
+  ContaBancaria: string;
+  Situacao: string;
+  DiaVencimento: number;
+  UltimoReajuste: string;
+  ProximoReajuste: string;
+  DataInicio: string;
+  DataTermino: string;
+  DiasCarencia: number;
+  ValorTotal: number;
+  LancamentosContrato: SigeLancamentoContrato[];
+  Vendedor: string | null;
+  ValorComissaoTotal: number;
+  UrlDownload: string;
 }
 
 export interface SigeContractResponse {
-  data: SigeContract[];
-  total: number;
-  page: number;
-  per_page: number;
+  data?: SigeContract[];
+  // A API do SIGE Cloud retorna um array diretamente, não dentro de "data"
+  // Então vamos suportar ambos os casos
+  [key: number]: SigeContract;
 }

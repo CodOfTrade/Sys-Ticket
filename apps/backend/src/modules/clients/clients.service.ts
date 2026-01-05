@@ -25,10 +25,15 @@ export class ClientsService {
         return cached;
       }
 
-      const response = await this.sigeCloudService.get<SigeClientResponse>('/clients', {
-        page,
-        per_page: perPage,
+      const rawResponse = await this.sigeCloudService.get<any>('/request/Oportunidades/Pesquisar', {
+        pageSize: perPage,
+        skip: (page - 1) * perPage,
       });
+
+      // A API do SIGE Cloud retorna um array diretamente
+      const response: SigeClientResponse = Array.isArray(rawResponse)
+        ? { data: rawResponse }
+        : rawResponse;
 
       await this.cacheManager.set(cacheKey, response, this.CACHE_TTL);
 
@@ -49,7 +54,9 @@ export class ClientsService {
         return cached;
       }
 
-      const response = await this.sigeCloudService.get<SigeClient>(`/clients/${clientId}`);
+      const response = await this.sigeCloudService.get<SigeClient>(`/request/Pessoas/GetById`, {
+        id: clientId,
+      });
 
       await this.cacheManager.set(cacheKey, response, this.CACHE_TTL);
 
@@ -62,11 +69,16 @@ export class ClientsService {
 
   async searchByDocument(document: string): Promise<SigeClient | null> {
     try {
-      const response = await this.sigeCloudService.get<SigeClientResponse>('/clients/search', {
-        document,
+      const rawResponse = await this.sigeCloudService.get<any>('/request/Oportunidades/Pesquisar', {
+        cliente: document,
       });
 
-      return response.data.length > 0 ? response.data[0] : null;
+      const response: SigeClientResponse = Array.isArray(rawResponse)
+        ? { data: rawResponse }
+        : rawResponse;
+
+      const data = response.data || [];
+      return data.length > 0 ? data[0] : null;
     } catch (error) {
       this.logger.error(`Erro ao buscar cliente por documento ${document}`, error);
       throw error;
@@ -75,11 +87,17 @@ export class ClientsService {
 
   async searchByName(name: string, page = 1, perPage = 20): Promise<SigeClientResponse> {
     try {
-      return await this.sigeCloudService.get<SigeClientResponse>('/clients/search', {
-        name,
-        page,
-        per_page: perPage,
+      const rawResponse = await this.sigeCloudService.get<any>('/request/Oportunidades/Pesquisar', {
+        cliente: name,
+        pageSize: perPage,
+        skip: (page - 1) * perPage,
       });
+
+      const response: SigeClientResponse = Array.isArray(rawResponse)
+        ? { data: rawResponse }
+        : rawResponse;
+
+      return response;
     } catch (error) {
       this.logger.error(`Erro ao buscar clientes por nome: ${name}`, error);
       throw error;

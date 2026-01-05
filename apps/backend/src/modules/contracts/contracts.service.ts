@@ -25,15 +25,20 @@ export class ContractsService {
       }
 
       const params: any = {
-        page,
-        per_page: perPage,
+        pageSize: perPage,
+        skip: (page - 1) * perPage,
       };
 
       if (status) {
-        params.status = status;
+        params.situacao = status;
       }
 
-      const response = await this.sigeCloudService.get<SigeContractResponse>('/contracts', params);
+      const rawResponse = await this.sigeCloudService.get<any>('/request/Contratos/GetAll', params);
+
+      // A API do SIGE Cloud retorna um array diretamente, não { data: [] }
+      const response: SigeContractResponse = Array.isArray(rawResponse)
+        ? { data: rawResponse }
+        : rawResponse;
 
       await this.cacheManager.set(cacheKey, response, this.CACHE_TTL);
 
@@ -54,7 +59,9 @@ export class ContractsService {
         return cached;
       }
 
-      const response = await this.sigeCloudService.get<SigeContract>(`/contracts/${contractId}`);
+      const response = await this.sigeCloudService.get<SigeContract>(`/request/Contratos/GetById`, {
+        id: contractId,
+      });
 
       await this.cacheManager.set(cacheKey, response, this.CACHE_TTL);
 
@@ -75,11 +82,15 @@ export class ContractsService {
         return cached;
       }
 
-      const response = await this.sigeCloudService.get<SigeContractResponse>('/contracts', {
-        client_id: clientId,
-        page,
-        per_page: perPage,
+      const rawResponse = await this.sigeCloudService.get<any>('/request/Contratos/Pesquisar', {
+        cliente: clientId,
+        pageSize: perPage,
+        skip: (page - 1) * perPage,
       });
+
+      const response: SigeContractResponse = Array.isArray(rawResponse)
+        ? { data: rawResponse }
+        : rawResponse;
 
       await this.cacheManager.set(cacheKey, response, this.CACHE_TTL);
 
@@ -93,22 +104,26 @@ export class ContractsService {
   async getActiveContracts(clientId: string): Promise<SigeContract[]> {
     try {
       const response = await this.findByClient(clientId, 1, 100);
-      return response.data.filter(contract => contract.status === 'active');
+      const contracts = response.data || [];
+      return contracts.filter(contract => contract.Situacao === 'Ativo');
     } catch (error) {
       this.logger.error(`Erro ao buscar contratos ativos do cliente ${clientId}`, error);
       throw error;
     }
   }
 
-  calculateServicePrice(contract: SigeContract, serviceId: string, hours: number): number {
-    const service = contract.services.find(s => s.id === serviceId);
-
-    if (!service) {
-      this.logger.warn(`Serviço ${serviceId} não encontrado no contrato ${contract.id}`);
-      return contract.hourly_rate * hours;
+  calculateServicePrice(contract: SigeContract, hours: number): number {
+    // Cálculo baseado no valor total do contrato
+    if (!contract.ValorTotal || contract.ValorTotal === 0) {
+      this.logger.warn(`Contrato ${contract.Codigo} não possui valor total definido`);
+      return 0;
     }
 
-    return service.price * hours;
+    // Calcula valor por hora baseado no valor total e duração do contrato
+    const valorMensal = contract.ValorTotal / 12; // Assumindo contrato de 12 meses
+    const valorPorHora = valorMensal / 160; // Assumindo 160 horas/mês
+
+    return valorPorHora * hours;
   }
 
   async invalidateCache(pattern: string): Promise<void> {
