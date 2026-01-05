@@ -27,8 +27,19 @@ export const ticketService = {
   },
 
   async getById(id: string): Promise<Ticket> {
-    const response = await api.get<ApiResponse<Ticket>>(`/v1/tickets/${id}`);
-    return response.data.data;
+    console.log('Buscando ticket com ID:', id);
+    console.log('URL completa:', `/v1/tickets/${id}`);
+    try {
+      const response = await api.get<ApiResponse<Ticket>>(`/v1/tickets/${id}`);
+      console.log('Resposta da API:', response);
+      return response.data.data;
+    } catch (error: any) {
+      console.error('Erro ao buscar ticket:', error);
+      console.error('Response:', error.response);
+      console.error('Request:', error.request);
+      console.error('Config:', error.config);
+      throw error;
+    }
   },
 
   async create(data: CreateTicketDto): Promise<Ticket> {
