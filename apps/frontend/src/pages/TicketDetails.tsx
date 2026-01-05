@@ -164,7 +164,7 @@ export default function TicketDetails() {
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">Solicitante</p>
                     <p className="font-medium text-gray-900 dark:text-white">
-                      {ticket.requester?.name || 'Não informado'}
+                      {ticket.requester_name || 'Não informado'}
                     </p>
                   </div>
                 </div>
@@ -174,7 +174,7 @@ export default function TicketDetails() {
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">Responsável</p>
                     <p className="font-medium text-gray-900 dark:text-white">
-                      {ticket.assignee?.name || 'Não atribuído'}
+                      {ticket.assigned_to?.name || 'Não atribuído'}
                     </p>
                   </div>
                 </div>
@@ -188,18 +188,6 @@ export default function TicketDetails() {
                     </p>
                   </div>
                 </div>
-
-                {ticket.due_date && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <div>
-                      <p className="text-gray-600 dark:text-gray-400">Prazo</p>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {formatDate(ticket.due_date)}
-                      </p>
-                    </div>
-                  </div>
-                )}
 
                 {ticket.category && (
                   <div className="flex items-center gap-2 text-sm">
