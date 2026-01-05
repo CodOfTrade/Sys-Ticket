@@ -6,6 +6,7 @@ import { ticketService } from '@/services/ticket.service';
 import { TicketStatus, TicketPriority } from '@/types/ticket.types';
 import { StatusBadge } from '@/components/Tickets/StatusBadge';
 import { PriorityBadge } from '@/components/Tickets/PriorityBadge';
+import { CreateTicketModal } from '@/components/Tickets/CreateTicketModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -288,25 +289,8 @@ export default function Tickets() {
         </div>
       )}
 
-      {/* Modal de Criação - Será implementado na próxima etapa */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full p-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              Novo Ticket
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Modal de criação será implementado...
-            </p>
-            <button
-              onClick={() => setShowCreateModal(false)}
-              className="mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Modal de Criação */}
+      <CreateTicketModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
     </div>
   );
 }
