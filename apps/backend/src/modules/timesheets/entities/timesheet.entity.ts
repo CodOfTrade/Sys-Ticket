@@ -111,6 +111,31 @@ export class Timesheet {
   @Column({ type: 'timestamp', nullable: true })
   synced_at: Date;
 
+  // Aprovação
+  @Column({ type: 'boolean', default: false })
+  approved: boolean;
+
+  @Column({ type: 'uuid', nullable: true })
+  approved_by_id: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  approved_at: Date;
+
+  // Faturamento
+  @Column({ type: 'boolean', default: false })
+  invoiced: boolean;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  invoice_id: string; // ID da OS no SIGE Cloud
+
+  // Pausas
+  @Column({ type: 'integer', default: 0 })
+  pause_duration: number; // em minutos
+
+  // Metadados
+  @Column({ type: 'jsonb', nullable: true })
+  metadata: Record<string, any>;
+
   @CreateDateColumn()
   created_at: Date;
 
