@@ -45,7 +45,7 @@ export async function seedInitialSetup(dataSource: DataSource) {
 
     if (serviceDeskExists.length === 0) {
       const [serviceDesk] = await queryRunner.query(
-        `INSERT INTO service_desks (name, description, active, created_at, updated_at)
+        `INSERT INTO service_desks (name, description, is_active, created_at, updated_at)
          VALUES ($1, $2, $3, NOW(), NOW())
          RETURNING id`,
         [

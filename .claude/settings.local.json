@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "Bash(ssh:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(npm run build:*)",
+      "Bash(scp:*)",
+      "Bash(curl:*)",
+      "Bash(git push:*)",
+      "Bash(sshpass -p '123321' ssh:*)",
+      "Bash(sshpass:*)"
+    ]
+  }
+}
