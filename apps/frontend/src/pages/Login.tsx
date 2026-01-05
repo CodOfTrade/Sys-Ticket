@@ -20,7 +20,7 @@ export default function Login() {
 
     try {
       const response = await authService.login({ email, password });
-      setAuth(response.user, response.access_token);
+      setAuth(response.user as any, response.access_token);
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao fazer login. Verifique suas credenciais.');
