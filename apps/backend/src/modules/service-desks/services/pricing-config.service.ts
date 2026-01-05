@@ -6,12 +6,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { PricingConfig } from '../entities/pricing-config.entity';
+import { PricingConfig, ServiceType, PricingType } from '../entities/pricing-config.entity';
 
 export interface CreatePricingConfigDto {
   service_desk_id: string;
-  service_type: string;
-  pricing_type?: string;
+  service_type: ServiceType;
+  pricing_type?: PricingType;
   hourly_rate_normal: number;
   hourly_rate_extra?: number;
   hourly_rate_weekend?: number;
@@ -25,7 +25,7 @@ export interface CreatePricingConfigDto {
 }
 
 export interface UpdatePricingConfigDto {
-  pricing_type?: string;
+  pricing_type?: PricingType;
   hourly_rate_normal?: number;
   hourly_rate_extra?: number;
   hourly_rate_weekend?: number;
