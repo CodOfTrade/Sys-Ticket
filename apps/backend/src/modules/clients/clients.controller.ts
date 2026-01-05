@@ -1,14 +1,21 @@
 import { Controller, Get, Post, Query, Param, Body } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { ClientsService } from './clients.service';
 import { CreateServiceOrderDto } from './interfaces/sige-service-order.interface';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { ClientContact } from './entities/client-contact.entity';
 
 @ApiTags('Clients')
 @ApiBearerAuth('JWT-auth')
 @Controller({ path: 'clients', version: '1' })
 export class ClientsController {
-  constructor(private readonly clientsService: ClientsService) {}
+  constructor(
+    private readonly clientsService: ClientsService,
+    @InjectRepository(ClientContact)
+    private contactRepository: Repository<ClientContact>,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Listar clientes do SIGE Cloud' })
@@ -67,5 +74,56 @@ export class ClientsController {
   @ApiResponse({ status: 404, description: 'OS não encontrada' })
   async getServiceOrder(@Param('id') id: string) {
     return this.clientsService.getServiceOrder(id);
+  }
+
+  @Get('contacts')
+  @ApiOperation({ summary: 'Listar contatos de clientes' })
+  @ApiQuery({ name: 'client_id', required: false, type: String })
+  async findContacts(@Query('client_id') clientId?: string) {
+    const query = this.contactRepository
+      .createQueryBuilder('contact')
+      .where('contact.is_active = :isActive', { isActive: true })
+      .orderBy('contact.name', 'ASC');
+
+    if (clientId) {
+      query.andWhere('contact.client_id = :clientId', { clientId });
+    }
+
+    const contacts = await query.getMany();
+    return {
+      success: true,
+      data: contacts,
+    };
+  }
+
+  @Post('contacts')
+  @ApiOperation({ summary: 'Criar contato de cliente' })
+  async createContact(
+    @Body()
+    body: {
+      client_id: string;
+      name: string;
+      email?: string;
+      phone?: string;
+      department?: string;
+      position?: string;
+    },
+  ) {
+    const contact = this.contactRepository.create(body);
+    await this.contactRepository.save(contact);
+    return {
+      success: true,
+      data: contact,
+    };
+  }
+
+  @Get('contacts/:id')
+  @ApiOperation({ summary: 'Buscar contato por ID' })
+  async findContact(@Param('id') id: string) {
+    const contact = await this.contactRepository.findOne({ where: { id } });
+    return {
+      success: true,
+      data: contact,
+    };
   }
 }
