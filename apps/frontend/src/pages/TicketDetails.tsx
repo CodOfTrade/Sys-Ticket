@@ -99,11 +99,17 @@ export default function TicketDetails() {
   }
 
   if (error || !ticket) {
+    console.error('Erro ao carregar ticket:', error);
+    console.log('ID do ticket:', id);
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Erro ao carregar ticket</p>
+          <p className="text-gray-900 dark:text-white font-semibold mb-2">Erro ao carregar ticket</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            {error instanceof Error ? error.message : 'Ticket não encontrado'}
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mb-4">ID: {id || 'não fornecido'}</p>
           <button
             onClick={() => navigate('/tickets')}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
