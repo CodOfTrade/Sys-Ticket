@@ -21,10 +21,10 @@ export async function seedInitialSetup(dataSource: DataSource) {
 
     if (adminExists.length === 0) {
       const [admin] = await queryRunner.query(
-        `INSERT INTO users (name, email, password, role, active, created_at, updated_at)
+        `INSERT INTO users (name, email, password, role, status, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
          RETURNING id`,
-        ['Administrador', 'admin@systicket.com', hashedPassword, 'admin', true],
+        ['Administrador', 'admin@systicket.com', hashedPassword, 'admin', 'active'],
       );
       adminId = admin.id;
       console.log('✅ Usuário admin criado com sucesso!');
