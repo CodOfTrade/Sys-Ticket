@@ -1,7 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TicketsController } from './tickets.controller';
+import { TicketDetailsController } from './controllers/ticket-details.controller';
 import { TicketsService } from './tickets.service';
+import { TicketCommentsService } from './services/ticket-comments.service';
+import { TicketAppointmentsService } from './services/ticket-appointments.service';
+import { TicketValuationsService } from './services/ticket-valuations.service';
+import { ChecklistsService } from './services/checklists.service';
 import { Ticket } from './entities/ticket.entity';
 import { TicketComment } from './entities/ticket-comment.entity';
 import { TicketAppointment } from './entities/ticket-appointment.entity';
@@ -28,8 +33,14 @@ import { ClientsModule } from '../clients/clients.module';
     ContractsModule,
     ClientsModule,
   ],
-  controllers: [TicketsController],
-  providers: [TicketsService],
+  controllers: [TicketsController, TicketDetailsController],
+  providers: [
+    TicketsService,
+    TicketCommentsService,
+    TicketAppointmentsService,
+    TicketValuationsService,
+    ChecklistsService,
+  ],
   exports: [TicketsService],
 })
 export class TicketsModule {}
