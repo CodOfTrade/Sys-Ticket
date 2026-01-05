@@ -16,11 +16,14 @@ export const ticketService = {
     page?: number;
     limit?: number;
   }): Promise<{ tickets: Ticket[]; total: number }> {
-    const response = await api.get<ApiResponse<{ tickets: Ticket[]; total: number }>>(
+    const response = await api.get<ApiResponse<{ data: Ticket[]; meta: { total: number } }>>(
       '/v1/tickets',
       { params }
     );
-    return response.data.data;
+    return {
+      tickets: response.data.data.data,
+      total: response.data.data.meta.total,
+    };
   },
 
   async getById(id: string): Promise<Ticket> {
