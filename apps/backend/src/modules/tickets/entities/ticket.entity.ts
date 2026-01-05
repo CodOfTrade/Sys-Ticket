@@ -16,6 +16,10 @@ import { ServiceCategory } from '../../service-catalog/entities/service-category
 import { ClientContact } from '../../clients/entities/client-contact.entity';
 import { TicketFollower } from './ticket-follower.entity';
 import { TicketAttachment } from './ticket-attachment.entity';
+import { TicketComment } from './ticket-comment.entity';
+import { TicketAppointment } from './ticket-appointment.entity';
+import { TicketValuation } from './ticket-valuation.entity';
+import { TicketChecklist } from './ticket-checklist.entity';
 
 export enum TicketStatus {
   NEW = 'new',
@@ -228,6 +232,18 @@ export class Ticket {
 
   @OneToMany(() => TicketAttachment, attachment => attachment.ticket)
   attachments: TicketAttachment[];
+
+  @OneToMany(() => TicketComment, comment => comment.ticket)
+  comments: TicketComment[];
+
+  @OneToMany(() => TicketAppointment, appointment => appointment.ticket)
+  appointments: TicketAppointment[];
+
+  @OneToMany(() => TicketValuation, valuation => valuation.ticket)
+  valuations: TicketValuation[];
+
+  @OneToMany(() => TicketChecklist, checklist => checklist.ticket)
+  checklists: TicketChecklist[];
 
   // Timestamps
   @CreateDateColumn()
