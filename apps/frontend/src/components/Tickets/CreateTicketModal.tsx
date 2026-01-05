@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { ticketService } from '@/services/ticket.service';
 import { TicketPriority, ServiceType, CreateTicketDto } from '@/types/ticket.types';
 import { useAuthStore } from '@/store/auth.store';
+import { serviceCatalogService } from '@/services/service-catalog.service';
+import { clientService } from '@/services/client.service';
 
 interface CreateTicketModalProps {
   isOpen: boolean;
@@ -19,11 +21,28 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     description: '',
     priority: TicketPriority.MEDIUM,
     service_type: ServiceType.REMOTE,
+    service_catalog_id: '',
+    client_id: '',
     client_name: '',
+    contact_id: '',
     requester_name: '',
     requester_email: '',
     requester_phone: '',
     category: '',
+  });
+
+  // Buscar catálogos de serviço
+  const { data: catalogs } = useQuery({
+    queryKey: ['service-catalogs', user?.service_desk_id],
+    queryFn: () => serviceCatalogService.getAll(user?.service_desk_id),
+    enabled: isOpen,
+  });
+
+  // Buscar contatos do cliente
+  const { data: contacts, refetch: refetchContacts } = useQuery({
+    queryKey: ['client-contacts', formData.client_id],
+    queryFn: () => clientService.getContacts(formData.client_id),
+    enabled: !!formData.client_id,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -53,7 +72,10 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
       description: '',
       priority: TicketPriority.MEDIUM,
       service_type: ServiceType.REMOTE,
+      service_catalog_id: '',
+      client_id: '',
       client_name: '',
+      contact_id: '',
       requester_name: '',
       requester_email: '',
       requester_phone: '',
@@ -71,6 +93,10 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
     if (!formData.description.trim()) {
       newErrors.description = 'Descrição é obrigatória';
+    }
+
+    if (!formData.service_catalog_id) {
+      newErrors.service_catalog_id = 'Catálogo de serviço é obrigatório';
     }
 
     if (!formData.client_name.trim()) {
@@ -104,13 +130,17 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
       description: formData.description,
       priority: formData.priority,
       type: formData.service_type,
-      client_id: 'CLI-' + Date.now(), // Gerar ID temporário
+      service_catalog_id: formData.service_catalog_id,
+      client_id: formData.client_id || 'CLI-' + Date.now(), // Gerar ID temporário se não houver
       client_name: formData.client_name,
       requester_name: formData.requester_name,
       service_desk_id: serviceDeskId,
     };
 
     // Adicionar campos opcionais apenas se preenchidos
+    if (formData.contact_id) {
+      ticketData.contact_id = formData.contact_id;
+    }
     if (formData.requester_email) {
       ticketData.requester_email = formData.requester_email;
     }
@@ -213,6 +243,34 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                 )}
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Catálogo de Serviço <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="service_catalog_id"
+                  value={formData.service_catalog_id}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                    errors.service_catalog_id
+                      ? 'border-red-500 dark:border-red-500'
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                >
+                  <option value="">Selecione um catálogo</option>
+                  {catalogs?.map((catalog) => (
+                    <option key={catalog.id} value={catalog.id}>
+                      {catalog.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.service_catalog_id && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {errors.service_catalog_id}
+                  </p>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -289,6 +347,29 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                 {errors.client_name && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.client_name}</p>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Solicitante
+                </label>
+                <select
+                  name="contact_id"
+                  value={formData.contact_id}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  disabled={!formData.client_id}
+                >
+                  <option value="">Selecione um contato existente</option>
+                  {contacts?.map((contact) => (
+                    <option key={contact.id} value={contact.id}>
+                      {contact.name} {contact.email ? `- ${contact.email}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Caso não encontre o contato, preencha os dados manualmente abaixo
+                </p>
               </div>
 
               <div>
