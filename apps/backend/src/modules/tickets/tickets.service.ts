@@ -36,6 +36,7 @@ export class TicketsService {
   private async initializeTicketCounter() {
     try {
       const lastTicket = await this.ticketsRepository.findOne({
+        where: {},
         order: { created_at: 'DESC' },
         select: ['ticket_number'],
       });
@@ -47,7 +48,8 @@ export class TicketsService {
         }
       }
     } catch (error) {
-      this.logger.error('Erro ao inicializar contador de tickets', error);
+      this.logger.error('Erro ao inicializar contador de tickets');
+      this.logger.error(error);
       this.ticketCounter = 0;
     }
   }
