@@ -7,6 +7,7 @@ interface User {
   email: string;
   role: 'admin' | 'manager' | 'agent' | 'client';
   avatar_url?: string;
+  service_desk_id?: string;
 }
 
 interface AuthStore {
