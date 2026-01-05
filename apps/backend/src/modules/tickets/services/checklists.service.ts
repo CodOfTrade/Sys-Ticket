@@ -183,7 +183,7 @@ export class ChecklistsService {
     if (isCompleted && !ticketChecklist.completed_at) {
       ticketChecklist.completed_at = new Date();
     } else if (!isCompleted && ticketChecklist.completed_at) {
-      ticketChecklist.completed_at = null;
+      ticketChecklist.completed_at = undefined;
     }
 
     return this.ticketChecklistRepository.save(ticketChecklist);
