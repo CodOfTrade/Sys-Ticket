@@ -11,6 +11,11 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { ServiceDesk } from '../../service-desks/entities/service-desk.entity';
 import { Timesheet } from '../../timesheets/entities/timesheet.entity';
+import { ServiceCatalog } from '../../service-catalog/entities/service-catalog.entity';
+import { ServiceCategory } from '../../service-catalog/entities/service-category.entity';
+import { ClientContact } from '../../clients/entities/client-contact.entity';
+import { TicketFollower } from './ticket-follower.entity';
+import { TicketAttachment } from './ticket-attachment.entity';
 
 export enum TicketStatus {
   NEW = 'new',
@@ -98,12 +103,36 @@ export class Ticket {
   })
   type: TicketType;
 
-  // Categoria e tags
+  // Catálogo de serviço
+  @ManyToOne(() => ServiceCatalog, { nullable: true })
+  @JoinColumn({ name: 'service_catalog_id' })
+  service_catalog: ServiceCatalog;
+
+  @Column({ nullable: true })
+  service_catalog_id: string;
+
+  // Categoria do catálogo
+  @ManyToOne(() => ServiceCategory, { nullable: true })
+  @JoinColumn({ name: 'service_category_id' })
+  service_category: ServiceCategory;
+
+  @Column({ nullable: true })
+  service_category_id: string;
+
+  // Categoria legado (texto livre - manter por compatibilidade)
   @Column({ type: 'varchar', length: 100, nullable: true })
   category: string;
 
   @Column({ type: 'simple-array', nullable: true })
   tags: string[];
+
+  // Solicitante (contato do cliente)
+  @ManyToOne(() => ClientContact, { nullable: true })
+  @JoinColumn({ name: 'contact_id' })
+  contact: ClientContact;
+
+  @Column({ nullable: true })
+  contact_id: string;
 
   // Mesa de serviço
   @ManyToOne(() => ServiceDesk, { nullable: false })
@@ -193,6 +222,12 @@ export class Ticket {
   // Relacionamentos
   @OneToMany(() => Timesheet, timesheet => timesheet.ticket)
   timesheets: Timesheet[];
+
+  @OneToMany(() => TicketFollower, follower => follower.ticket)
+  followers: TicketFollower[];
+
+  @OneToMany(() => TicketAttachment, attachment => attachment.ticket)
+  attachments: TicketAttachment[];
 
   // Timestamps
   @CreateDateColumn()
