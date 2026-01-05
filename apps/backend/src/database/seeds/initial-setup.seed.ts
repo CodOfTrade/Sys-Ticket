@@ -61,7 +61,32 @@ export async function seedInitialSetup(dataSource: DataSource) {
       console.log('ℹ️  Mesa de serviço já existe');
     }
 
-    // 3. Criar configurações de preço padrão
+    // 3. Criar tabela pricing_configs se não existir
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS pricing_configs (
+        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+        service_desk_id uuid NOT NULL REFERENCES service_desks(id) ON DELETE CASCADE,
+        service_type varchar NOT NULL,
+        pricing_type varchar DEFAULT 'hourly',
+        hourly_rate_normal decimal(10,2) DEFAULT 0,
+        hourly_rate_extra decimal(10,2) DEFAULT 0,
+        hourly_rate_weekend decimal(10,2) DEFAULT 0,
+        hourly_rate_holiday decimal(10,2) DEFAULT 0,
+        hourly_rate_night decimal(10,2) DEFAULT 0,
+        fixed_price decimal(10,2) DEFAULT 0,
+        contract_percentage decimal(5,2) DEFAULT 100,
+        minimum_charge decimal(10,2) DEFAULT 0,
+        round_to_minutes integer DEFAULT 30,
+        active boolean DEFAULT true,
+        description text,
+        created_at timestamp DEFAULT NOW(),
+        updated_at timestamp DEFAULT NOW(),
+        UNIQUE(service_desk_id, service_type)
+      );
+    `);
+    console.log('✅ Tabela pricing_configs verificada/criada!');
+
+    // 4. Criar configurações de preço padrão
     const pricingTypes = [
       {
         service_type: 'remote',
