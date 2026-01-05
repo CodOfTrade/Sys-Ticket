@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { ticketService } from '@/services/ticket.service';
@@ -39,7 +39,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
   });
 
   // Buscar contatos do cliente
-  const { data: contacts, refetch: refetchContacts } = useQuery({
+  const { data: contacts } = useQuery({
     queryKey: ['client-contacts', formData.client_id],
     queryFn: () => clientService.getContacts(formData.client_id),
     enabled: !!formData.client_id,
