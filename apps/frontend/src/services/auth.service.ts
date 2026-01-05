@@ -18,13 +18,13 @@ export interface LoginResponse {
 
 export const authService = {
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
-    const response = await api.post<LoginResponse>('/auth/login', credentials);
-    return response.data;
+    const response = await api.post<{ success: boolean; data: LoginResponse }>('/v1/auth/login', credentials);
+    return response.data.data;
   },
 
   async getProfile() {
-    const response = await api.get('/auth/profile');
-    return response.data;
+    const response = await api.get('/v1/auth/profile');
+    return response.data.data;
   },
 
   async logout() {
