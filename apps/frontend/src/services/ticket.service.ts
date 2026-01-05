@@ -1,0 +1,56 @@
+import { api } from './api';
+import { Ticket, CreateTicketDto, UpdateTicketDto } from '@/types/ticket.types';
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  errors: any[];
+}
+
+export const ticketService = {
+  async getAll(params?: {
+    status?: string;
+    priority?: string;
+    service_desk_id?: string;
+    assignee_id?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ tickets: Ticket[]; total: number }> {
+    const response = await api.get<ApiResponse<{ tickets: Ticket[]; total: number }>>(
+      '/v1/tickets',
+      { params }
+    );
+    return response.data.data;
+  },
+
+  async getById(id: string): Promise<Ticket> {
+    const response = await api.get<ApiResponse<Ticket>>(`/v1/tickets/${id}`);
+    return response.data.data;
+  },
+
+  async create(data: CreateTicketDto): Promise<Ticket> {
+    const response = await api.post<ApiResponse<Ticket>>('/v1/tickets', data);
+    return response.data.data;
+  },
+
+  async update(id: string, data: UpdateTicketDto): Promise<Ticket> {
+    const response = await api.patch<ApiResponse<Ticket>>(`/v1/tickets/${id}`, data);
+    return response.data.data;
+  },
+
+  async assign(id: string, assigneeId: string): Promise<Ticket> {
+    const response = await api.patch<ApiResponse<Ticket>>(
+      `/v1/tickets/${id}/assign/${assigneeId}`
+    );
+    return response.data.data;
+  },
+
+  async unassign(id: string): Promise<Ticket> {
+    const response = await api.patch<ApiResponse<Ticket>>(`/v1/tickets/${id}/unassign`);
+    return response.data.data;
+  },
+
+  async delete(id: string): Promise<void> {
+    await api.delete(`/v1/tickets/${id}`);
+  },
+};
