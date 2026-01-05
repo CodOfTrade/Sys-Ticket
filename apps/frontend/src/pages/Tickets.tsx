@@ -38,7 +38,7 @@ export default function Tickets() {
   const tickets = data?.tickets || [];
   const filteredTickets = tickets.filter((ticket) =>
     ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ticket.number.toString().includes(searchTerm)
+    ticket.ticket_number.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleDelete = async (id: string) => {
@@ -115,11 +115,16 @@ export default function Tickets() {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="">Todos</option>
-                <option value={TicketStatus.OPEN}>Aberto</option>
+                <option value={TicketStatus.NEW}>Novo</option>
                 <option value={TicketStatus.IN_PROGRESS}>Em Andamento</option>
-                <option value={TicketStatus.PENDING}>Pendente</option>
+                <option value={TicketStatus.WAITING_CLIENT}>Aguardando Cliente</option>
+                <option value={TicketStatus.WAITING_THIRD_PARTY}>Aguardando Terceiros</option>
+                <option value={TicketStatus.PAUSED}>Pausado</option>
+                <option value={TicketStatus.WAITING_APPROVAL}>Aguardando Aprovação</option>
                 <option value={TicketStatus.RESOLVED}>Resolvido</option>
+                <option value={TicketStatus.READY_TO_INVOICE}>Pronto para Faturar</option>
                 <option value={TicketStatus.CLOSED}>Fechado</option>
+                <option value={TicketStatus.CANCELLED}>Cancelado</option>
               </select>
             </div>
 
@@ -154,7 +159,7 @@ export default function Tickets() {
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
           <p className="text-sm text-gray-600 dark:text-gray-400">Abertos</p>
           <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-            {tickets.filter((t) => t.status === TicketStatus.OPEN).length}
+            {tickets.filter((t) => t.status === TicketStatus.NEW).length}
           </p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
@@ -220,13 +225,11 @@ export default function Tickets() {
                     <td className="px-6 py-4">
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">
-                          #{ticket.number} - {ticket.title}
+                          {ticket.ticket_number} - {ticket.title}
                         </p>
-                        {ticket.client && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            {ticket.client.name}
-                          </p>
-                        )}
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          {ticket.client_name}
+                        </p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -236,13 +239,13 @@ export default function Tickets() {
                       <PriorityBadge priority={ticket.priority} />
                     </td>
                     <td className="px-6 py-4">
-                      {ticket.assignee ? (
+                      {ticket.assigned_to ? (
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                             <User size={16} className="text-blue-600 dark:text-blue-400" />
                           </div>
                           <span className="text-sm text-gray-900 dark:text-white">
-                            {ticket.assignee.name}
+                            {ticket.assigned_to.name}
                           </span>
                         </div>
                       ) : (
