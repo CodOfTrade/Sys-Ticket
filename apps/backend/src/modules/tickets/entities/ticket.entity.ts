@@ -119,7 +119,7 @@ export class Ticket {
   assigned_to: User;
 
   @Column({ nullable: true })
-  assigned_to_id: string;
+  assigned_to_id: string | null;
 
   // Criador do ticket
   @ManyToOne(() => User, { nullable: true })
@@ -203,6 +203,12 @@ export class Ticket {
 
   @Column({ type: 'timestamp', nullable: true })
   closed_at: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  started_at: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  paused_at: Date;
 
   // Campos customizados (JSON)
   @Column({ type: 'jsonb', nullable: true })
