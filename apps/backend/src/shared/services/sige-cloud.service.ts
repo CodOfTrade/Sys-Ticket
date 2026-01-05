@@ -12,6 +12,7 @@ export class SigeCloudService {
   constructor(private readonly configService: ConfigService) {
     this.baseUrl = this.configService.get<string>('SIGE_API_URL') || 'https://api.sigecloud.com.br';
     this.apiKey = this.configService.get<string>('SIGE_API_KEY') || '';
+    const apiUser = this.configService.get<string>('SIGE_API_USER') || '';
 
     this.axiosInstance = axios.create({
       baseURL: this.baseUrl,
@@ -19,6 +20,7 @@ export class SigeCloudService {
       headers: {
         'Content-Type': 'application/json',
         'Authorization-token': this.apiKey,
+        'User': apiUser,
         'App': 'API',
       },
     });
