@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, Eye, Edit, Trash2, User, Clock } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Trash2, User, Clock } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ticketService } from '@/services/ticket.service';
-import { Ticket, TicketStatus, TicketPriority, ServiceType } from '@/types/ticket.types';
+import { TicketStatus, TicketPriority } from '@/types/ticket.types';
 import { StatusBadge } from '@/components/Tickets/StatusBadge';
 import { PriorityBadge } from '@/components/Tickets/PriorityBadge';
 import { format } from 'date-fns';
