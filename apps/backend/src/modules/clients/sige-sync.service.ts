@@ -195,20 +195,31 @@ export class SigeSyncService {
    */
   private async upsertClient(clientData: any): Promise<SigeClient> {
     try {
+      // API SIGE retorna Codigo como identificador único
+      const sigeId = String(clientData.Codigo || clientData.id || clientData.IdPessoa);
+
+      if (!sigeId) {
+        this.logger.warn('Cliente sem Codigo, pulando...', clientData);
+        return null;
+      }
+
       const existing = await this.clientRepository.findOne({
-        where: { sigeId: clientData.id || clientData.IdPessoa },
+        where: { sigeId },
       });
 
       const client = existing || this.clientRepository.create();
 
-      client.sigeId = clientData.id || clientData.IdPessoa;
-      client.nome = clientData.nome || clientData.Nome;
+      client.sigeId = sigeId;
+      // Campo "Cliente" tem o nome do cliente
+      client.nome = clientData.Cliente || clientData.nome || clientData.Nome;
       client.razaoSocial = clientData.razao_social || clientData.RazaoSocial;
       client.nomeFantasia = clientData.nome_fantasia || clientData.NomeFantasia;
       client.cpfCnpj = clientData.cpf_cnpj || clientData.CpfCnpj || clientData.Documento;
       client.tipoPessoa = clientData.tipo_pessoa || clientData.TipoPessoa;
-      client.email = clientData.email || clientData.Email;
-      client.telefone = clientData.telefone || clientData.Telefone;
+      // Campo "EmailContato" tem o email
+      client.email = clientData.EmailContato || clientData.email || clientData.Email;
+      // Campo "TelefoneContato" tem o telefone
+      client.telefone = clientData.TelefoneContato || clientData.telefone || clientData.Telefone;
       client.celular = clientData.celular || clientData.Celular;
       client.endereco = clientData.endereco || clientData.Endereco;
       client.cidade = clientData.cidade || clientData.Cidade;
@@ -219,7 +230,7 @@ export class SigeSyncService {
 
       return await this.clientRepository.save(client);
     } catch (error) {
-      this.logger.error(`Erro ao fazer upsert do cliente ${clientData.id}`, error);
+      this.logger.error(`Erro ao fazer upsert do cliente ${clientData.Codigo}`, error);
       throw error;
     }
   }
@@ -229,18 +240,26 @@ export class SigeSyncService {
    */
   private async upsertContract(contractData: any): Promise<SigeContract> {
     try {
+      // API SIGE retorna Codigo como identificador único
+      const sigeId = String(contractData.Codigo || contractData.id || contractData.IdContrato);
+
+      if (!sigeId) {
+        this.logger.warn('Contrato sem Codigo, pulando...', contractData);
+        return null;
+      }
+
       const existing = await this.contractRepository.findOne({
-        where: { sigeId: contractData.id || contractData.IdContrato },
+        where: { sigeId },
       });
 
       const contract = existing || this.contractRepository.create();
 
-      contract.sigeId = contractData.id || contractData.IdContrato;
+      contract.sigeId = sigeId;
       contract.numeroContrato = contractData.numero_contrato || contractData.NumeroContrato;
-      contract.descricao = contractData.descricao || contractData.Descricao;
-      contract.valorMensal = contractData.valor_mensal || contractData.ValorMensal;
-      contract.dataInicio = contractData.data_inicio || contractData.DataInicio;
-      contract.dataFim = contractData.data_fim || contractData.DataFim;
+      contract.descricao = contractData.Descricao || contractData.descricao;
+      contract.valorMensal = contractData.Valor || contractData.valor_mensal || contractData.ValorMensal;
+      contract.dataInicio = contractData.DataAbertura || contractData.data_inicio || contractData.DataInicio;
+      contract.dataFim = contractData.DataFechamento || contractData.data_fim || contractData.DataFim;
       contract.status = contractData.status || contractData.Status;
       contract.tipo = contractData.tipo || contractData.Tipo;
       contract.observacoes = contractData.observacoes || contractData.Observacoes;
@@ -250,7 +269,7 @@ export class SigeSyncService {
       // Vincular ao cliente se existir
       if (contractData.client_id || contractData.IdCliente) {
         const client = await this.clientRepository.findOne({
-          where: { sigeId: contractData.client_id || contractData.IdCliente },
+          where: { sigeId: String(contractData.client_id || contractData.IdCliente) },
         });
         if (client) {
           contract.sigeClientId = client.id;
@@ -259,7 +278,7 @@ export class SigeSyncService {
 
       return await this.contractRepository.save(contract);
     } catch (error) {
-      this.logger.error(`Erro ao fazer upsert do contrato ${contractData.id}`, error);
+      this.logger.error(`Erro ao fazer upsert do contrato ${contractData.Codigo}`, error);
       throw error;
     }
   }
