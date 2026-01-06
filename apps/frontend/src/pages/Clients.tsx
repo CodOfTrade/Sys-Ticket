@@ -1,24 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { clientService } from '@services/client.service';
+import { clientService, type Client } from '@services/client.service';
 import { api } from '@services/api';
-
-interface Client {
-  id: string;
-  nome: string;
-  razao_social?: string;
-  nome_fantasia?: string;
-  cpf_cnpj?: string;
-  tipo_pessoa?: string;
-  email?: string;
-  telefone?: string;
-  celular?: string;
-  endereco?: string;
-  cidade?: string;
-  estado?: string;
-  cep?: string;
-  ativo?: boolean;
-}
 
 export default function Clients() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,7 +18,6 @@ export default function Clients() {
       }
       return clientService.findAll(page);
     },
-    keepPreviousData: true,
   });
 
   // Mutation para forçar sincronização
@@ -46,7 +28,7 @@ export default function Clients() {
     onSuccess: () => {
       alert('Sincronização iniciada! Os dados serão atualizados em breve.');
       setTimeout(() => {
-        queryClient.invalidateQueries(['clients']);
+        queryClient.invalidateQueries({ queryKey: ['clients'] });
       }, 5000);
     },
     onError: () => {
@@ -88,10 +70,10 @@ export default function Clients() {
         </h1>
         <button
           onClick={() => syncMutation.mutate()}
-          disabled={syncMutation.isLoading}
+          disabled={syncMutation.isPending}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
         >
-          {syncMutation.isLoading ? (
+          {syncMutation.isPending ? (
             <>
               <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />

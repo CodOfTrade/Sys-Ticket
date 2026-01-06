@@ -13,6 +13,32 @@ export interface ClientContact {
   is_active: boolean;
 }
 
+export interface Client {
+  id: string;
+  nome: string;
+  razao_social?: string;
+  nome_fantasia?: string;
+  cpf_cnpj?: string;
+  tipo_pessoa?: string;
+  email?: string;
+  telefone?: string;
+  celular?: string;
+  endereco?: string;
+  cidade?: string;
+  estado?: string;
+  cep?: string;
+  ativo?: boolean;
+}
+
+export interface ClientsResponse {
+  data: Client[];
+  meta: {
+    current_page: number;
+    per_page: number;
+    total: number;
+  };
+}
+
 interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -20,6 +46,20 @@ interface ApiResponse<T> {
 }
 
 export const clientService = {
+  async findAll(page = 1, perPage = 50): Promise<ClientsResponse> {
+    const response = await api.get<ClientsResponse>('/v1/clients', {
+      params: { page, per_page: perPage },
+    });
+    return response.data;
+  },
+
+  async searchByName(name: string, page = 1, perPage = 20): Promise<ClientsResponse> {
+    const response = await api.get<ClientsResponse>('/v1/clients/search', {
+      params: { name, page, per_page: perPage },
+    });
+    return response.data;
+  },
+
   async getContacts(clientId?: string): Promise<ClientContact[]> {
     const params = clientId ? { client_id: clientId } : {};
     const response = await api.get<ApiResponse<ClientContact[]>>(
