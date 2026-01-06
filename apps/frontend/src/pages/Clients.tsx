@@ -38,7 +38,7 @@ export default function Clients() {
     },
   });
 
-  const clients = clientsData?.data || [];
+  const clients = Array.isArray(clientsData?.data) ? clientsData.data : [];
   const totalPages = clientsData?.meta ? Math.ceil(clientsData.meta.total / clientsData.meta.per_page) : 1;
 
   const formatDocument = (doc?: string) => {
