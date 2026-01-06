@@ -17,7 +17,14 @@
       "Bash(powershell.exe -Command \"cd ''d:/Arquivos do Usuário/OneDrive/3 - Pessoal José/Programaçao/Sys-Ticket/apps/frontend''; npm run build\")",
       "Bash(powershell.exe -Command \"Get-Command node -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source\")",
       "Bash(git reset:*)",
-      "Bash(dir /s \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\")"
+      "Bash(dir /s \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\")",
+      "Bash(xargs:*)",
+      "Bash(pm2 delete:*)",
+      "Bash(powershell.exe -Command \"cd ''d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend''; npm run build\")",
+      "Bash(dir /s)",
+      "Bash(findstr:*)",
+      "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\"\" && git status\")",
+      "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\"\" && git add . && git commit -m \"\"Fix: modificar ClientsService para buscar do banco local ao invés da API SIGE\"\"\")"
     ]
   }
 }

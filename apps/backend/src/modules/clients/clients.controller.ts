@@ -6,6 +6,7 @@ import { ClientsService } from './clients.service';
 import { SigeSyncService } from './sige-sync.service';
 import { CreateServiceOrderDto } from './interfaces/sige-service-order.interface';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { ClientContact } from './entities/client-contact.entity';
 
 @ApiTags('Clients')
@@ -20,6 +21,7 @@ export class ClientsController {
   ) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'Listar clientes do SIGE Cloud' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'per_page', required: false, type: Number, example: 50 })
@@ -32,6 +34,7 @@ export class ClientsController {
   }
 
   @Get('search')
+  @Public()
   @ApiOperation({ summary: 'Buscar clientes por nome' })
   @ApiQuery({ name: 'name', required: true, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
