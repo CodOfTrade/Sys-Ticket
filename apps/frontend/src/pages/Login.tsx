@@ -151,7 +151,7 @@ export default function Login() {
               Credenciais de teste:
             </p>
             <p className="text-xs text-blue-700 dark:text-blue-400">
-              Email: admin@systicket.com<br />
+              Email: teste@admin.com<br />
               Senha: admin123
             </p>
           </div>
