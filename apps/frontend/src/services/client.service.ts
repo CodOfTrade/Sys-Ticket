@@ -47,17 +47,17 @@ interface ApiResponse<T> {
 
 export const clientService = {
   async findAll(page = 1, perPage = 50): Promise<ClientsResponse> {
-    const response = await api.get<ClientsResponse>('/v1/clients', {
+    const response = await api.get<{ success: boolean; data: ClientsResponse }>('/v1/clients', {
       params: { page, per_page: perPage },
     });
-    return response.data;
+    return response.data.data;
   },
 
   async searchByName(name: string, page = 1, perPage = 20): Promise<ClientsResponse> {
-    const response = await api.get<ClientsResponse>('/v1/clients/search', {
+    const response = await api.get<{ success: boolean; data: ClientsResponse }>('/v1/clients/search', {
       params: { name, page, per_page: perPage },
     });
-    return response.data;
+    return response.data.data;
   },
 
   async getContacts(clientId?: string): Promise<ClientContact[]> {
