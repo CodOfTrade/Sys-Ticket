@@ -52,7 +52,7 @@ export class ClientsService {
   /**
    * Busca cliente por ID no banco local
    */
-  async findOne(clientId: string): Promise<SigeClientInterface> {
+  async findOne(clientId: string): Promise<SigeClientInterface | null> {
     try {
       const client = await this.clientRepository.findOne({
         where: { sigeId: clientId },
