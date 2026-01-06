@@ -52,17 +52,17 @@ export class ClientsService {
     }
   }
 
-  async findOne(clientId: string): Promise<SigeClient> {
+  async findOne(clientId: string): Promise<SigeClientInterface> {
     const cacheKey = `sige:client:${clientId}`;
 
     try {
-      const cached = await this.cacheManager.get<SigeClient>(cacheKey);
+      const cached = await this.cacheManager.get<SigeClientInterface>(cacheKey);
       if (cached) {
         this.logger.debug(`Cache hit for ${cacheKey}`);
         return cached;
       }
 
-      const response = await this.sigeCloudService.get<SigeClient>(`/request/Pessoas/GetById`, {
+      const response = await this.sigeCloudService.get<SigeClientInterface>(`/request/Pessoas/GetById`, {
         id: clientId,
       });
 
@@ -75,7 +75,7 @@ export class ClientsService {
     }
   }
 
-  async searchByDocument(document: string): Promise<SigeClient | null> {
+  async searchByDocument(document: string): Promise<SigeClientInterface | null> {
     try {
       const rawResponse = await this.sigeCloudService.get<any>('/request/Oportunidades/Pesquisar', {
         cliente: document,
