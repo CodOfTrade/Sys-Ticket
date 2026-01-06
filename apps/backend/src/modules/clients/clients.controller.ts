@@ -45,6 +45,22 @@ export class ClientsController {
     return this.clientsService.searchByName(name, page, perPage);
   }
 
+  @Post('sync')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Sincronizar dados do SIGE Cloud manualmente' })
+  @ApiResponse({ status: 200, description: 'Sincronização iniciada com sucesso' })
+  async syncSigeData() {
+    // Executa sync em background
+    this.sigeSyncService.syncAll().catch(err => {
+      console.error('Erro na sincronização:', err);
+    });
+
+    return {
+      success: true,
+      message: 'Sincronização iniciada em background',
+    };
+  }
+
   @Get('document/:document')
   @ApiOperation({ summary: 'Buscar cliente por CPF/CNPJ' })
   @ApiResponse({ status: 200, description: 'Cliente encontrado' })
@@ -149,21 +165,5 @@ export class ClientsController {
   @ApiResponse({ status: 404, description: 'Produto não encontrado' })
   async getProduct(@Param('id') id: string) {
     return this.clientsService.getProduct(id);
-  }
-
-  @Post('sync')
-  @Roles('admin')
-  @ApiOperation({ summary: 'Sincronizar dados do SIGE Cloud manualmente' })
-  @ApiResponse({ status: 200, description: 'Sincronização iniciada com sucesso' })
-  async syncSigeData() {
-    // Executa sync em background
-    this.sigeSyncService.syncAll().catch(err => {
-      console.error('Erro na sincronização:', err);
-    });
-
-    return {
-      success: true,
-      message: 'Sincronização iniciada em background',
-    };
   }
 }
