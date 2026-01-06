@@ -147,4 +147,67 @@ export class ClientsService {
     this.logger.log(`Invalidando cache: ${pattern}`);
     // Implementação depende do cache manager usado (Redis, etc)
   }
+
+  /**
+   * Busca produtos no SIGE Cloud
+   */
+  async searchProducts(query: string, page = 1, perPage = 20): Promise<any> {
+    const cacheKey = `sige:products:${query}:${page}:${perPage}`;
+
+    try {
+      const cached = await this.cacheManager.get<any>(cacheKey);
+      if (cached) {
+        this.logger.debug(`Cache hit for ${cacheKey}`);
+        return cached;
+      }
+
+      const rawResponse = await this.sigeCloudService.get<any>('/request/Produtos/Pesquisar', {
+        nome: query,
+        pageSize: perPage,
+        skip: (page - 1) * perPage,
+      });
+
+      const response = {
+        data: Array.isArray(rawResponse) ? rawResponse : (rawResponse.data || []),
+        meta: {
+          current_page: page,
+          per_page: perPage,
+          total: Array.isArray(rawResponse) ? rawResponse.length : (rawResponse.total || 0),
+        },
+      };
+
+      await this.cacheManager.set(cacheKey, response, this.CACHE_TTL);
+
+      return response;
+    } catch (error) {
+      this.logger.error(`Erro ao buscar produtos: ${query}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Busca produto por ID no SIGE Cloud
+   */
+  async getProduct(productId: string): Promise<any> {
+    const cacheKey = `sige:product:${productId}`;
+
+    try {
+      const cached = await this.cacheManager.get<any>(cacheKey);
+      if (cached) {
+        this.logger.debug(`Cache hit for ${cacheKey}`);
+        return cached;
+      }
+
+      const response = await this.sigeCloudService.get<any>('/request/Produtos/GetById', {
+        id: productId,
+      });
+
+      await this.cacheManager.set(cacheKey, response, this.CACHE_TTL);
+
+      return response;
+    } catch (error) {
+      this.logger.error(`Erro ao buscar produto ${productId}`, error);
+      throw error;
+    }
+  }
 }
