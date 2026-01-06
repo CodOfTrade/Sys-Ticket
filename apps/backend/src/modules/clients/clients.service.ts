@@ -23,93 +23,122 @@ export class ClientsService {
     private clientRepository: Repository<SigeClient>,
   ) {}
 
+  /**
+   * Lista todos os clientes do banco local (sincronizados do SIGE Cloud)
+   */
   async findAll(page = 1, perPage = 50): Promise<SigeClientResponse> {
-    const cacheKey = `sige:clients:${page}:${perPage}`;
-
     try {
-      const cached = await this.cacheManager.get<SigeClientResponse>(cacheKey);
-      if (cached) {
-        this.logger.debug(`Cache hit for ${cacheKey}`);
-        return cached;
-      }
-
-      const rawResponse = await this.sigeCloudService.get<any>('/request/Oportunidades/Pesquisar', {
-        pageSize: perPage,
+      const [clients, total] = await this.clientRepository.findAndCount({
+        where: { ativo: true },
         skip: (page - 1) * perPage,
+        take: perPage,
+        order: { nome: 'ASC' },
       });
 
-      // A API do SIGE Cloud retorna um array diretamente
-      const response: SigeClientResponse = Array.isArray(rawResponse)
-        ? { data: rawResponse }
-        : rawResponse;
-
-      await this.cacheManager.set(cacheKey, response, this.CACHE_TTL);
-
-      return response;
+      return {
+        data: clients.map(c => this.mapClientToInterface(c)),
+        meta: {
+          current_page: page,
+          per_page: perPage,
+          total,
+        },
+      };
     } catch (error) {
-      this.logger.error('Erro ao buscar clientes do SIGE Cloud', error);
+      this.logger.error('Erro ao buscar clientes', error);
       throw error;
     }
   }
 
+  /**
+   * Busca cliente por ID no banco local
+   */
   async findOne(clientId: string): Promise<SigeClientInterface> {
-    const cacheKey = `sige:client:${clientId}`;
-
     try {
-      const cached = await this.cacheManager.get<SigeClientInterface>(cacheKey);
-      if (cached) {
-        this.logger.debug(`Cache hit for ${cacheKey}`);
-        return cached;
+      const client = await this.clientRepository.findOne({
+        where: { sigeId: clientId },
+      });
+
+      if (!client) {
+        return null;
       }
 
-      const response = await this.sigeCloudService.get<SigeClientInterface>(`/request/Pessoas/GetById`, {
-        id: clientId,
-      });
-
-      await this.cacheManager.set(cacheKey, response, this.CACHE_TTL);
-
-      return response;
+      return this.mapClientToInterface(client);
     } catch (error) {
-      this.logger.error(`Erro ao buscar cliente ${clientId} do SIGE Cloud`, error);
+      this.logger.error(`Erro ao buscar cliente ${clientId}`, error);
       throw error;
     }
   }
 
+  /**
+   * Busca cliente por CPF/CNPJ no banco local
+   */
   async searchByDocument(document: string): Promise<SigeClientInterface | null> {
     try {
-      const rawResponse = await this.sigeCloudService.get<any>('/request/Oportunidades/Pesquisar', {
-        cliente: document,
+      const client = await this.clientRepository.findOne({
+        where: { cpfCnpj: document.replace(/\D/g, ''), ativo: true },
       });
 
-      const response: SigeClientResponse = Array.isArray(rawResponse)
-        ? { data: rawResponse }
-        : rawResponse;
+      if (!client) {
+        return null;
+      }
 
-      const data = response.data || [];
-      return data.length > 0 ? data[0] : null;
+      return this.mapClientToInterface(client);
     } catch (error) {
       this.logger.error(`Erro ao buscar cliente por documento ${document}`, error);
       throw error;
     }
   }
 
+  /**
+   * Busca clientes por nome no banco local
+   */
   async searchByName(name: string, page = 1, perPage = 20): Promise<SigeClientResponse> {
     try {
-      const rawResponse = await this.sigeCloudService.get<any>('/request/Oportunidades/Pesquisar', {
-        cliente: name,
-        pageSize: perPage,
+      const [clients, total] = await this.clientRepository.findAndCount({
+        where: [
+          { nome: Like(`%${name}%`), ativo: true },
+          { razaoSocial: Like(`%${name}%`), ativo: true },
+          { nomeFantasia: Like(`%${name}%`), ativo: true },
+        ],
         skip: (page - 1) * perPage,
+        take: perPage,
+        order: { nome: 'ASC' },
       });
 
-      const response: SigeClientResponse = Array.isArray(rawResponse)
-        ? { data: rawResponse }
-        : rawResponse;
-
-      return response;
+      return {
+        data: clients.map(c => this.mapClientToInterface(c)),
+        meta: {
+          current_page: page,
+          per_page: perPage,
+          total,
+        },
+      };
     } catch (error) {
       this.logger.error(`Erro ao buscar clientes por nome: ${name}`, error);
       throw error;
     }
+  }
+
+  /**
+   * Mapeia entidade para interface
+   */
+  private mapClientToInterface(client: SigeClient): SigeClientInterface {
+    return {
+      id: client.sigeId,
+      nome: client.nome,
+      razao_social: client.razaoSocial,
+      nome_fantasia: client.nomeFantasia,
+      cpf_cnpj: client.cpfCnpj,
+      tipo_pessoa: client.tipoPessoa,
+      email: client.email,
+      telefone: client.telefone,
+      celular: client.celular,
+      endereco: client.endereco,
+      cidade: client.cidade,
+      estado: client.estado,
+      cep: client.cep,
+      ativo: client.ativo,
+    };
   }
 
   async createServiceOrder(createDto: CreateServiceOrderDto): Promise<SigeServiceOrder> {
