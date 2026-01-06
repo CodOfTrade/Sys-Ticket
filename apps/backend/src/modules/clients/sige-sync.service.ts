@@ -193,12 +193,12 @@ export class SigeSyncService {
   /**
    * Insere ou atualiza um cliente no banco local
    */
-  private async upsertClient(clientData: any): Promise<SigeClient> {
+  private async upsertClient(clientData: any): Promise<SigeClient | null> {
     try {
       // API SIGE retorna Codigo como identificador único
       const sigeId = String(clientData.Codigo || clientData.id || clientData.IdPessoa);
 
-      if (!sigeId) {
+      if (!sigeId || sigeId === 'undefined') {
         this.logger.warn('Cliente sem Codigo, pulando...', clientData);
         return null;
       }
@@ -238,12 +238,12 @@ export class SigeSyncService {
   /**
    * Insere ou atualiza um contrato no banco local
    */
-  private async upsertContract(contractData: any): Promise<SigeContract> {
+  private async upsertContract(contractData: any): Promise<SigeContract | null> {
     try {
       // API SIGE retorna Codigo como identificador único
       const sigeId = String(contractData.Codigo || contractData.id || contractData.IdContrato);
 
-      if (!sigeId) {
+      if (!sigeId || sigeId === 'undefined') {
         this.logger.warn('Contrato sem Codigo, pulando...', contractData);
         return null;
       }
