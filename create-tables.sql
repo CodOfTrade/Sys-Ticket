@@ -100,3 +100,87 @@ CREATE INDEX IF NOT EXISTS idx_ticket_attachments_ticket ON ticket_attachments(t
 CREATE INDEX IF NOT EXISTS idx_tickets_catalog ON tickets(service_catalog_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_category ON tickets(service_category_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_contact ON tickets(contact_id);
+
+-- ========================================
+-- TABELAS DE SINCRONIZAÇÃO SIGE CLOUD
+-- ========================================
+
+-- Table: sige_products
+-- Stores products synchronized from SIGE Cloud
+CREATE TABLE IF NOT EXISTS sige_products (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  sige_id VARCHAR(100) NOT NULL UNIQUE,
+  nome VARCHAR(255) NOT NULL,
+  descricao TEXT,
+  codigo VARCHAR(100),
+  preco_venda DECIMAL(10,2),
+  preco_custo DECIMAL(10,2),
+  unidade VARCHAR(50),
+  tipo VARCHAR(50),
+  ativo BOOLEAN DEFAULT TRUE,
+  last_synced_at TIMESTAMP DEFAULT NOW(),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Table: sige_clients
+-- Stores clients synchronized from SIGE Cloud
+CREATE TABLE IF NOT EXISTS sige_clients (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  sige_id VARCHAR(100) NOT NULL UNIQUE,
+  nome VARCHAR(255) NOT NULL,
+  razao_social VARCHAR(255),
+  nome_fantasia VARCHAR(255),
+  cpf_cnpj VARCHAR(20),
+  tipo_pessoa VARCHAR(10),
+  email VARCHAR(255),
+  telefone VARCHAR(20),
+  celular VARCHAR(20),
+  endereco TEXT,
+  cidade VARCHAR(100),
+  estado VARCHAR(2),
+  cep VARCHAR(10),
+  ativo BOOLEAN DEFAULT TRUE,
+  last_synced_at TIMESTAMP DEFAULT NOW(),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Table: sige_contracts
+-- Stores contracts synchronized from SIGE Cloud
+CREATE TABLE IF NOT EXISTS sige_contracts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  sige_id VARCHAR(100) NOT NULL UNIQUE,
+  sige_client_id UUID REFERENCES sige_clients(id) ON DELETE CASCADE,
+  numero_contrato VARCHAR(100),
+  descricao TEXT,
+  valor_mensal DECIMAL(10,2),
+  data_inicio DATE,
+  data_fim DATE,
+  status VARCHAR(50),
+  tipo VARCHAR(50),
+  observacoes TEXT,
+  ativo BOOLEAN DEFAULT TRUE,
+  last_synced_at TIMESTAMP DEFAULT NOW(),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create indexes for SIGE tables
+CREATE INDEX IF NOT EXISTS idx_sige_products_sige_id ON sige_products(sige_id);
+CREATE INDEX IF NOT EXISTS idx_sige_products_nome ON sige_products(nome);
+CREATE INDEX IF NOT EXISTS idx_sige_products_codigo ON sige_products(codigo);
+CREATE INDEX IF NOT EXISTS idx_sige_products_ativo ON sige_products(ativo);
+CREATE INDEX IF NOT EXISTS idx_sige_products_last_synced ON sige_products(last_synced_at);
+
+CREATE INDEX IF NOT EXISTS idx_sige_clients_sige_id ON sige_clients(sige_id);
+CREATE INDEX IF NOT EXISTS idx_sige_clients_nome ON sige_clients(nome);
+CREATE INDEX IF NOT EXISTS idx_sige_clients_cpf_cnpj ON sige_clients(cpf_cnpj);
+CREATE INDEX IF NOT EXISTS idx_sige_clients_ativo ON sige_clients(ativo);
+CREATE INDEX IF NOT EXISTS idx_sige_clients_last_synced ON sige_clients(last_synced_at);
+
+CREATE INDEX IF NOT EXISTS idx_sige_contracts_sige_id ON sige_contracts(sige_id);
+CREATE INDEX IF NOT EXISTS idx_sige_contracts_client_id ON sige_contracts(sige_client_id);
+CREATE INDEX IF NOT EXISTS idx_sige_contracts_status ON sige_contracts(status);
+CREATE INDEX IF NOT EXISTS idx_sige_contracts_ativo ON sige_contracts(ativo);
+CREATE INDEX IF NOT EXISTS idx_sige_contracts_last_synced ON sige_contracts(last_synced_at);

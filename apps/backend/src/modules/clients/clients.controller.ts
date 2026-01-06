@@ -3,6 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse } from '@ne
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClientsService } from './clients.service';
+import { SigeSyncService } from './sige-sync.service';
 import { CreateServiceOrderDto } from './interfaces/sige-service-order.interface';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { ClientContact } from './entities/client-contact.entity';
@@ -13,6 +14,7 @@ import { ClientContact } from './entities/client-contact.entity';
 export class ClientsController {
   constructor(
     private readonly clientsService: ClientsService,
+    private readonly sigeSyncService: SigeSyncService,
     @InjectRepository(ClientContact)
     private contactRepository: Repository<ClientContact>,
   ) {}
@@ -147,5 +149,21 @@ export class ClientsController {
   @ApiResponse({ status: 404, description: 'Produto não encontrado' })
   async getProduct(@Param('id') id: string) {
     return this.clientsService.getProduct(id);
+  }
+
+  @Post('sync')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Sincronizar dados do SIGE Cloud manualmente' })
+  @ApiResponse({ status: 200, description: 'Sincronização iniciada com sucesso' })
+  async syncSigeData() {
+    // Executa sync em background
+    this.sigeSyncService.syncAll().catch(err => {
+      console.error('Erro na sincronização:', err);
+    });
+
+    return {
+      success: true,
+      message: 'Sincronização iniciada em background',
+    };
   }
 }
