@@ -10,7 +10,7 @@ import { SigeContract } from './entities/sige-contract.entity';
 @Injectable()
 export class SigeSyncService {
   private readonly logger = new Logger(SigeSyncService.name);
-  private readonly BATCH_SIZE = 100;
+  private readonly BATCH_SIZE = 50; // API SIGE Cloud retorna 50 por vez
 
   constructor(
     private readonly sigeCloudService: SigeCloudService,
@@ -40,7 +40,7 @@ export class SigeSyncService {
           skip: (page - 1) * this.BATCH_SIZE,
         });
 
-        const products = Array.isArray(rawResponse) ? rawResponse : (rawResponse.data || []);
+        const products = Array.isArray(rawResponse) ? rawResponse : (rawResponse?.data || []);
 
         if (products.length === 0) {
           hasMore = false;
@@ -86,7 +86,7 @@ export class SigeSyncService {
           skip: (page - 1) * this.BATCH_SIZE,
         });
 
-        const clients = Array.isArray(rawResponse) ? rawResponse : (rawResponse.data || []);
+        const clients = Array.isArray(rawResponse) ? rawResponse : (rawResponse?.data || []);
 
         if (clients.length === 0) {
           hasMore = false;
@@ -133,7 +133,7 @@ export class SigeSyncService {
           skip: (page - 1) * this.BATCH_SIZE,
         });
 
-        const contracts = Array.isArray(rawResponse) ? rawResponse : (rawResponse.data || []);
+        const contracts = Array.isArray(rawResponse) ? rawResponse : (rawResponse?.data || []);
 
         if (contracts.length === 0) {
           hasMore = false;
