@@ -226,6 +226,8 @@ export class TicketsService {
    */
   async findOne(id: string): Promise<Ticket> {
     try {
+      this.logger.log(`Buscando ticket com ID: ${id}`);
+
       const ticket = await this.ticketsRepository.findOne({
         where: { id },
         relations: [
@@ -240,15 +242,19 @@ export class TicketsService {
       });
 
       if (!ticket) {
+        this.logger.warn(`Ticket com ID ${id} não encontrado`);
         throw new NotFoundException(`Ticket com ID ${id} não encontrado`);
       }
 
+      this.logger.log(`Ticket ${id} encontrado com sucesso`);
       return ticket;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Erro ao buscar ticket ${id}`, error);
+      this.logger.error(`Erro ao buscar ticket ${id}:`);
+      this.logger.error(error);
+      this.logger.error(error.stack);
       throw new BadRequestException('Erro ao buscar ticket');
     }
   }

@@ -11,7 +11,13 @@
       "Bash(curl:*)",
       "Bash(git push:*)",
       "Bash(sshpass -p '123321' ssh:*)",
-      "Bash(sshpass:*)"
+      "Bash(sshpass:*)",
+      "Bash(where npm)",
+      "Bash(cmd.exe /c \"npm run build\")",
+      "Bash(powershell.exe -Command \"cd ''d:/Arquivos do Usuário/OneDrive/3 - Pessoal José/Programaçao/Sys-Ticket/apps/frontend''; npm run build\")",
+      "Bash(powershell.exe -Command \"Get-Command node -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source\")",
+      "Bash(git reset:*)",
+      "Bash(dir /s \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\")"
     ]
   }
 }
