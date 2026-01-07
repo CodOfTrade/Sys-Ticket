@@ -119,11 +119,18 @@ export class ClientsService {
         }
       );
 
+      // Log da query SQL gerada
+      const sql = queryBuilder.getSql();
+      this.logger.debug(`SQL gerado: ${sql}`);
+      this.logger.debug(`Parâmetros: ${JSON.stringify(queryBuilder.getParameters())}`);
+
       const [clients, total] = await queryBuilder
         .orderBy('client.nome', 'ASC')
         .skip((page - 1) * perPage)
         .take(perPage)
         .getManyAndCount();
+
+      this.logger.debug(`Busca por "${searchTerm}" retornou ${total} resultados`);
 
       return {
         data: clients.map(c => this.mapClientToInterface(c)),
