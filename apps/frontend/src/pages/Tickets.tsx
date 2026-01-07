@@ -221,63 +221,78 @@ export default function Tickets() {
                 {filteredTickets.map((ticket) => (
                   <tr
                     key={ticket.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                    onClick={() => window.location.href = `/tickets/${ticket.id}`}
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">
-                          {ticket.ticket_number} - {ticket.title}
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                            #{ticket.ticket_number}
+                          </p>
+                          {ticket.priority === TicketPriority.URGENT && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-red-500 text-white font-bold animate-pulse">
+                              🔥 URGENTE
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">
+                          {ticket.title}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 hover:underline" onClick={(e) => e.stopPropagation()}>
                           {ticket.client_name}
                         </p>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <StatusBadge status={ticket.status} />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <PriorityBadge priority={ticket.priority} />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       {ticket.assigned_to ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                            <User size={16} className="text-blue-600 dark:text-blue-400" />
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                            <User size={12} className="text-blue-600 dark:text-blue-400" />
                           </div>
-                          <span className="text-sm text-gray-900 dark:text-white">
+                          <span className="text-xs text-gray-900 dark:text-white">
                             {ticket.assigned_to.name}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           Não atribuído
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <Clock size={16} />
-                        {format(new Date(ticket.created_at), "dd/MM/yyyy 'às' HH:mm", {
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                        <Clock size={13} />
+                        {format(new Date(ticket.created_at), "dd/MM/yy HH:mm", {
                           locale: ptBR,
                         })}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
                         <Link
                           to={`/tickets/${ticket.id}`}
-                          className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                           title="Ver detalhes"
                         >
-                          <Eye size={18} />
+                          <Eye size={15} />
                         </Link>
                         <button
-                          onClick={() => handleDelete(ticket.id)}
-                          className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(ticket.id);
+                          }}
+                          className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           title="Excluir"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </td>
