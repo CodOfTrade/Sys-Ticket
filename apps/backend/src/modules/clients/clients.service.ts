@@ -90,20 +90,32 @@ export class ClientsService {
   }
 
   /**
-   * Busca clientes por nome no banco local
+   * Busca clientes por nome no banco local (case-insensitive, busca parcial)
    */
   async searchByName(name: string, page = 1, perPage = 20): Promise<SigeClientResponse> {
     try {
-      const [clients, total] = await this.clientRepository.findAndCount({
-        where: [
-          { nome: Like(`%${name}%`), ativo: true },
-          { razaoSocial: Like(`%${name}%`), ativo: true },
-          { nomeFantasia: Like(`%${name}%`), ativo: true },
-        ],
-        skip: (page - 1) * perPage,
-        take: perPage,
-        order: { nome: 'ASC' },
-      });
+      // Remove caracteres especiais e normaliza para busca mais flexível
+      const searchTerm = name.trim();
+
+      const [clients, total] = await this.clientRepository
+        .createQueryBuilder('client')
+        .where('client.ativo = :ativo', { ativo: true })
+        .andWhere(
+          '(LOWER(client.nome) LIKE LOWER(:search) OR ' +
+          'LOWER(client.razaoSocial) LIKE LOWER(:search) OR ' +
+          'LOWER(client.nomeFantasia) LIKE LOWER(:search) OR ' +
+          'REPLACE(REPLACE(client.cpfCnpj, \'.\', \'\'), \'-\', \'\') LIKE :searchClean OR ' +
+          'client.telefone LIKE :search OR ' +
+          'client.celular LIKE :search)',
+          {
+            search: `%${searchTerm}%`,
+            searchClean: `%${searchTerm.replace(/\D/g, '')}%`
+          }
+        )
+        .orderBy('client.nome', 'ASC')
+        .skip((page - 1) * perPage)
+        .take(perPage)
+        .getManyAndCount();
 
       return {
         data: clients.map(c => this.mapClientToInterface(c)),
