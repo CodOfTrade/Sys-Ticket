@@ -8,6 +8,7 @@ import { SigeClient as SigeClientInterface, SigeClientResponse } from './interfa
 import { CreateServiceOrderDto, SigeServiceOrder, SigeServiceOrderResponse } from './interfaces/sige-service-order.interface';
 import { SigeProduct } from './entities/sige-product.entity';
 import { SigeClient } from './entities/sige-client.entity';
+import { SigeContract } from './entities/sige-contract.entity';
 
 @Injectable()
 export class ClientsService {
@@ -21,6 +22,8 @@ export class ClientsService {
     private productRepository: Repository<SigeProduct>,
     @InjectRepository(SigeClient)
     private clientRepository: Repository<SigeClient>,
+    @InjectRepository(SigeContract)
+    private contractRepository: Repository<SigeContract>,
   ) {}
 
   /**
@@ -282,6 +285,44 @@ export class ClientsService {
       };
     } catch (error) {
       this.logger.error(`Erro ao buscar produto ${productId}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Busca contratos de um cliente por ID do SIGE
+   */
+  async getClientContracts(clientSigeId: string): Promise<any> {
+    try {
+      // Primeiro, encontrar o cliente pelo sigeId
+      const client = await this.clientRepository.findOne({
+        where: { sigeId: clientSigeId },
+      });
+
+      if (!client) {
+        return [];
+      }
+
+      // Buscar contratos vinculados ao cliente
+      const contracts = await this.contractRepository.find({
+        where: { sigeClientId: client.id, ativo: true },
+        order: { dataInicio: 'DESC' },
+      });
+
+      return contracts.map(contract => ({
+        id: contract.sigeId,
+        numero_contrato: contract.numeroContrato,
+        descricao: contract.descricao,
+        valor_mensal: contract.valorMensal,
+        data_inicio: contract.dataInicio,
+        data_fim: contract.dataFim,
+        status: contract.status,
+        tipo: contract.tipo,
+        observacoes: contract.observacoes,
+        ativo: contract.ativo,
+      }));
+    } catch (error) {
+      this.logger.error(`Erro ao buscar contratos do cliente ${clientSigeId}`, error);
       throw error;
     }
   }

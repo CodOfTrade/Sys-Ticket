@@ -169,4 +169,16 @@ export class ClientsController {
   async getProduct(@Param('id') id: string) {
     return this.clientsService.getProduct(id);
   }
+
+  @Get(':clientId/contracts')
+  @Public()
+  @ApiOperation({ summary: 'Listar contratos de um cliente' })
+  @ApiResponse({ status: 200, description: 'Lista de contratos retornada com sucesso' })
+  async getClientContracts(@Param('clientId') clientId: string) {
+    const contracts = await this.clientsService.getClientContracts(clientId);
+    return {
+      success: true,
+      data: contracts,
+    };
+  }
 }
