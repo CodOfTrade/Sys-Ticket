@@ -57,4 +57,13 @@ export const requesterService = {
     const response = await api.get(`/v1/clients/contacts/${id}`);
     return response.data.data;
   },
+
+  async update(id: string, data: Partial<CreateRequesterDto>): Promise<Requester> {
+    const response = await api.patch(`/v1/clients/contacts/${id}`, data);
+    return response.data.data;
+  },
+
+  async delete(id: string): Promise<void> {
+    await api.delete(`/v1/clients/contacts/${id}`);
+  },
 };

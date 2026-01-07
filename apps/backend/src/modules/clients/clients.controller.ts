@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Query, Param, Body } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -135,6 +135,39 @@ export class ClientsController {
     return {
       success: true,
       data: contact,
+    };
+  }
+
+  @Patch('contacts/:id')
+  @Public()
+  @ApiOperation({ summary: 'Atualizar contato de cliente' })
+  async updateContact(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      department?: string;
+      position?: string;
+    },
+  ) {
+    await this.contactRepository.update(id, body);
+    const contact = await this.contactRepository.findOne({ where: { id } });
+    return {
+      success: true,
+      data: contact,
+    };
+  }
+
+  @Delete('contacts/:id')
+  @Public()
+  @ApiOperation({ summary: 'Deletar contato de cliente' })
+  async deleteContact(@Param('id') id: string) {
+    await this.contactRepository.delete(id);
+    return {
+      success: true,
+      message: 'Contato removido com sucesso',
     };
   }
 

@@ -179,7 +179,11 @@ export default function Clients() {
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {clients.map((client) => (
-                    <tr key={client.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <tr
+                      key={client.id}
+                      onClick={() => setSelectedClient(client)}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
@@ -209,12 +213,9 @@ export default function Clients() {
                         {client.cidade && client.estado ? `${client.cidade}/${client.estado}` : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => setSelectedClient(client)}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                        >
-                          Ver detalhes
-                        </button>
+                        <div className="text-blue-600 dark:text-blue-400">
+                          Ver detalhes →
+                        </div>
                       </td>
                     </tr>
                   ))}
