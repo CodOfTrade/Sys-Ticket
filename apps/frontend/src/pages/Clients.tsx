@@ -14,6 +14,7 @@ export default function Clients() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
+      setPage(1); // Resetar página quando o termo debounced mudar
     }, 300);
 
     return () => clearTimeout(timer);
@@ -109,11 +110,8 @@ export default function Clients() {
           <input
             type="text"
             value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Buscar cliente por nome, razão social..."
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar cliente por nome, razão social, CPF/CNPJ, telefone..."
             className="w-full px-4 py-3 pl-11 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
           />
           <svg
