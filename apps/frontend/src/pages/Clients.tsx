@@ -1,20 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientService, type Client } from '@services/client.service';
 import { api } from '@services/api';
 
 export default function Clients() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
 
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Query para buscar clientes
   const { data: clientsData, isLoading, error } = useQuery({
-    queryKey: ['clients', searchTerm, page],
+    queryKey: ['clients', debouncedSearchTerm, page],
     queryFn: async () => {
-      if (searchTerm) {
-        return clientService.searchByName(searchTerm, page);
+      if (debouncedSearchTerm.trim()) {
+        return clientService.searchByName(debouncedSearchTerm, page);
       }
       return clientService.findAll(page);
     },
