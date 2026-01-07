@@ -121,8 +121,8 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl w-full h-full overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-end z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-l-xl w-[calc(100%-280px)] h-full overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-start">
