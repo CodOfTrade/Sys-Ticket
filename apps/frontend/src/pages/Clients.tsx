@@ -19,7 +19,6 @@ export default function Clients() {
       return clientService.findAll(page);
     },
     retry: 1,
-    initialData: { data: [], meta: { current_page: 1, per_page: 50, total: 0 } },
   });
 
   // Mutation para forçar sincronização
