@@ -75,11 +75,6 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
     return new Date(date).toLocaleDateString('pt-BR');
   };
 
-  const formatCurrency = (value?: number) => {
-    if (!value) return '-';
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-  };
-
   const tabs = [
     { id: 'info', label: 'Informações', icon: '📋' },
     { id: 'requesters', label: 'Solicitantes', icon: '👥' },
