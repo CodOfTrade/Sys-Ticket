@@ -64,40 +64,8 @@ export class ClientsController {
     };
   }
 
-  @Get('document/:document')
-  @ApiOperation({ summary: 'Buscar cliente por CPF/CNPJ' })
-  @ApiResponse({ status: 200, description: 'Cliente encontrado' })
-  @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
-  async searchByDocument(@Param('document') document: string) {
-    return this.clientsService.searchByDocument(document);
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Buscar cliente por ID' })
-  @ApiResponse({ status: 200, description: 'Cliente encontrado' })
-  @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
-  async findOne(@Param('id') id: string) {
-    return this.clientsService.findOne(id);
-  }
-
-  @Post('service-orders')
-  @Roles('admin', 'manager', 'agent')
-  @ApiOperation({ summary: 'Criar Ordem de Serviço no SIGE Cloud' })
-  @ApiResponse({ status: 201, description: 'OS criada com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  async createServiceOrder(@Body() createDto: CreateServiceOrderDto) {
-    return this.clientsService.createServiceOrder(createDto);
-  }
-
-  @Get('service-orders/:id')
-  @ApiOperation({ summary: 'Buscar Ordem de Serviço por ID' })
-  @ApiResponse({ status: 200, description: 'OS encontrada' })
-  @ApiResponse({ status: 404, description: 'OS não encontrada' })
-  async getServiceOrder(@Param('id') id: string) {
-    return this.clientsService.getServiceOrder(id);
-  }
-
   @Get('contacts')
+  @Public()
   @ApiOperation({ summary: 'Listar contatos de clientes' })
   @ApiQuery({ name: 'client_id', required: false, type: String })
   async findContacts(@Query('client_id') clientId?: string) {
@@ -118,6 +86,7 @@ export class ClientsController {
   }
 
   @Post('contacts')
+  @Public()
   @ApiOperation({ summary: 'Criar contato de cliente' })
   async createContact(
     @Body()
@@ -139,6 +108,7 @@ export class ClientsController {
   }
 
   @Get('contacts/:id')
+  @Public()
   @ApiOperation({ summary: 'Buscar contato por ID' })
   async findContact(@Param('id') id: string) {
     const contact = await this.contactRepository.findOne({ where: { id } });
@@ -146,6 +116,39 @@ export class ClientsController {
       success: true,
       data: contact,
     };
+  }
+
+  @Get('document/:document')
+  @ApiOperation({ summary: 'Buscar cliente por CPF/CNPJ' })
+  @ApiResponse({ status: 200, description: 'Cliente encontrado' })
+  @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
+  async searchByDocument(@Param('document') document: string) {
+    return this.clientsService.searchByDocument(document);
+  }
+
+  @Post('service-orders')
+  @Roles('admin', 'manager', 'agent')
+  @ApiOperation({ summary: 'Criar Ordem de Serviço no SIGE Cloud' })
+  @ApiResponse({ status: 201, description: 'OS criada com sucesso' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  async createServiceOrder(@Body() createDto: CreateServiceOrderDto) {
+    return this.clientsService.createServiceOrder(createDto);
+  }
+
+  @Get('service-orders/:id')
+  @ApiOperation({ summary: 'Buscar Ordem de Serviço por ID' })
+  @ApiResponse({ status: 200, description: 'OS encontrada' })
+  @ApiResponse({ status: 404, description: 'OS não encontrada' })
+  async getServiceOrder(@Param('id') id: string) {
+    return this.clientsService.getServiceOrder(id);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Buscar cliente por ID' })
+  @ApiResponse({ status: 200, description: 'Cliente encontrado' })
+  @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
+  async findOne(@Param('id') id: string) {
+    return this.clientsService.findOne(id);
   }
 
   @Get('products/search')
