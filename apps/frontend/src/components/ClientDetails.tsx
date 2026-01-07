@@ -121,10 +121,10 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-end p-4 pt-20 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl w-[calc(100%-320px)] h-[calc(100%-6rem)] overflow-hidden flex flex-col shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center pl-[280px] z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-xl w-[calc(100vw-320px)] h-[calc(100vh-80px)] overflow-hidden flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -148,7 +148,7 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+        <div className="sticky top-0 z-10 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
           <nav className="flex overflow-x-auto">
             {tabs.map((tab) => (
               <button
