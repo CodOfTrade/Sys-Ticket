@@ -114,7 +114,7 @@ export class SigeSyncService {
   /**
    * Sincroniza contratos do SIGE Cloud a cada 12 horas
    */
-  @Cron(CronExpression.EVERY_12_HOURS)
+  @Cron(CronExpression.EVERY_MINUTE)  // TEMPORÁRIO: mudado para 1 minuto para testar
   async syncContracts(): Promise<void> {
     this.logger.log('Iniciando sincronização de contratos...');
 
