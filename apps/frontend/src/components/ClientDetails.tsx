@@ -15,7 +15,7 @@ type TabType = 'info' | 'requesters' | 'tickets' | 'contracts';
 export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('info');
   const [showRequesterForm, setShowRequesterForm] = useState(false);
-  const [requesterForm, setRequesterForm] = useState<CreateRequesterDto>({
+  const [requesterForm, setRequesterForm] = useState({
     client_id: client.id,
     name: '',
     email: '',
@@ -492,9 +492,9 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
                             {ticket.title}
                           </h4>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                            {ticket.description.length > 150
+                            {ticket.description && ticket.description.length > 150
                               ? `${ticket.description.substring(0, 150)}...`
-                              : ticket.description}
+                              : ticket.description || ''}
                           </p>
                           <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                             <span>Solicitante: {ticket.requester_name}</span>
