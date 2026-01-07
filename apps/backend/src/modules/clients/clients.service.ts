@@ -290,30 +290,37 @@ export class ClientsService {
   }
 
   /**
-   * Busca contratos de um cliente por ID do SIGE
+   * Busca contratos de um cliente por ID local
    */
-  async getClientContracts(clientSigeId: string): Promise<any> {
+  async getClientContracts(clientId: string): Promise<any> {
     try {
-      // Primeiro, encontrar o cliente pelo sigeId
+      this.logger.log(`Buscando contratos para cliente ${clientId}`);
+
+      // Buscar o cliente pelo ID local
       const client = await this.clientRepository.findOne({
-        where: { sigeId: clientSigeId },
+        where: { id: clientId },
       });
 
       if (!client) {
+        this.logger.warn(`Cliente ${clientId} não encontrado`);
         return [];
       }
 
-      // Buscar contratos vinculados ao cliente
+      this.logger.log(`Cliente encontrado: ${client.nome}, ID: ${client.id}`);
+
+      // Buscar contratos vinculados ao cliente usando o ID local (UUID) do cliente
       const contracts = await this.contractRepository.find({
-        where: { sigeClientId: client.id, ativo: true },
+        where: { sigeClientId: clientId, ativo: true },
         order: { dataInicio: 'DESC' },
       });
 
+      this.logger.log(`Contratos encontrados: ${contracts.length}`);
+
       return contracts.map(contract => ({
-        id: contract.sigeId,
+        id: contract.id,
         numero_contrato: contract.numeroContrato,
         descricao: contract.descricao,
-        valor_mensal: contract.valorMensal,
+        valor_mensal: contract.valorMensal ? parseFloat(contract.valorMensal.toString()) : null,
         data_inicio: contract.dataInicio,
         data_fim: contract.dataFim,
         status: contract.status,
@@ -322,7 +329,7 @@ export class ClientsService {
         ativo: contract.ativo,
       }));
     } catch (error) {
-      this.logger.error(`Erro ao buscar contratos do cliente ${clientSigeId}`, error);
+      this.logger.error(`Erro ao buscar contratos do cliente ${clientId}`, error);
       throw error;
     }
   }

@@ -33,7 +33,8 @@ export default function ClientRequesters({ clientId }: ClientRequestersProps) {
   // Criar solicitante
   const createMutation = useMutation({
     mutationFn: requesterService.create,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Solicitante criado com sucesso:', data);
       queryClient.invalidateQueries({ queryKey: ['requesters', clientId] });
       setShowForm(false);
       setEditingId(null);
@@ -45,6 +46,10 @@ export default function ClientRequesters({ clientId }: ClientRequestersProps) {
         department: '',
         position: '',
       });
+    },
+    onError: (error) => {
+      console.error('Erro ao criar solicitante:', error);
+      alert('Erro ao criar solicitante. Verifique o console para mais detalhes.');
     },
   });
 

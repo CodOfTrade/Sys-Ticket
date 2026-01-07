@@ -21,7 +21,9 @@ interface ApiResponse<T> {
 export const contractService = {
   async getByClient(clientId: string): Promise<Contract[]> {
     try {
+      console.log('Buscando contratos para cliente:', clientId);
       const response = await api.get<ApiResponse<Contract[]>>(`/v1/clients/${clientId}/contracts`);
+      console.log('Resposta da API de contratos:', response.data);
 
       // Validar resposta
       if (!response.data || !response.data.data) {
@@ -29,7 +31,9 @@ export const contractService = {
         return [];
       }
 
-      return Array.isArray(response.data.data) ? response.data.data : [];
+      const contracts = Array.isArray(response.data.data) ? response.data.data : [];
+      console.log('Contratos encontrados:', contracts.length);
+      return contracts;
     } catch (error) {
       console.error('Erro ao buscar contratos:', error);
       return [];
