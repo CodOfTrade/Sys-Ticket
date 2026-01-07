@@ -10,7 +10,7 @@ import { SigeContract } from './entities/sige-contract.entity';
 @Injectable()
 export class SigeSyncService {
   private readonly logger = new Logger(SigeSyncService.name);
-  private readonly BATCH_SIZE = 200; // API SIGE Cloud - usar pageSize maior
+  private readonly BATCH_SIZE = 100; // API SIGE Cloud - limite máximo é 100
 
   constructor(
     private readonly sigeCloudService: SigeCloudService,
