@@ -254,61 +254,72 @@ export default function ClientRequesters({ clientId }: ClientRequestersProps) {
         </div>
       ) : (
         <>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {requesters.map((requester) => (
               <div
                 key={requester.id}
-                className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-md transition-shadow"
+                className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 dark:text-white">
-                      {requester.name}
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <h4 className="font-semibold text-gray-900 dark:text-white">
+                        {requester.name}
+                      </h4>
+
                       {requester.is_primary && (
-                        <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                        <span className="text-xs px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 font-medium">
                           Principal
                         </span>
                       )}
-                    </h4>
+
+                      {requester.can_request_tickets && (
+                        <span className="text-xs px-2 py-0.5 rounded bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 font-medium">
+                          Pode abrir tickets
+                        </span>
+                      )}
+
+                      {!requester.is_active && (
+                        <span className="text-xs px-2 py-0.5 rounded bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 font-medium">
+                          Inativo
+                        </span>
+                      )}
+                    </div>
 
                     {requester.position && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
                         {requester.position}
-                        {requester.department && ` - ${requester.department}`}
+                        {requester.department && ` • ${requester.department}`}
                       </p>
                     )}
 
-                    <div className="mt-2 space-y-1">
+                    <div className="flex gap-4 mt-1 text-xs text-gray-600 dark:text-gray-400">
                       {requester.email && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">Email:</span> {requester.email}
-                        </p>
+                        <span>✉ {requester.email}</span>
                       )}
                       {requester.phone && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium">Telefone:</span> {requester.phone}
-                        </p>
+                        <span>📞 {requester.phone}</span>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex gap-2 ml-4">
+                  <div className="flex gap-1 ml-4">
                     <button
                       onClick={() => handleEdit(requester)}
-                      className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                      className="p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                       title="Editar"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                     </button>
                     <button
                       onClick={() => handleDelete(requester.id, requester.name)}
                       disabled={deleteMutation.isPending}
-                      className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50"
+                      className="p-1.5 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50"
                       title="Remover"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
