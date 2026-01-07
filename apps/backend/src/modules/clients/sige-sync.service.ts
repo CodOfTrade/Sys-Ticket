@@ -262,42 +262,39 @@ export class SigeSyncService {
       const contract = existing || this.contractRepository.create();
 
       contract.sigeId = sigeId;
-      contract.numeroContrato = contractData.numero_contrato || contractData.NumeroContrato;
-      contract.descricao = contractData.Descricao || contractData.descricao;
-      contract.valorMensal = contractData.Valor || contractData.valor_mensal || contractData.ValorMensal;
-      contract.dataInicio = contractData.DataAbertura || contractData.data_inicio || contractData.DataInicio;
-      contract.dataFim = contractData.DataFechamento || contractData.data_fim || contractData.DataFim;
-      contract.status = contractData.status || contractData.Status;
-      contract.tipo = contractData.tipo || contractData.Tipo;
-      contract.observacoes = contractData.observacoes || contractData.Observacoes;
-      contract.ativo = contractData.ativo !== undefined ? contractData.ativo : (contractData.Ativo !== undefined ? contractData.Ativo : true);
+      contract.numeroContrato = String(contractData.Codigo || '');
+      contract.descricao = contractData.Tipo || contractData.descricao;
+      contract.valorMensal = contractData.ValorTotal ? (contractData.ValorTotal / 12) : null;
+      contract.dataInicio = contractData.DataInicio;
+      contract.dataFim = contractData.DataTermino;
+      contract.status = contractData.Situacao;
+      contract.tipo = contractData.Tipo;
+      contract.observacoes = contractData.PlanoDeContas;
+      contract.ativo = contractData.Situacao !== 'Rescindido';
       contract.lastSyncedAt = new Date();
 
-      // Vincular ao cliente se existir - tentar múltiplos campos possíveis
-      const possibleClientIds = [
-        contractData.client_id,
-        contractData.IdCliente,
-        contractData.IdPessoa,
-        contractData.CodigoPessoa,
-        contractData.ID,
-      ].filter(id => id);
+      // Vincular ao cliente pelo NOME (campo Cliente na API retorna o nome)
+      if (contractData.Cliente) {
+        const clientName = String(contractData.Cliente).trim();
+        this.logger.debug(`Tentando vincular contrato ${sigeId} ao cliente: ${clientName}`);
 
-      if (possibleClientIds.length > 0) {
-        const clientIdToSearch = String(possibleClientIds[0]);
-        this.logger.debug(`Tentando vincular contrato ${sigeId} ao cliente SIGE ID: ${clientIdToSearch}`);
-
+        // Buscar por nome fantasia, razão social ou nome
         const client = await this.clientRepository.findOne({
-          where: { sigeId: clientIdToSearch },
+          where: [
+            { nomeFantasia: clientName },
+            { razaoSocial: clientName },
+            { nome: clientName },
+          ],
         });
 
         if (client) {
           contract.sigeClientId = client.id;
-          this.logger.debug(`✓ Contrato ${sigeId} vinculado ao cliente ${client.nome}`);
+          this.logger.log(`✓ Contrato ${sigeId} vinculado ao cliente ${client.nome} (UUID: ${client.id})`);
         } else {
-          this.logger.warn(`✗ Cliente SIGE ID ${clientIdToSearch} não encontrado para contrato ${sigeId}`);
+          this.logger.warn(`✗ Cliente "${clientName}" não encontrado para vincular contrato ${sigeId}`);
         }
       } else {
-        this.logger.warn(`Contrato ${sigeId} sem campo de cliente para vincular`);
+        this.logger.warn(`Contrato ${sigeId} sem campo Cliente para vincular`);
       }
 
       return await this.contractRepository.save(contract);
