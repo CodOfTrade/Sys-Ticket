@@ -33,6 +33,32 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
     return doc;
   };
 
+  // Função para verificar se o contrato está vigente (data atual entre início e fim)
+  const isContractValid = (dataInicio?: string, dataFim?: string) => {
+    if (!dataInicio || !dataFim) return false;
+    const hoje = new Date();
+    const inicio = new Date(dataInicio);
+    const fim = new Date(dataFim);
+    return hoje >= inicio && hoje <= fim;
+  };
+
+  // Função para obter a cor do status
+  const getStatusColor = (status?: string) => {
+    if (!status) return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+
+    const statusLower = status.toLowerCase();
+    if (statusLower === 'ativo' || statusLower === 'active') {
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+    }
+    if (statusLower === 'rescindido' || statusLower === 'cancelado') {
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+    }
+    if (statusLower === 'suspenso') {
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+    }
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+  };
+
   const formatPhone = (phone?: string) => {
     if (!phone) return '-';
     const cleaned = phone.replace(/\D/g, '');
@@ -227,81 +253,67 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
                   Nenhum contrato encontrado
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {contracts.map((contract) => (
-                    <div
-                      key={contract.id}
-                      className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            {contract.numero_contrato && (
-                              <span className="font-mono text-sm font-semibold text-gray-900 dark:text-white">
-                                {contract.numero_contrato}
-                              </span>
-                            )}
-                            {contract.status && (
-                              <span className={`text-xs px-2 py-1 rounded ${
-                                contract.status === 'ativo' || contract.status === 'active'
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                              }`}>
-                                {contract.status}
-                              </span>
-                            )}
-                            {contract.tipo && (
-                              <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                {contract.tipo}
-                              </span>
-                            )}
-                          </div>
+                <div className="space-y-2">
+                  {contracts.map((contract) => {
+                    const vigente = isContractValid(contract.data_inicio, contract.data_fim);
+                    return (
+                      <div
+                        key={contract.id}
+                        className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              {contract.numero_contrato && (
+                                <span className="font-mono text-sm font-semibold text-gray-900 dark:text-white">
+                                  #{contract.numero_contrato}
+                                </span>
+                              )}
+
+                              {/* Tag de Vigência - destaque maior */}
+                              {vigente && (
+                                <span className="text-xs px-3 py-1 rounded-full font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg">
+                                  ✓ VIGENTE
+                                </span>
+                              )}
+
+                              {/* Tag de Status */}
+                              {contract.status && (
+                                <span className={`text-xs px-2 py-1 rounded font-medium ${getStatusColor(contract.status)}`}>
+                                  {contract.status}
+                                </span>
+                              )}
+
+                              {contract.tipo && (
+                                <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                  {contract.tipo}
+                                </span>
+                              )}
+                            </div>
 
                           {contract.descricao && (
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">
                               {contract.descricao}
                             </p>
                           )}
 
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            {contract.valor_mensal && (
-                              <div>
-                                <span className="font-medium text-gray-700 dark:text-gray-300">Valor Mensal:</span>
-                                <span className="ml-2 text-gray-900 dark:text-white">
-                                  {formatCurrency(contract.valor_mensal)}
-                                </span>
-                              </div>
-                            )}
+                          <div className="flex gap-4 text-xs text-gray-600 dark:text-gray-400">
                             {contract.data_inicio && (
-                              <div>
-                                <span className="font-medium text-gray-700 dark:text-gray-300">Início:</span>
-                                <span className="ml-2 text-gray-900 dark:text-white">
-                                  {formatDate(contract.data_inicio)}
-                                </span>
-                              </div>
+                              <span>
+                                <strong>Início:</strong> {formatDate(contract.data_inicio)}
+                              </span>
                             )}
                             {contract.data_fim && (
-                              <div>
-                                <span className="font-medium text-gray-700 dark:text-gray-300">Fim:</span>
-                                <span className="ml-2 text-gray-900 dark:text-white">
-                                  {formatDate(contract.data_fim)}
-                                </span>
-                              </div>
+                              <span>
+                                <strong>Fim:</strong> {formatDate(contract.data_fim)}
+                              </span>
                             )}
                           </div>
-
-                          {contract.observacoes && (
-                            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Observações:</span>
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                {contract.observacoes}
-                              </p>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
