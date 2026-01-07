@@ -81,7 +81,7 @@ export class SigeSyncService {
       let totalSynced = 0;
 
       while (hasMore) {
-        const rawResponse = await this.sigeCloudService.get<any>('/request/Oportunidades/Pesquisar', {
+        const rawResponse = await this.sigeCloudService.get<any>('/request/Pessoas/Pesquisar', {
           pageSize: this.BATCH_SIZE,
           skip: (page - 1) * this.BATCH_SIZE,
         });
@@ -94,8 +94,11 @@ export class SigeSyncService {
         }
 
         for (const client of clients) {
-          await this.upsertClient(client);
-          totalSynced++;
+          // Sincronizar apenas se for Cliente
+          if (client.Cliente === true) {
+            await this.upsertClient(client);
+            totalSynced++;
+          }
         }
 
         this.logger.debug(`Sincronizados ${totalSynced} clientes (página ${page})`);
@@ -195,11 +198,11 @@ export class SigeSyncService {
    */
   private async upsertClient(clientData: any): Promise<SigeClient | null> {
     try {
-      // API SIGE retorna Codigo como identificador único
-      const sigeId = String(clientData.Codigo || clientData.id || clientData.IdPessoa);
+      // API SIGE retorna ID como identificador único no endpoint /request/Pessoas/Pesquisar
+      const sigeId = String(clientData.ID || clientData.Codigo || clientData.id);
 
       if (!sigeId || sigeId === 'undefined') {
-        this.logger.warn('Cliente sem Codigo, pulando...', clientData);
+        this.logger.warn('Cliente sem ID, pulando...', clientData);
         return null;
       }
 
@@ -210,27 +213,32 @@ export class SigeSyncService {
       const client = existing || this.clientRepository.create();
 
       client.sigeId = sigeId;
-      // Campo "Cliente" tem o nome do cliente
-      client.nome = clientData.Cliente || clientData.nome || clientData.Nome;
-      client.razaoSocial = clientData.razao_social || clientData.RazaoSocial;
-      client.nomeFantasia = clientData.nome_fantasia || clientData.NomeFantasia;
-      client.cpfCnpj = clientData.cpf_cnpj || clientData.CpfCnpj || clientData.Documento;
-      client.tipoPessoa = clientData.tipo_pessoa || clientData.TipoPessoa;
-      // Campo "EmailContato" tem o email
-      client.email = clientData.EmailContato || clientData.email || clientData.Email;
-      // Campo "TelefoneContato" tem o telefone
-      client.telefone = clientData.TelefoneContato || clientData.telefone || clientData.Telefone;
-      client.celular = clientData.celular || clientData.Celular;
-      client.endereco = clientData.endereco || clientData.Endereco;
-      client.cidade = clientData.cidade || clientData.Cidade;
-      client.estado = clientData.estado || clientData.Estado || clientData.UF;
-      client.cep = clientData.cep || clientData.Cep;
-      client.ativo = clientData.ativo !== undefined ? clientData.ativo : (clientData.Ativo !== undefined ? clientData.Ativo : true);
+      // Usar NomeFantasia ou RazaoSocial como nome principal
+      client.nome = clientData.NomeFantasia || clientData.RazaoSocial || clientData.nome;
+      client.razaoSocial = clientData.RazaoSocial || clientData.razao_social;
+      client.nomeFantasia = clientData.NomeFantasia || clientData.nome_fantasia;
+      client.cpfCnpj = clientData.CNPJ_CPF || clientData.cpf_cnpj;
+      client.tipoPessoa = clientData.PessoaFisica ? 'F' : 'J';
+      client.email = clientData.Email || clientData.email;
+      client.telefone = clientData.Telefone || clientData.telefone;
+      client.celular = clientData.Celular || clientData.celular;
+      // Montar endereço completo
+      const enderecoParts = [
+        clientData.Logradouro,
+        clientData.LogradouroNumero,
+        clientData.Complemento,
+        clientData.Bairro
+      ].filter(p => p && p.trim());
+      client.endereco = enderecoParts.length > 0 ? enderecoParts.join(', ') : null;
+      client.cidade = clientData.Cidade || clientData.cidade;
+      client.estado = clientData.UF || clientData.estado;
+      client.cep = clientData.CEP || clientData.cep;
+      client.ativo = !clientData.Bloqueado;
       client.lastSyncedAt = new Date();
 
       return await this.clientRepository.save(client);
     } catch (error) {
-      this.logger.error(`Erro ao fazer upsert do cliente ${clientData.Codigo}`, error);
+      this.logger.error(`Erro ao fazer upsert do cliente ${clientData.ID || clientData.Codigo}`, error);
       throw error;
     }
   }
