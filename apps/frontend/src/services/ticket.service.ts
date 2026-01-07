@@ -67,4 +67,9 @@ export const ticketService = {
   async delete(id: string): Promise<void> {
     await api.delete(`/v1/tickets/${id}`);
   },
+
+  async getByClient(clientId: string): Promise<Ticket[]> {
+    const response = await api.get<ApiResponse<Ticket[]>>(`/v1/tickets/client/${clientId}`);
+    return response.data.data;
+  },
 };
