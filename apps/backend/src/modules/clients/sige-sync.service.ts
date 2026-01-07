@@ -125,7 +125,7 @@ export class SigeSyncService {
       let totalSynced = 0;
 
       while (hasMore) {
-        const rawResponse = await this.sigeCloudService.get<any>('/request/Contratos/GetAll', {
+        const rawResponse = await this.sigeCloudService.get<any>('/request/Contratos/Pesquisar', {
           pageSize: this.BATCH_SIZE,
           skip: (page - 1) * this.BATCH_SIZE,
         });
