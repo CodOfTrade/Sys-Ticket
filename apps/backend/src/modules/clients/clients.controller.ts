@@ -49,7 +49,7 @@ export class ClientsController {
   }
 
   @Post('sync')
-  @Roles('admin')
+  @Public()
   @ApiOperation({ summary: 'Sincronizar dados do SIGE Cloud manualmente' })
   @ApiResponse({ status: 200, description: 'Sincronização iniciada com sucesso' })
   async syncSigeData() {

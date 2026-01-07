@@ -30,7 +30,11 @@
       "Bash(cat:*)",
       "Bash(dir \"C:\\\\Users\" /b)",
       "Bash(powershell.exe:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\"\" && git add . && git status:*)",
+      "Bash(cmd.exe /c \"git status\")",
+      "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\"\" && git add apps/backend/src/modules/clients/clients.controller.ts apps/backend/src/modules/clients/sige-sync.service.ts && git commit -m \"\"Fix: adicionar logs debug e mudar endpoint de contratos para GetAll\"\" && git push\")",
+      "Bash(cmd.exe /c 'cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\"\" && git add . && git commit -m \"\"Fix: adicionar logs debug e mudar endpoint de contratos para GetAll\"\" && git push')"
     ]
   }
 }

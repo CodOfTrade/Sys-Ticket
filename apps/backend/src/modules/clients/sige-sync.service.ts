@@ -125,7 +125,7 @@ export class SigeSyncService {
       let totalSynced = 0;
 
       while (hasMore) {
-        const rawResponse = await this.sigeCloudService.get<any>('/request/Contratos/Pesquisar', {
+        const rawResponse = await this.sigeCloudService.get<any>('/request/Contratos/GetAll', {
           pageSize: this.BATCH_SIZE,
           skip: (page - 1) * this.BATCH_SIZE,
         });
@@ -135,6 +135,11 @@ export class SigeSyncService {
         if (contracts.length === 0) {
           hasMore = false;
           break;
+        }
+
+        // Log primeiro contrato para debug
+        if (page === 1 && contracts.length > 0) {
+          this.logger.log('Exemplo de contrato da API SIGE:', JSON.stringify(contracts[0], null, 2));
         }
 
         for (const contract of contracts) {
