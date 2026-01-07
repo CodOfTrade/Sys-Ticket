@@ -27,10 +27,11 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   const queryClient = useQueryClient();
 
   // Buscar solicitantes do cliente
-  const { data: requestersData, isLoading: loadingRequesters } = useQuery({
+  const { data: requestersData, isLoading: loadingRequesters, error: requestersError } = useQuery({
     queryKey: ['requesters', client.id, requesterPage],
     queryFn: () => requesterService.findByClient(client.id, requesterPage, 20),
     enabled: activeTab === 'requesters',
+    retry: 1,
   });
 
   const requesters = requestersData?.data || [];
@@ -400,7 +401,11 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
               )}
 
               {/* Lista de solicitantes */}
-              {loadingRequesters ? (
+              {requestersError ? (
+                <div className="text-center py-12 text-red-500 dark:text-red-400">
+                  Erro ao carregar solicitantes. Tente novamente.
+                </div>
+              ) : loadingRequesters ? (
                 <div className="text-center py-12">
                   <svg className="animate-spin h-8 w-8 text-blue-600 mx-auto" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
