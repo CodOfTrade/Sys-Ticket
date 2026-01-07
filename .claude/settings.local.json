@@ -28,7 +28,9 @@
       "Bash(where:*)",
       "Bash(powershell.exe -Command \"Invoke-WebRequest -Uri ''https://sourceforge.net/projects/sshpass/files/latest/download'' -OutFile ''$env:TEMP\\\\sshpass.zip''\")",
       "Bash(cat:*)",
-      "Bash(dir \"C:\\\\Users\" /b)"
+      "Bash(dir \"C:\\\\Users\" /b)",
+      "Bash(powershell.exe:*)",
+      "Bash(taskkill:*)"
     ]
   }
 }
