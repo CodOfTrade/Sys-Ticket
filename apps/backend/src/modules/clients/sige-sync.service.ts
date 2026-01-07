@@ -10,7 +10,7 @@ import { SigeContract } from './entities/sige-contract.entity';
 @Injectable()
 export class SigeSyncService {
   private readonly logger = new Logger(SigeSyncService.name);
-  private readonly BATCH_SIZE = 50; // API SIGE Cloud retorna 50 por vez
+  private readonly BATCH_SIZE = 200; // API SIGE Cloud - usar pageSize maior
 
   constructor(
     private readonly sigeCloudService: SigeCloudService,
@@ -54,11 +54,8 @@ export class SigeSyncService {
 
         this.logger.debug(`Sincronizados ${totalSynced} produtos (página ${page})`);
 
-        if (products.length < this.BATCH_SIZE) {
-          hasMore = false;
-        } else {
-          page++;
-        }
+        // SEMPRE incrementa página, só para quando retornar array vazio
+        page++;
       }
 
       this.logger.log(`Sincronização de produtos concluída: ${totalSynced} produtos`);
@@ -103,11 +100,8 @@ export class SigeSyncService {
 
         this.logger.debug(`Sincronizados ${totalSynced} clientes (página ${page})`);
 
-        if (clients.length < this.BATCH_SIZE) {
-          hasMore = false;
-        } else {
-          page++;
-        }
+        // SEMPRE incrementa página, só para quando retornar array vazio
+        page++;
       }
 
       this.logger.log(`Sincronização de clientes concluída: ${totalSynced} clientes`);
@@ -150,11 +144,8 @@ export class SigeSyncService {
 
         this.logger.debug(`Sincronizados ${totalSynced} contratos (página ${page})`);
 
-        if (contracts.length < this.BATCH_SIZE) {
-          hasMore = false;
-        } else {
-          page++;
-        }
+        // SEMPRE incrementa página, só para quando retornar array vazio
+        page++;
       }
 
       this.logger.log(`Sincronização de contratos concluída: ${totalSynced} contratos`);
