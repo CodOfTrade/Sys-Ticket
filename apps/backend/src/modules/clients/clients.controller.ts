@@ -196,6 +196,18 @@ export class ClientsController {
     return this.clientsService.getServiceOrder(id);
   }
 
+  @Get(':clientId/contracts')
+  @Public()
+  @ApiOperation({ summary: 'Listar contratos de um cliente' })
+  @ApiResponse({ status: 200, description: 'Lista de contratos retornada com sucesso' })
+  async getClientContracts(@Param('clientId') clientId: string) {
+    const contracts = await this.clientsService.getClientContracts(clientId);
+    return {
+      success: true,
+      data: contracts,
+    };
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Buscar cliente por ID' })
   @ApiResponse({ status: 200, description: 'Cliente encontrado' })
@@ -224,17 +236,5 @@ export class ClientsController {
   @ApiResponse({ status: 404, description: 'Produto não encontrado' })
   async getProduct(@Param('id') id: string) {
     return this.clientsService.getProduct(id);
-  }
-
-  @Get(':clientId/contracts')
-  @Public()
-  @ApiOperation({ summary: 'Listar contratos de um cliente' })
-  @ApiResponse({ status: 200, description: 'Lista de contratos retornada com sucesso' })
-  async getClientContracts(@Param('clientId') clientId: string) {
-    const contracts = await this.clientsService.getClientContracts(clientId);
-    return {
-      success: true,
-      data: contracts,
-    };
   }
 }
