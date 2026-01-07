@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Client } from '@services/client.service';
-import { requesterService, type Requester, type CreateRequesterDto } from '@services/requester.service';
+import { requesterService, type CreateRequesterDto } from '@services/requester.service';
 
 interface ClientDetailsProps {
   client: Client;
