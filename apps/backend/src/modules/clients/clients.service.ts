@@ -159,6 +159,7 @@ export class ClientsService {
   private mapClientToInterface(client: SigeClient): SigeClientInterface {
     return {
       id: client.sigeId,
+      localId: client.id, // UUID local para uso em contratos
       nome: client.nome,
       razao_social: client.razaoSocial,
       nome_fantasia: client.nomeFantasia,

@@ -14,11 +14,12 @@ type TabType = 'info' | 'requesters' | 'contracts';
 export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('info');
 
-  // Buscar contratos do cliente
+  // Buscar contratos do cliente (usando localId se disponível)
+  const clientIdForContracts = client.localId || client.id;
   const { data: contracts = [], isLoading: loadingContracts } = useQuery({
-    queryKey: ['contracts', 'client', client.id],
-    queryFn: () => contractService.getByClient(client.id),
-    enabled: activeTab === 'contracts',
+    queryKey: ['contracts', 'client', clientIdForContracts],
+    queryFn: () => contractService.getByClient(clientIdForContracts),
+    enabled: activeTab === 'contracts' && !!clientIdForContracts,
   });
 
   const formatDocument = (doc?: string) => {
@@ -203,7 +204,7 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
           )}
 
           {activeTab === 'requesters' && (
-            <ClientRequesters clientId={client.id} />
+            <ClientRequesters clientId={clientIdForContracts} />
           )}
 
           {activeTab === 'contracts' && (

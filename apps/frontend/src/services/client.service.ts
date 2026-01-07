@@ -14,7 +14,8 @@ export interface ClientContact {
 }
 
 export interface Client {
-  id: string;
+  id: string; // ID do SIGE
+  localId?: string; // UUID do banco local
   nome: string;
   razao_social?: string;
   nome_fantasia?: string;

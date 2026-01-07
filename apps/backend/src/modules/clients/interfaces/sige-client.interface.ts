@@ -8,6 +8,7 @@ export interface SigeInteracao {
 
 export interface SigeClient {
   id?: string;
+  localId?: string; // UUID do banco local
   Codigo?: number;
   Descricao?: string;
   DataAbertura?: string;
