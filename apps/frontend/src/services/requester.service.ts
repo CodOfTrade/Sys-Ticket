@@ -28,10 +28,24 @@ export interface CreateRequesterDto {
 
 export const requesterService = {
   async findByClient(clientId: string, page = 1, limit = 20): Promise<{ data: Requester[]; meta: { total: number; page: number; limit: number; totalPages: number } }> {
-    const response = await api.get(`/v1/clients/contacts`, {
-      params: { client_id: clientId, page, limit },
-    });
-    return { data: response.data.data, meta: response.data.meta };
+    try {
+      const response = await api.get(`/v1/clients/contacts`, {
+        params: { client_id: clientId, page, limit },
+      });
+
+      // Validar resposta
+      if (!response.data || !response.data.data) {
+        return { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } };
+      }
+
+      return {
+        data: Array.isArray(response.data.data) ? response.data.data : [],
+        meta: response.data.meta || { total: 0, page: 1, limit: 20, totalPages: 0 }
+      };
+    } catch (error) {
+      console.error('Erro ao buscar solicitantes:', error);
+      return { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } };
+    }
   },
 
   async create(data: CreateRequesterDto): Promise<Requester> {
