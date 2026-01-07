@@ -17,7 +17,7 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   const [showRequesterForm, setShowRequesterForm] = useState(false);
   const [requesterPage, setRequesterPage] = useState(1);
   const [requesterForm, setRequesterForm] = useState({
-    client_id: client.id,
+    client_id: client?.id || '',
     name: '',
     email: '',
     phone: '',
@@ -28,14 +28,14 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
 
   // Buscar solicitantes do cliente
   const { data: requestersData, isLoading: loadingRequesters, error: requestersError } = useQuery({
-    queryKey: ['requesters', client.id, requesterPage],
-    queryFn: () => requesterService.findByClient(client.id, requesterPage, 20),
-    enabled: activeTab === 'requesters',
+    queryKey: ['requesters', client?.id, requesterPage],
+    queryFn: () => requesterService.findByClient(client?.id || '', requesterPage, 20),
+    enabled: activeTab === 'requesters' && !!client?.id,
     retry: 1,
   });
 
-  const requesters = requestersData?.data || [];
-  const requestersMeta = requestersData?.meta;
+  const requesters = Array.isArray(requestersData?.data) ? requestersData.data : [];
+  const requestersMeta = requestersData?.meta || { total: 0, page: 1, limit: 20, totalPages: 0 };
 
   // Buscar tickets do cliente
   const { data: tickets = [], isLoading: loadingTickets } = useQuery({
@@ -412,7 +412,7 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
                 </div>
-              ) : requesters.length === 0 ? (
+              ) : !requesters || requesters.length === 0 ? (
                 <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                   Nenhum solicitante cadastrado
                 </div>
