@@ -68,7 +68,13 @@ export class ClientsController {
   @Public()
   @ApiOperation({ summary: 'Listar contatos de clientes' })
   @ApiQuery({ name: 'client_id', required: false, type: String })
-  async findContacts(@Query('client_id') clientId?: string) {
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  async findContacts(
+    @Query('client_id') clientId?: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+  ) {
     const query = this.contactRepository
       .createQueryBuilder('contact')
       .where('contact.is_active = :isActive', { isActive: true })
@@ -78,10 +84,24 @@ export class ClientsController {
       query.andWhere('contact.client_id = :clientId', { clientId });
     }
 
-    const contacts = await query.getMany();
+    // Contar total
+    const total = await query.getCount();
+
+    // Aplicar paginação
+    const contacts = await query
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
     return {
       success: true,
       data: contacts,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 

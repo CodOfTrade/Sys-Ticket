@@ -27,11 +27,11 @@ export interface CreateRequesterDto {
 }
 
 export const requesterService = {
-  async findByClient(clientId: string): Promise<Requester[]> {
+  async findByClient(clientId: string, page = 1, limit = 20): Promise<{ data: Requester[]; meta: { total: number; page: number; limit: number; totalPages: number } }> {
     const response = await api.get(`/v1/clients/contacts`, {
-      params: { client_id: clientId },
+      params: { client_id: clientId, page, limit },
     });
-    return response.data.data;
+    return { data: response.data.data, meta: response.data.meta };
   },
 
   async create(data: CreateRequesterDto): Promise<Requester> {

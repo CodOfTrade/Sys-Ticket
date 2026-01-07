@@ -15,6 +15,7 @@ type TabType = 'info' | 'requesters' | 'tickets' | 'contracts';
 export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('info');
   const [showRequesterForm, setShowRequesterForm] = useState(false);
+  const [requesterPage, setRequesterPage] = useState(1);
   const [requesterForm, setRequesterForm] = useState({
     client_id: client.id,
     name: '',
@@ -26,11 +27,14 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   const queryClient = useQueryClient();
 
   // Buscar solicitantes do cliente
-  const { data: requesters = [], isLoading: loadingRequesters } = useQuery({
-    queryKey: ['requesters', client.id],
-    queryFn: () => requesterService.findByClient(client.id),
+  const { data: requestersData, isLoading: loadingRequesters } = useQuery({
+    queryKey: ['requesters', client.id, requesterPage],
+    queryFn: () => requesterService.findByClient(client.id, requesterPage, 20),
     enabled: activeTab === 'requesters',
   });
+
+  const requesters = requestersData?.data || [];
+  const requestersMeta = requestersData?.meta;
 
   // Buscar tickets do cliente
   const { data: tickets = [], isLoading: loadingTickets } = useQuery({
@@ -51,6 +55,7 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
     mutationFn: requesterService.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['requesters', client.id] });
+      setRequesterPage(1);
       setShowRequesterForm(false);
       setRequesterForm({
         client_id: client.id,
@@ -444,6 +449,34 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Paginação de solicitantes */}
+              {requestersMeta && requestersMeta.totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Mostrando {((requestersMeta.page - 1) * requestersMeta.limit) + 1} - {Math.min(requestersMeta.page * requestersMeta.limit, requestersMeta.total)} de {requestersMeta.total} solicitantes
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setRequesterPage(p => Math.max(1, p - 1))}
+                      disabled={requesterPage === 1}
+                      className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Anterior
+                    </button>
+                    <span className="px-3 py-1 text-gray-700 dark:text-gray-300">
+                      Página {requestersMeta.page} de {requestersMeta.totalPages}
+                    </span>
+                    <button
+                      onClick={() => setRequesterPage(p => Math.min(requestersMeta.totalPages, p + 1))}
+                      disabled={requesterPage === requestersMeta.totalPages}
+                      className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Próxima
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
