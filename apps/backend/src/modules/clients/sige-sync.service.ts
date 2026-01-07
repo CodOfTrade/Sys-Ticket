@@ -264,7 +264,7 @@ export class SigeSyncService {
       contract.sigeId = sigeId;
       contract.numeroContrato = String(contractData.Codigo || '');
       contract.descricao = contractData.Tipo || contractData.descricao;
-      contract.valorMensal = contractData.ValorTotal ? (contractData.ValorTotal / 12) : null;
+      contract.valorMensal = contractData.ValorTotal ? (contractData.ValorTotal / 12) : undefined;
       contract.dataInicio = contractData.DataInicio;
       contract.dataFim = contractData.DataTermino;
       contract.status = contractData.Situacao;
