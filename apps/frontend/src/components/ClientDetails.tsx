@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Client } from '@services/client.service';
-import { ticketService } from '@services/ticket.service';
 import { contractService } from '@services/contract.service';
 import ClientRequesters from './ClientRequesters';
 
@@ -10,17 +9,10 @@ interface ClientDetailsProps {
   onClose: () => void;
 }
 
-type TabType = 'info' | 'requesters' | 'tickets' | 'contracts';
+type TabType = 'info' | 'requesters' | 'contracts';
 
 export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('info');
-
-  // Buscar tickets do cliente
-  const { data: tickets = [], isLoading: loadingTickets } = useQuery({
-    queryKey: ['tickets', 'client', client.id],
-    queryFn: () => ticketService.getByClient(client.id),
-    enabled: activeTab === 'tickets',
-  });
 
   // Buscar contratos do cliente
   const { data: contracts = [], isLoading: loadingContracts } = useQuery({
@@ -116,7 +108,6 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   const tabs = [
     { id: 'info', label: 'Informações', icon: '📋' },
     { id: 'requesters', label: 'Solicitantes', icon: '👥' },
-    { id: 'tickets', label: 'Tickets', icon: '🎫' },
     { id: 'contracts', label: 'Contratos', icon: '📄' },
   ];
 
@@ -265,69 +256,6 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
 
           {activeTab === 'requesters' && (
             <ClientRequesters clientId={client.id} />
-          )}
-
-          {activeTab === 'tickets' && (
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Tickets do Cliente
-                </h3>
-              </div>
-
-              {loadingTickets ? (
-                <div className="text-center py-12">
-                  <svg className="animate-spin h-8 w-8 text-blue-600 mx-auto" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                </div>
-              ) : tickets.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                  Nenhum ticket encontrado
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {tickets.map((ticket) => (
-                    <div
-                      key={ticket.id}
-                      className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="font-mono text-sm text-gray-600 dark:text-gray-400">
-                              #{ticket.ticket_number}
-                            </span>
-                            <span className={`text-xs px-2 py-1 rounded ${getStatusColor(ticket.status)}`}>
-                              {getStatusLabel(ticket.status)}
-                            </span>
-                            <span className={`text-xs px-2 py-1 rounded ${getPriorityColor(ticket.priority)}`}>
-                              {getPriorityLabel(ticket.priority)}
-                            </span>
-                          </div>
-                          <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-                            {ticket.title}
-                          </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                            {ticket.description && ticket.description.length > 150
-                              ? `${ticket.description.substring(0, 150)}...`
-                              : ticket.description || ''}
-                          </p>
-                          <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                            <span>Solicitante: {ticket.requester_name}</span>
-                            {ticket.assigned_to && (
-                              <span>Atribuído: {ticket.assigned_to.name}</span>
-                            )}
-                            <span>Criado: {formatDate(ticket.created_at)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           )}
 
           {activeTab === 'contracts' && (
