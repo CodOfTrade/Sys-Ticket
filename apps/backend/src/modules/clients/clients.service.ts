@@ -97,27 +97,31 @@ export class ClientsService {
       // Remove caracteres especiais e normaliza para busca mais flexível
       const searchTerm = name.trim();
       const searchPattern = `%${searchTerm}%`;
-      const searchCleanPattern = `%${searchTerm.replace(/\D/g, '')}%`;
+      const cleanedSearch = searchTerm.replace(/\D/g, '');
 
       const queryBuilder = this.clientRepository
         .createQueryBuilder('client')
         .where('client.ativo = :ativo', { ativo: true });
 
+      // Montar condições de busca
+      const conditions = [
+        'LOWER(client.nome) LIKE LOWER(:search)',
+        'LOWER(client.razaoSocial) LIKE LOWER(:search)',
+        'LOWER(client.nomeFantasia) LIKE LOWER(:search)',
+        'client.telefone LIKE :search',
+        'client.celular LIKE :search',
+      ];
+
+      const params: any = { search: searchPattern };
+
+      // Só buscar por CPF/CNPJ se houver números no termo de busca
+      if (cleanedSearch.length > 0) {
+        conditions.push('client.cpfCnpj LIKE :searchClean');
+        params.searchClean = `%${cleanedSearch}%`;
+      }
+
       // Adicionar condições de busca com OR
-      queryBuilder.andWhere(
-        '(' +
-          'LOWER(client.nome) LIKE LOWER(:search) OR ' +
-          'LOWER(client.razaoSocial) LIKE LOWER(:search) OR ' +
-          'LOWER(client.nomeFantasia) LIKE LOWER(:search) OR ' +
-          'client.cpfCnpj LIKE :searchClean OR ' +
-          'client.telefone LIKE :search OR ' +
-          'client.celular LIKE :search' +
-        ')',
-        {
-          search: searchPattern,
-          searchClean: searchCleanPattern,
-        }
-      );
+      queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
 
       // Log da query SQL gerada
       const sql = queryBuilder.getSql();
