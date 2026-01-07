@@ -229,7 +229,7 @@ export class SigeSyncService {
         clientData.Complemento,
         clientData.Bairro
       ].filter(p => p && p.trim());
-      client.endereco = enderecoParts.length > 0 ? enderecoParts.join(', ') : null;
+      client.endereco = enderecoParts.length > 0 ? enderecoParts.join(', ') : undefined;
       client.cidade = clientData.Cidade || clientData.cidade;
       client.estado = clientData.UF || clientData.estado;
       client.cep = clientData.CEP || clientData.cep;
