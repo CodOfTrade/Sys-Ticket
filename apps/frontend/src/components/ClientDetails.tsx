@@ -201,14 +201,9 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
 
           {activeTab === 'tickets' && (
             <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Tickets do Cliente
-                </h3>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  + Novo Ticket
-                </button>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Tickets do Cliente
+              </h3>
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 Nenhum ticket encontrado
               </div>
@@ -217,14 +212,9 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
 
           {activeTab === 'contracts' && (
             <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Contratos
-                </h3>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  + Novo Contrato
-                </button>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Contratos
+              </h3>
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 Nenhum contrato encontrado
               </div>
