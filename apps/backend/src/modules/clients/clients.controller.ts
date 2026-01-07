@@ -196,7 +196,7 @@ export class ClientsController {
     return this.clientsService.getServiceOrder(id);
   }
 
-  @Get(':clientId/contracts')
+  @Get('contract/client/:clientId')
   @Public()
   @ApiOperation({ summary: 'Listar contratos de um cliente' })
   @ApiResponse({ status: 200, description: 'Lista de contratos retornada com sucesso' })

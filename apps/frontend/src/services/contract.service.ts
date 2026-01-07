@@ -22,7 +22,7 @@ export const contractService = {
   async getByClient(clientId: string): Promise<Contract[]> {
     try {
       console.log('Buscando contratos para cliente:', clientId);
-      const response = await api.get<ApiResponse<Contract[]>>(`/v1/clients/${clientId}/contracts`);
+      const response = await api.get<ApiResponse<Contract[]>>(`/v1/clients/contract/client/${clientId}`);
       console.log('Resposta da API de contratos:', response.data);
 
       // Validar resposta
