@@ -20,7 +20,19 @@ interface ApiResponse<T> {
 
 export const contractService = {
   async getByClient(clientId: string): Promise<Contract[]> {
-    const response = await api.get<ApiResponse<Contract[]>>(`/v1/clients/${clientId}/contracts`);
-    return response.data.data;
+    try {
+      const response = await api.get<ApiResponse<Contract[]>>(`/v1/clients/${clientId}/contracts`);
+
+      // Validar resposta
+      if (!response.data || !response.data.data) {
+        console.error('Resposta inválida da API de contratos:', response.data);
+        return [];
+      }
+
+      return Array.isArray(response.data.data) ? response.data.data : [];
+    } catch (error) {
+      console.error('Erro ao buscar contratos:', error);
+      return [];
+    }
   },
 };
