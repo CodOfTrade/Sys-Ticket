@@ -252,6 +252,9 @@ export class SigeSyncService {
         return null;
       }
 
+      // Log detalhado dos campos do contrato
+      this.logger.debug(`Processando contrato ${sigeId}. Campos disponíveis: ${Object.keys(contractData).join(', ')}`);
+
       const existing = await this.contractRepository.findOne({
         where: { sigeId },
       });
@@ -270,14 +273,31 @@ export class SigeSyncService {
       contract.ativo = contractData.ativo !== undefined ? contractData.ativo : (contractData.Ativo !== undefined ? contractData.Ativo : true);
       contract.lastSyncedAt = new Date();
 
-      // Vincular ao cliente se existir
-      if (contractData.client_id || contractData.IdCliente) {
+      // Vincular ao cliente se existir - tentar múltiplos campos possíveis
+      const possibleClientIds = [
+        contractData.client_id,
+        contractData.IdCliente,
+        contractData.IdPessoa,
+        contractData.CodigoPessoa,
+        contractData.ID,
+      ].filter(id => id);
+
+      if (possibleClientIds.length > 0) {
+        const clientIdToSearch = String(possibleClientIds[0]);
+        this.logger.debug(`Tentando vincular contrato ${sigeId} ao cliente SIGE ID: ${clientIdToSearch}`);
+
         const client = await this.clientRepository.findOne({
-          where: { sigeId: String(contractData.client_id || contractData.IdCliente) },
+          where: { sigeId: clientIdToSearch },
         });
+
         if (client) {
           contract.sigeClientId = client.id;
+          this.logger.debug(`✓ Contrato ${sigeId} vinculado ao cliente ${client.nome}`);
+        } else {
+          this.logger.warn(`✗ Cliente SIGE ID ${clientIdToSearch} não encontrado para contrato ${sigeId}`);
         }
+      } else {
+        this.logger.warn(`Contrato ${sigeId} sem campo de cliente para vincular`);
       }
 
       return await this.contractRepository.save(contract);
