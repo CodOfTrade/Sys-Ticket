@@ -273,25 +273,53 @@ export class SigeSyncService {
       contract.ativo = contractData.Situacao !== 'Rescindido';
       contract.lastSyncedAt = new Date();
 
-      // Vincular ao cliente pelo NOME (campo Cliente na API retorna o nome)
+      // Vincular ao cliente pelo NOME ou CNPJ (campo Cliente na API pode conter "CNPJ — Nome" ou apenas "Nome")
       if (contractData.Cliente) {
-        const clientName = String(contractData.Cliente).trim();
-        this.logger.debug(`Tentando vincular contrato ${sigeId} ao cliente: ${clientName}`);
+        const clientField = String(contractData.Cliente).trim();
+        this.logger.debug(`Tentando vincular contrato ${sigeId} ao cliente: ${clientField}`);
 
-        // Buscar por nome fantasia, razão social ou nome
-        const client = await this.clientRepository.findOne({
-          where: [
-            { nomeFantasia: clientName },
-            { razaoSocial: clientName },
-            { nome: clientName },
-          ],
-        });
+        let client: SigeClient | null = null;
+
+        // Extrair CNPJ se estiver no formato "CNPJ — Nome"
+        const cnpjMatch = clientField.match(/^(\d{14,18})/);
+        if (cnpjMatch) {
+          const cnpj = cnpjMatch[1];
+          this.logger.debug(`CNPJ extraído: ${cnpj}`);
+
+          // Buscar por CNPJ primeiro (mais confiável)
+          client = await this.clientRepository.findOne({
+            where: { cpfCnpj: cnpj },
+          });
+
+          if (client) {
+            this.logger.log(`✓ Cliente encontrado pelo CNPJ: ${client.nome}`);
+          }
+        }
+
+        // Se não encontrou pelo CNPJ, tentar pelo nome
+        if (!client) {
+          // Remover CNPJ do início se existir
+          const clientName = clientField.replace(/^\d{14,18}\s*[-—]\s*/, '').trim();
+
+          // Buscar por nome fantasia, razão social ou nome
+          client = await this.clientRepository.findOne({
+            where: [
+              { nomeFantasia: clientName },
+              { razaoSocial: clientName },
+              { nome: clientName },
+            ],
+          });
+
+          if (client) {
+            this.logger.log(`✓ Cliente encontrado pelo nome: ${client.nome}`);
+          }
+        }
 
         if (client) {
           contract.sigeClientId = client.id;
           this.logger.log(`✓ Contrato ${sigeId} vinculado ao cliente ${client.nome} (UUID: ${client.id})`);
         } else {
-          this.logger.warn(`✗ Cliente "${clientName}" não encontrado para vincular contrato ${sigeId}`);
+          this.logger.warn(`✗ Cliente "${clientField}" não encontrado para vincular contrato ${sigeId}`);
         }
       } else {
         this.logger.warn(`Contrato ${sigeId} sem campo Cliente para vincular`);
