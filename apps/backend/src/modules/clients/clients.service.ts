@@ -96,22 +96,30 @@ export class ClientsService {
     try {
       // Remove caracteres especiais e normaliza para busca mais flexível
       const searchTerm = name.trim();
+      const searchPattern = `%${searchTerm}%`;
+      const searchCleanPattern = `%${searchTerm.replace(/\D/g, '')}%`;
 
-      const [clients, total] = await this.clientRepository
+      const queryBuilder = this.clientRepository
         .createQueryBuilder('client')
-        .where('client.ativo = :ativo', { ativo: true })
-        .andWhere(
-          '(LOWER(client.nome) LIKE LOWER(:search) OR ' +
+        .where('client.ativo = :ativo', { ativo: true });
+
+      // Adicionar condições de busca com OR
+      queryBuilder.andWhere(
+        '(' +
+          'LOWER(client.nome) LIKE LOWER(:search) OR ' +
           'LOWER(client.razaoSocial) LIKE LOWER(:search) OR ' +
           'LOWER(client.nomeFantasia) LIKE LOWER(:search) OR ' +
-          'REPLACE(REPLACE(client.cpfCnpj, \'.\', \'\'), \'-\', \'\') LIKE :searchClean OR ' +
+          'client.cpfCnpj LIKE :searchClean OR ' +
           'client.telefone LIKE :search OR ' +
-          'client.celular LIKE :search)',
-          {
-            search: `%${searchTerm}%`,
-            searchClean: `%${searchTerm.replace(/\D/g, '')}%`
-          }
-        )
+          'client.celular LIKE :search' +
+        ')',
+        {
+          search: searchPattern,
+          searchClean: searchCleanPattern,
+        }
+      );
+
+      const [clients, total] = await queryBuilder
         .orderBy('client.nome', 'ASC')
         .skip((page - 1) * perPage)
         .take(perPage)
