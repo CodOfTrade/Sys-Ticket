@@ -206,8 +206,16 @@ export default function Clients() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                         {formatDocument(client.cpf_cnpj)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                        {formatPhone(client.celular || client.telefone)}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {(client.celular || client.telefone) ? (
+                          <a
+                            href={`tel:${(client.celular || client.telefone)?.replace(/\D/g, '')}`}
+                            className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {formatPhone(client.celular || client.telefone)}
+                          </a>
+                        ) : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                         {client.cidade && client.estado ? `${client.cidade}/${client.estado}` : '-'}

@@ -293,12 +293,24 @@ export default function ClientRequesters({ clientId }: ClientRequestersProps) {
                       </p>
                     )}
 
-                    <div className="flex gap-4 mt-1 text-xs text-gray-600 dark:text-gray-400">
+                    <div className="flex gap-4 mt-1 text-xs">
                       {requester.email && (
-                        <span>✉ {requester.email}</span>
+                        <a
+                          href={`mailto:${requester.email}`}
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          ✉ {requester.email}
+                        </a>
                       )}
                       {requester.phone && (
-                        <span>📞 {requester.phone}</span>
+                        <a
+                          href={`tel:${requester.phone.replace(/\D/g, '')}`}
+                          className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          📞 {requester.phone}
+                        </a>
                       )}
                     </div>
                   </div>

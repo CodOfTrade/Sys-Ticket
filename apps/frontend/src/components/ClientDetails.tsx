@@ -185,7 +185,12 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Email
                     </label>
-                    <p className="text-gray-900 dark:text-white">{client.email}</p>
+                    <a
+                      href={`mailto:${client.email}`}
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
+                    >
+                      {client.email}
+                    </a>
                   </div>
                 )}
 
@@ -194,7 +199,12 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Telefone
                     </label>
-                    <p className="text-gray-900 dark:text-white">{formatPhone(client.telefone)}</p>
+                    <a
+                      href={`tel:${client.telefone.replace(/\D/g, '')}`}
+                      className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:underline"
+                    >
+                      {formatPhone(client.telefone)}
+                    </a>
                   </div>
                 )}
 
@@ -203,7 +213,12 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Celular
                     </label>
-                    <p className="text-gray-900 dark:text-white">{formatPhone(client.celular)}</p>
+                    <a
+                      href={`tel:${client.celular.replace(/\D/g, '')}`}
+                      className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:underline"
+                    >
+                      {formatPhone(client.celular)}
+                    </a>
                   </div>
                 )}
               </div>
