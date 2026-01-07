@@ -27,7 +27,8 @@
       "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\"\" && git add . && git commit -m \"\"Fix: modificar ClientsService para buscar do banco local ao invés da API SIGE\"\"\")",
       "Bash(where:*)",
       "Bash(powershell.exe -Command \"Invoke-WebRequest -Uri ''https://sourceforge.net/projects/sshpass/files/latest/download'' -OutFile ''$env:TEMP\\\\sshpass.zip''\")",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(dir \"C:\\\\Users\" /b)"
     ]
   }
 }

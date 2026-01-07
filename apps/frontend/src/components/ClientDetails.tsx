@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Client } from '@services/client.service';
-import { requesterService, type CreateRequesterDto } from '@services/requester.service';
 import { ticketService } from '@services/ticket.service';
 import { contractService } from '@services/contract.service';
+import ClientRequesters from './ClientRequesters';
 
 interface ClientDetailsProps {
   client: Client;
@@ -14,28 +14,6 @@ type TabType = 'info' | 'requesters' | 'tickets' | 'contracts';
 
 export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('info');
-  const [showRequesterForm, setShowRequesterForm] = useState(false);
-  const [requesterPage, setRequesterPage] = useState(1);
-  const [requesterForm, setRequesterForm] = useState({
-    client_id: client?.id || '',
-    name: '',
-    email: '',
-    phone: '',
-    department: '',
-    position: '',
-  });
-  const queryClient = useQueryClient();
-
-  // Buscar solicitantes do cliente
-  const { data: requestersData, isLoading: loadingRequesters, error: requestersError } = useQuery({
-    queryKey: ['requesters', client?.id, requesterPage],
-    queryFn: () => requesterService.findByClient(client?.id || '', requesterPage, 20),
-    enabled: activeTab === 'requesters' && !!client?.id,
-    retry: 1,
-  });
-
-  const requesters = Array.isArray(requestersData?.data) ? requestersData.data : [];
-  const requestersMeta = requestersData?.meta || { total: 0, page: 1, limit: 20, totalPages: 0 };
 
   // Buscar tickets do cliente
   const { data: tickets = [], isLoading: loadingTickets } = useQuery({
@@ -49,24 +27,6 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
     queryKey: ['contracts', 'client', client.id],
     queryFn: () => contractService.getByClient(client.id),
     enabled: activeTab === 'contracts',
-  });
-
-  // Mutation para criar solicitante
-  const createRequesterMutation = useMutation({
-    mutationFn: requesterService.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['requesters', client.id] });
-      setRequesterPage(1);
-      setShowRequesterForm(false);
-      setRequesterForm({
-        client_id: client.id,
-        name: '',
-        email: '',
-        phone: '',
-        department: '',
-        position: '',
-      });
-    },
   });
 
   const formatDocument = (doc?: string) => {
@@ -304,187 +264,7 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
           )}
 
           {activeTab === 'requesters' && (
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Solicitantes
-                </h3>
-                <button
-                  onClick={() => setShowRequesterForm(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  + Adicionar Solicitante
-                </button>
-              </div>
-
-              {/* Formulário de adicionar solicitante */}
-              {showRequesterForm && (
-                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-4 border border-gray-200 dark:border-gray-700">
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Novo Solicitante</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Nome *
-                      </label>
-                      <input
-                        type="text"
-                        value={requesterForm.name}
-                        onChange={(e) => setRequesterForm({ ...requesterForm, name: e.target.value })}
-                        className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        value={requesterForm.email}
-                        onChange={(e) => setRequesterForm({ ...requesterForm, email: e.target.value })}
-                        className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Telefone
-                      </label>
-                      <input
-                        type="tel"
-                        value={requesterForm.phone}
-                        onChange={(e) => setRequesterForm({ ...requesterForm, phone: e.target.value })}
-                        className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Cargo
-                      </label>
-                      <input
-                        type="text"
-                        value={requesterForm.position}
-                        onChange={(e) => setRequesterForm({ ...requesterForm, position: e.target.value })}
-                        className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 mt-4">
-                    <button
-                      onClick={() => createRequesterMutation.mutate(requesterForm)}
-                      disabled={!requesterForm.name || createRequesterMutation.isPending}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition-colors"
-                    >
-                      {createRequesterMutation.isPending ? 'Salvando...' : 'Salvar'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowRequesterForm(false);
-                        setRequesterForm({
-                          client_id: client.id,
-                          name: '',
-                          email: '',
-                          phone: '',
-                          department: '',
-                          position: '',
-                        });
-                      }}
-                      className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Lista de solicitantes */}
-              {requestersError ? (
-                <div className="text-center py-12 text-red-500 dark:text-red-400">
-                  Erro ao carregar solicitantes. Tente novamente.
-                </div>
-              ) : loadingRequesters ? (
-                <div className="text-center py-12">
-                  <svg className="animate-spin h-8 w-8 text-blue-600 mx-auto" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                </div>
-              ) : !requesters || requesters.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                  Nenhum solicitante cadastrado
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {requesters.map((requester) => (
-                    <div
-                      key={requester.id}
-                      className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900 dark:text-white">
-                            {requester.name}
-                            {requester.is_primary && (
-                              <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-                                Principal
-                              </span>
-                            )}
-                          </h4>
-                          {requester.position && (
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                              {requester.position}
-                            </p>
-                          )}
-                          <div className="mt-2 space-y-1">
-                            {requester.email && (
-                              <p className="text-sm text-gray-700 dark:text-gray-300">
-                                <span className="font-medium">Email:</span> {requester.email}
-                              </p>
-                            )}
-                            {requester.phone && (
-                              <p className="text-sm text-gray-700 dark:text-gray-300">
-                                <span className="font-medium">Telefone:</span> {requester.phone}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Paginação de solicitantes */}
-              {requestersMeta && requestersMeta.totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Mostrando {((requestersMeta.page - 1) * requestersMeta.limit) + 1} - {Math.min(requestersMeta.page * requestersMeta.limit, requestersMeta.total)} de {requestersMeta.total} solicitantes
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setRequesterPage(p => Math.max(1, p - 1))}
-                      disabled={requesterPage === 1}
-                      className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Anterior
-                    </button>
-                    <span className="px-3 py-1 text-gray-700 dark:text-gray-300">
-                      Página {requestersMeta.page} de {requestersMeta.totalPages}
-                    </span>
-                    <button
-                      onClick={() => setRequesterPage(p => Math.min(requestersMeta.totalPages, p + 1))}
-                      disabled={requesterPage === requestersMeta.totalPages}
-                      className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Próxima
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <ClientRequesters clientId={client.id} />
           )}
 
           {activeTab === 'tickets' && (
