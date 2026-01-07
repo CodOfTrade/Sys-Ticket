@@ -310,7 +310,7 @@ export class ClientsService {
 
       // Buscar contratos vinculados ao cliente usando o ID local (UUID) do cliente
       const contracts = await this.contractRepository.find({
-        where: { sigeClientId: clientId, ativo: true },
+        where: { sigeClientId: clientId },
         order: { dataInicio: 'DESC' },
       });
 
