@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientService, type Client } from '@services/client.service';
 import { api } from '@services/api';
+import ClientDetails from '@components/ClientDetails';
 
 export default function Clients() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -278,122 +279,10 @@ export default function Clients() {
 
       {/* Modal de detalhes */}
       {selectedClient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Detalhes do Cliente
-                </h2>
-                <button
-                  onClick={() => setSelectedClient(null)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Nome
-                    </label>
-                    <p className="text-gray-900 dark:text-white">{selectedClient.nome || '-'}</p>
-                  </div>
-
-                  {selectedClient.razao_social && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Razão Social
-                      </label>
-                      <p className="text-gray-900 dark:text-white">{selectedClient.razao_social}</p>
-                    </div>
-                  )}
-
-                  {selectedClient.nome_fantasia && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Nome Fantasia
-                      </label>
-                      <p className="text-gray-900 dark:text-white">{selectedClient.nome_fantasia}</p>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      CPF/CNPJ
-                    </label>
-                    <p className="text-gray-900 dark:text-white">{formatDocument(selectedClient.cpf_cnpj)}</p>
-                  </div>
-
-                  {selectedClient.tipo_pessoa && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Tipo de Pessoa
-                      </label>
-                      <p className="text-gray-900 dark:text-white">
-                        {selectedClient.tipo_pessoa === 'F' ? 'Física' : 'Jurídica'}
-                      </p>
-                    </div>
-                  )}
-
-                  {selectedClient.email && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Email
-                      </label>
-                      <p className="text-gray-900 dark:text-white">{selectedClient.email}</p>
-                    </div>
-                  )}
-
-                  {selectedClient.telefone && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Telefone
-                      </label>
-                      <p className="text-gray-900 dark:text-white">{formatPhone(selectedClient.telefone)}</p>
-                    </div>
-                  )}
-
-                  {selectedClient.celular && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Celular
-                      </label>
-                      <p className="text-gray-900 dark:text-white">{formatPhone(selectedClient.celular)}</p>
-                    </div>
-                  )}
-                </div>
-
-                {selectedClient.endereco && (
-                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Endereço
-                    </label>
-                    <p className="text-gray-900 dark:text-white">{selectedClient.endereco}</p>
-                    {(selectedClient.cidade || selectedClient.estado || selectedClient.cep) && (
-                      <p className="text-gray-600 dark:text-gray-400 mt-1">
-                        {[selectedClient.cidade, selectedClient.estado, selectedClient.cep].filter(Boolean).join(', ')}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setSelectedClient(null)}
-                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                >
-                  Fechar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ClientDetails
+          client={selectedClient}
+          onClose={() => setSelectedClient(null)}
+        />
       )}
     </div>
   );
