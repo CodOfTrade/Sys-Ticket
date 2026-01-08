@@ -49,6 +49,8 @@ export class TicketAppointmentsService {
    * Iniciar timer de apontamento
    */
   async startTimer(userId: string, dto: StartTimerDto) {
+    this.logger.log(`Tentando iniciar timer para userId: ${userId}`);
+
     // Verificar se já existe timer ativo para este usuário
     const activeTimer = await this.appointmentRepository.findOne({
       where: {
@@ -57,6 +59,8 @@ export class TicketAppointmentsService {
         timer_stopped_at: null as any,
       },
     });
+
+    this.logger.log(`Timer ativo encontrado: ${activeTimer ? 'SIM (ID: ' + activeTimer.id + ')' : 'NÃO'}`);
 
     if (activeTimer) {
       throw new BadRequestException(
