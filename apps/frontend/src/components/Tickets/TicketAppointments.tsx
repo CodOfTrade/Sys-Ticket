@@ -35,6 +35,7 @@ const coverageTypeColors: Record<ServiceCoverageType, string> = {
 export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsProps) {
   const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<string | null>(null);
   const [formData, setFormData] = useState<any>({
     ticket_id: ticketId,
     appointment_date: new Date().toISOString().split('T')[0],
@@ -150,6 +151,19 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
     },
   });
 
+  // Mutation para atualizar apontamento
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      appointmentsService.updateAppointment(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['appointments-summary', ticketId] });
+      setShowCreateModal(false);
+      setEditingAppointment(null);
+      resetForm();
+    },
+  });
+
   // Mutation para deletar apontamento
   const deleteMutation = useMutation({
     mutationFn: (appointmentId: string) => appointmentsService.deleteAppointment(appointmentId),
@@ -159,7 +173,31 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
     },
   });
 
+  const handleEditAppointment = (appointment: any) => {
+    setEditingAppointment(appointment.id);
+    setFormData({
+      ticket_id: ticketId,
+      appointment_date: appointment.appointment_date,
+      start_time: appointment.start_time,
+      end_time: appointment.end_time,
+      type: appointment.type,
+      coverage_type: appointment.coverage_type,
+      service_type: appointment.service_type,
+      service_level: appointment.service_level || ServiceLevel.N1,
+      modality: appointment.service_type,
+      contract_id: appointment.contract_id || '',
+      is_warranty: appointment.is_warranty || false,
+      manual_price_override: appointment.manual_price_override || false,
+      manual_unit_price: appointment.unit_price || 0,
+      description: appointment.description || '',
+      send_as_response: false,
+      attachments: [],
+    });
+    setShowCreateModal(true);
+  };
+
   const resetForm = () => {
+    setEditingAppointment(null);
     setFormData({
       ticket_id: ticketId,
       appointment_date: new Date().toISOString().split('T')[0],
@@ -183,16 +221,11 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
     e.preventDefault();
 
     // Montar DTO apenas com campos aceitos pelo backend
-    const dto: CreateAppointmentDto = {
-      ticket_id: formData.ticket_id,
+    const dto: any = {
       appointment_date: formData.appointment_date,
       start_time: formData.start_time,
       end_time: formData.end_time,
-      type: formData.type,
-      coverage_type: formData.coverage_type,
-      service_type: formData.modality, // Modalidade vai para service_type
       description: formData.description || undefined,
-      send_as_response: formData.send_as_response,
     };
 
     // SEMPRE enviar o preço calculado (seja manual ou automático)
@@ -202,8 +235,23 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
         : calculatedPrice.unit_price;
     }
 
-    console.log('Enviando apontamento:', dto);
-    createMutation.mutate(dto);
+    if (editingAppointment) {
+      // Modo edição
+      console.log('Atualizando apontamento:', editingAppointment, dto);
+      updateMutation.mutate({ id: editingAppointment, data: dto });
+    } else {
+      // Modo criação
+      const createDto: CreateAppointmentDto = {
+        ...dto,
+        ticket_id: formData.ticket_id,
+        type: formData.type,
+        coverage_type: formData.coverage_type,
+        service_type: formData.modality, // Modalidade vai para service_type
+        send_as_response: formData.send_as_response,
+      };
+      console.log('Criando apontamento:', createDto);
+      createMutation.mutate(createDto);
+    }
   };
 
   const formatDuration = (minutes: number): string => {
@@ -336,6 +384,7 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
 
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={() => handleEditAppointment(appointment)}
                     className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     title="Editar"
                   >
@@ -366,7 +415,7 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Novo Apontamento
+                  {editingAppointment ? 'Editar Apontamento' : 'Novo Apontamento'}
                 </h2>
                 <button
                   onClick={() => {
