@@ -17,13 +17,11 @@ import { CreateServiceCatalogDto } from './dto/create-service-catalog.dto';
 
 @ApiTags('Service Catalog')
 @Controller('v1/service-catalog')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class ServiceCatalogController {
   constructor(private readonly serviceCatalogService: ServiceCatalogService) {}
 
   @Get()
-  @Public()
   @ApiOperation({ summary: 'Listar catálogos de serviço' })
   async findAll(@Query('service_desk_id') serviceDeskId?: string) {
     const catalogs = await this.serviceCatalogService.findAll(serviceDeskId);
