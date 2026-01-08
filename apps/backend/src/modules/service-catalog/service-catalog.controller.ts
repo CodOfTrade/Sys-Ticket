@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 import { ServiceCatalogService } from './service-catalog.service';
 import { CreateServiceCatalogDto } from './dto/create-service-catalog.dto';
 
@@ -22,6 +23,7 @@ export class ServiceCatalogController {
   constructor(private readonly serviceCatalogService: ServiceCatalogService) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'Listar catálogos de serviço' })
   async findAll(@Query('service_desk_id') serviceDeskId?: string) {
     const catalogs = await this.serviceCatalogService.findAll(serviceDeskId);
