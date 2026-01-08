@@ -107,7 +107,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
       id: user.id,
       name: user.name,
       email: user.email,
-      phone: user.phone || '',
+      phone: '',
       type: 'user' as const,
       label: `${user.name} - ${user.email} (Técnico)`,
     })) || []),
