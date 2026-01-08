@@ -645,22 +645,23 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
                 {/* Dropdown de Resultados */}
                 {showClientDropdown && clientSearchTerm.length >= 2 && clientSearchResults?.data && clientSearchResults.data.length > 0 && !selectedClient && (
-                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-hidden">
-                    <div className="overflow-y-auto max-h-60">
+                  <div className="absolute z-10 left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden" style={{ maxHeight: '240px' }}>
+                    <div className="overflow-y-auto" style={{ maxHeight: '240px' }}>
                       {clientSearchResults.data.slice(0, 10).map((client) => (
                         <button
                           key={client.id}
                           type="button"
                           onClick={() => handleSelectClient(client)}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 block"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 flex flex-col"
                         >
-                          <p className="font-medium text-sm text-gray-900 dark:text-white truncate block">
+                          <span className="font-medium text-sm text-gray-900 dark:text-white truncate w-full">
                             {client.nome_fantasia || client.nome}
-                          </p>
-                          <div className="flex gap-x-2 mt-0.5 text-xs text-gray-600 dark:text-gray-400 min-w-0">
-                            {client.cpf_cnpj && <span className="truncate block min-w-0">CNPJ: {client.cpf_cnpj}</span>}
-                            {client.cidade && <span className="truncate block min-w-0">{client.cidade}/{client.estado}</span>}
-                          </div>
+                          </span>
+                          <span className="text-xs text-gray-600 dark:text-gray-400 truncate w-full mt-0.5">
+                            {client.cpf_cnpj && `CNPJ: ${client.cpf_cnpj}`}
+                            {client.cpf_cnpj && client.cidade && ' • '}
+                            {client.cidade && `${client.cidade}/${client.estado}`}
+                          </span>
                         </button>
                       ))}
                     </div>
