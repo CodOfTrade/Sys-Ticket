@@ -57,6 +57,21 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
       // Validar campos obrigatórios
       if (!formData.modality || !formData.coverage_type) return;
 
+      // Se for CONTRATO, zerar o valor (não há cobrança)
+      if (formData.coverage_type === ServiceCoverageType.CONTRACT) {
+        const now = new Date();
+        const startTime = new Date(activeTimer.timer_started_at!);
+        const durationMinutes = Math.round((now.getTime() - startTime.getTime()) / (1000 * 60));
+        setCalculatedPrice({
+          unit_price: 0,
+          total_amount: 0,
+          duration_hours: durationMinutes / 60,
+          description: 'Contrato - Sem cobrança',
+        });
+        setIsCalculating(false);
+        return;
+      }
+
       setIsCalculating(true);
       try {
         // Calcular duração baseado no timer
@@ -134,6 +149,7 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
         manual_price_override: formData.manual_price_override,
         manual_unit_price: formData.manual_price_override ? formData.manual_unit_price : undefined,
         description: formData.description || undefined,
+        send_as_response: formData.send_as_response, // NOVO: Enviar como resposta ao cliente
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['active-timer'] });
