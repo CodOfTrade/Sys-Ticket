@@ -652,16 +652,14 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                           key={client.id}
                           type="button"
                           onClick={() => handleSelectClient(client)}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 block"
                         >
-                          <div className="overflow-hidden">
-                            <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                              {client.nome_fantasia || client.nome}
-                            </p>
-                            <div className="flex gap-x-3 mt-0.5 text-xs text-gray-600 dark:text-gray-400 overflow-hidden">
-                              {client.cpf_cnpj && <span className="truncate">CNPJ: {client.cpf_cnpj}</span>}
-                              {client.cidade && <span className="truncate">{client.cidade}/{client.estado}</span>}
-                            </div>
+                          <p className="font-medium text-sm text-gray-900 dark:text-white truncate block">
+                            {client.nome_fantasia || client.nome}
+                          </p>
+                          <div className="flex gap-x-2 mt-0.5 text-xs text-gray-600 dark:text-gray-400 min-w-0">
+                            {client.cpf_cnpj && <span className="truncate block min-w-0">CNPJ: {client.cpf_cnpj}</span>}
+                            {client.cidade && <span className="truncate block min-w-0">{client.cidade}/{client.estado}</span>}
                           </div>
                         </button>
                       ))}
