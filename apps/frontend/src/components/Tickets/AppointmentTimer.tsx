@@ -13,13 +13,7 @@ interface AppointmentTimerProps {
   ticketId: string;
 }
 
-// Labels dos campos
-const serviceTypeLabels: Record<ServiceType, string> = {
-  [ServiceType.INTERNAL]: 'Interno',
-  [ServiceType.REMOTE]: 'Remoto',
-  [ServiceType.EXTERNAL]: 'Externo/Presencial',
-};
-
+// Labels dos contratos
 const serviceLevelLabels: Record<ServiceLevel, string> = {
   [ServiceLevel.N1]: 'Suporte Standard',
   [ServiceLevel.N2]: 'Suporte Premium',
