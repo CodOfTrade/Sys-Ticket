@@ -43,6 +43,13 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
   } | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 
+  // Buscar timer ativo (declarar antes do useEffect que usa)
+  const { data: activeTimer } = useQuery({
+    queryKey: ['active-timer'],
+    queryFn: () => appointmentsService.getActiveTimer(),
+    refetchInterval: 5000, // Atualizar a cada 5 segundos
+  });
+
   // Calcular preço automaticamente quando campos mudarem (no modal de parar)
   useEffect(() => {
     const calculatePrice = async () => {
@@ -138,13 +145,6 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
       setIsRecording(true);
     }
   };
-
-  // Buscar timer ativo
-  const { data: activeTimer } = useQuery({
-    queryKey: ['active-timer'],
-    queryFn: () => appointmentsService.getActiveTimer(),
-    refetchInterval: 5000, // Atualizar a cada 5 segundos
-  });
 
   // Buscar contratos do cliente
   const { data: clientContracts = [] } = useQuery({
