@@ -22,6 +22,7 @@ export class ServiceCatalogController {
   constructor(private readonly serviceCatalogService: ServiceCatalogService) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'Listar catálogos de serviço' })
   async findAll(@Query('service_desk_id') serviceDeskId?: string) {
     const catalogs = await this.serviceCatalogService.findAll(serviceDeskId);
