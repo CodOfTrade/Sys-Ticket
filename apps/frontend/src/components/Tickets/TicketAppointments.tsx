@@ -51,6 +51,7 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
     manual_price_override: false,
     manual_unit_price: 0,
     send_as_response: false,
+    attachments: [], // NOVO: Anexos/Evidências
   });
 
   // Estado para preço calculado
@@ -70,6 +71,21 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
 
       // Validar campos obrigatórios
       if (!formData.start_time || !formData.end_time || !formData.modality) return;
+
+      // Se for CONTRATO, zerar o valor (não há cobrança)
+      if (formData.coverage_type === ServiceCoverageType.CONTRACT) {
+        const [startHour, startMin] = formData.start_time.split(':').map(Number);
+        const [endHour, endMin] = formData.end_time.split(':').map(Number);
+        const durationMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+        setCalculatedPrice({
+          unit_price: 0,
+          total_amount: 0,
+          duration_hours: durationMinutes / 60,
+          description: 'Contrato - Sem cobrança',
+        });
+        setIsCalculating(false);
+        return;
+      }
 
       setIsCalculating(true);
       try {
@@ -160,6 +176,7 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
       manual_price_override: false,
       manual_unit_price: 0,
       send_as_response: false,
+      attachments: [],
     });
   };
 
@@ -331,7 +348,7 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Novo Apontamento Manual
+                  Novo Apontamento
                 </h2>
                 <button
                   onClick={() => {
@@ -582,6 +599,66 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                     onChange={(value) => setFormData({ ...formData, description: value })}
                     placeholder="Descreva o trabalho realizado ou clique no microfone para falar..."
                   />
+                </div>
+
+                {/* Anexos/Evidências */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Anexos/Evidências (opcional)
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx,.txt"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        setFormData({ ...formData, attachments: files });
+                      }}
+                      className="hidden"
+                      id="attachment-upload"
+                    />
+                    <label
+                      htmlFor="attachment-upload"
+                      className="cursor-pointer flex flex-col items-center gap-2"
+                    >
+                      <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Clique para selecionar arquivos ou arraste aqui
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-500">
+                        Imagens, PDF, DOC, TXT (máx. 10MB por arquivo)
+                      </span>
+                    </label>
+                    {formData.attachments && formData.attachments.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {formData.attachments.map((file: File, index: number) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg"
+                          >
+                            <span className="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">
+                              {file.name}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newAttachments = formData.attachments.filter((_: File, i: number) => i !== index);
+                                setFormData({ ...formData, attachments: newAttachments });
+                              }}
+                              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 ml-2"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-3 mt-6">
