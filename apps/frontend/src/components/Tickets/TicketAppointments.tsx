@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, Plus, Trash2, Edit2, Calendar, DollarSign } from 'lucide-react';
 import { appointmentsService } from '@/services/ticket-details.service';

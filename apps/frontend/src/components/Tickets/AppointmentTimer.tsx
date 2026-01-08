@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Play, Square, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { appointmentsService } from '@/services/ticket-details.service';
@@ -29,6 +29,7 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
     manual_price_override: false,
     manual_unit_price: 0,
     description: '',
+    send_as_response: false, // NOVO: Enviar como resposta ao cliente
   });
 
   // Estado para preço calculado
