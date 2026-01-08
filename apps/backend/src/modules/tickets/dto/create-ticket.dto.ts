@@ -127,6 +127,22 @@ export class CreateTicketDto {
   service_desk_id: string;
 
   @ApiPropertyOptional({
+    description: 'ID do catálogo de serviço',
+    example: 'uuid-do-catalogo',
+  })
+  @IsUUID()
+  @IsOptional()
+  service_catalog_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'ID do contato/solicitante',
+    example: 'uuid-do-contato',
+  })
+  @IsUUID()
+  @IsOptional()
+  contact_id?: string;
+
+  @ApiPropertyOptional({
     description: 'ID do atendente responsável',
     example: 'uuid-do-atendente',
   })
