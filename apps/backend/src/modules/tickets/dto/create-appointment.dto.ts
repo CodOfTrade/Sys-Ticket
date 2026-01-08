@@ -223,3 +223,51 @@ export class UpdateAppointmentDto {
   @IsOptional()
   unit_price?: number;
 }
+
+export class CalculatePriceDto {
+  @ApiProperty({ description: 'ID do ticket' })
+  @IsUUID()
+  @IsNotEmpty()
+  ticket_id: string;
+
+  @ApiProperty({ description: 'Hora inicial (HH:MM)' })
+  @IsString()
+  @IsNotEmpty()
+  start_time: string;
+
+  @ApiProperty({ description: 'Hora final (HH:MM)' })
+  @IsString()
+  @IsNotEmpty()
+  end_time: string;
+
+  @ApiProperty({
+    description: 'Tipo de serviço para pricing (INTERNAL, REMOTE, EXTERNAL)',
+    enum: ServiceType,
+  })
+  @IsEnum(ServiceType)
+  @IsNotEmpty()
+  service_type: ServiceType;
+
+  @ApiProperty({
+    description: 'Tipo de cobertura/faturamento',
+    enum: ServiceCoverageType,
+  })
+  @IsEnum(ServiceCoverageType)
+  @IsNotEmpty()
+  coverage_type: ServiceCoverageType;
+
+  @ApiProperty({ description: 'É garantia (zera o valor)', required: false })
+  @IsBoolean()
+  @IsOptional()
+  is_warranty?: boolean;
+
+  @ApiProperty({ description: 'Override manual de preço', required: false })
+  @IsBoolean()
+  @IsOptional()
+  manual_price_override?: boolean;
+
+  @ApiProperty({ description: 'Preço por hora manual (se manual_price_override = true)', required: false })
+  @IsNumber()
+  @IsOptional()
+  manual_unit_price?: number;
+}

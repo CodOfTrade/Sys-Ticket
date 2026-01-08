@@ -28,6 +28,7 @@ import {
   StartTimerDto,
   StopTimerDto,
   UpdateAppointmentDto,
+  CalculatePriceDto,
 } from '../dto/create-appointment.dto';
 import {
   CreateValuationDto,
@@ -111,7 +112,7 @@ export class TicketDetailsController {
 
   @Post('appointments/calculate-price')
   @ApiOperation({ summary: 'Calcular preço estimado de apontamento' })
-  async calculateAppointmentPrice(@Body() dto: any) {
+  async calculateAppointmentPrice(@Body() dto: CalculatePriceDto) {
     const pricing = await this.appointmentsService.calculatePriceEstimate(dto);
     return { success: true, data: pricing };
   }
