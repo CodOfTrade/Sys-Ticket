@@ -142,8 +142,12 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateTicketDto) => ticketService.create(data),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log('✓ Ticket criado com sucesso!', result);
+      alert('Ticket criado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      setShowAssignmentModal(false);
+      setSelectedTechnician('');
       onClose();
       resetForm();
     },
@@ -381,13 +385,8 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
       console.log('Dados do ticket a ser criado:', JSON.stringify(ticketData, null, 2));
 
-      const result = await createMutation.mutateAsync(ticketData);
-
-      console.log('✓ Ticket criado com sucesso!', result);
-      alert('Ticket criado com sucesso!');
-
-      setShowAssignmentModal(false);
-      setSelectedTechnician('');
+      await createMutation.mutateAsync(ticketData);
+      // onSuccess do mutation vai lidar com tudo (alert, invalidate, close)
     } catch (error: any) {
       console.error('✗ ERRO AO CRIAR TICKET:', error);
       console.error('Detalhes do erro:', {
