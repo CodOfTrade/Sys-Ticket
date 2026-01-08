@@ -169,22 +169,18 @@ export class PricingConfigService {
    * Regras:
    * - Se duração < minimum_charge_threshold_minutes, cobra minimum_charge
    * - Caso contrário:
-   *   - Se charge_excess_per_minute = true: cobra por minuto excedente
-   *   - Se charge_excess_per_minute = false: cobra por hora completa excedente
+   *   - SEMPRE arredonda para hora completa (ceiling)
+   *   - Exemplo: 1h02m = 2h, 2h30m = 3h
    *
    * Exemplo:
    * - hourly_rate_normal = R$ 70
    * - minimum_charge = R$ 70
    * - minimum_charge_threshold_minutes = 60
-   * - charge_excess_per_minute = true
    *
    * Duração 10 min → R$ 70 (valor mínimo)
    * Duração 48 min → R$ 70 (valor mínimo)
-   * Duração 75 min → R$ 70 + (15 min × R$ 70/60) = R$ 87,50
-   * Duração 125 min → R$ 70 + (65 min × R$ 70/60) = R$ 145,83
-   *
-   * Se charge_excess_per_minute = false:
-   * Duração 75 min → R$ 70 + R$ 70 = R$ 140 (1 hora extra completa)
+   * Duração 62 min (1h02m) → R$ 70 + R$ 70 = R$ 140 (arredonda para 2h total)
+   * Duração 125 min (2h05m) → R$ 70 + (2h × R$ 70) = R$ 210 (arredonda para 3h total)
    */
   calculatePrice(config: PricingConfig, durationMinutes: number): {
     basePrice: number;
@@ -210,17 +206,11 @@ export class PricingConfigService {
 
     // Duração excedente
     const excessMinutes = durationMinutes - thresholdMinutes;
-    let excessPrice = 0;
 
-    if (config.charge_excess_per_minute) {
-      // Cobrança por minuto excedente
-      const pricePerMinute = hourlyRate / 60;
-      excessPrice = excessMinutes * pricePerMinute;
-    } else {
-      // Cobrança por hora completa excedente
-      const excessHours = Math.ceil(excessMinutes / 60);
-      excessPrice = excessHours * hourlyRate;
-    }
+    // SEMPRE arredonda para hora completa (ceiling)
+    // Exemplo: 1h02m = 2h total, então excess de 2 min vira 1h extra
+    const excessHours = Math.ceil(excessMinutes / 60);
+    const excessPrice = excessHours * hourlyRate;
 
     const totalPrice = minimumCharge + excessPrice;
 
@@ -229,9 +219,7 @@ export class PricingConfigService {
       excessPrice: Math.round(excessPrice * 100) / 100, // Arredondar para 2 casas
       totalPrice: Math.round(totalPrice * 100) / 100,
       appliedRate: hourlyRate,
-      description: config.charge_excess_per_minute
-        ? `Base: R$ ${minimumCharge.toFixed(2)} + Excedente: ${excessMinutes} min × R$ ${(hourlyRate / 60).toFixed(2)}/min`
-        : `Base: R$ ${minimumCharge.toFixed(2)} + Excedente: ${Math.ceil(excessMinutes / 60)}h × R$ ${hourlyRate.toFixed(2)}/h`,
+      description: `Base: R$ ${minimumCharge.toFixed(2)} + Excedente: ${excessHours}h × R$ ${hourlyRate.toFixed(2)}/h (arredondado)`,
     };
   }
 }
