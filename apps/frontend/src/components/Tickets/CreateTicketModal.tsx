@@ -477,7 +477,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Novo Ticket</h2>
@@ -645,20 +645,20 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
                 {/* Dropdown de Resultados */}
                 {showClientDropdown && clientSearchTerm.length >= 2 && clientSearchResults?.data && clientSearchResults.data.length > 0 && !selectedClient && (
-                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto overflow-x-hidden">
+                  <div className="absolute z-10 left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {clientSearchResults.data.slice(0, 10).map((client) => (
                       <button
                         key={client.id}
                         type="button"
                         onClick={() => handleSelectClient(client)}
-                        className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                        className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 overflow-hidden"
                       >
-                        <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                        <p className="font-medium text-sm text-gray-900 dark:text-white truncate pr-2">
                           {client.nome_fantasia || client.nome}
                         </p>
-                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-gray-600 dark:text-gray-400">
-                          {client.cpf_cnpj && <span className="truncate max-w-[150px]">CNPJ: {client.cpf_cnpj}</span>}
-                          {client.cidade && <span className="truncate">{client.cidade}/{client.estado}</span>}
+                        <div className="flex gap-x-3 mt-0.5 text-xs text-gray-600 dark:text-gray-400">
+                          {client.cpf_cnpj && <span className="truncate flex-shrink-0">CNPJ: {client.cpf_cnpj}</span>}
+                          {client.cidade && <span className="truncate flex-shrink">{client.cidade}/{client.estado}</span>}
                         </div>
                       </button>
                     ))}
