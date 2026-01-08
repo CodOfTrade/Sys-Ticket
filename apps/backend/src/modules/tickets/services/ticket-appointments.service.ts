@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { TicketAppointment } from '../entities/ticket-appointment.entity';
 import {
   CreateAppointmentDto,
@@ -56,7 +56,7 @@ export class TicketAppointmentsService {
       where: {
         user_id: userId,
         is_timer_based: true,
-        timer_stopped_at: null as any,
+        timer_stopped_at: IsNull(),
       },
     });
 
