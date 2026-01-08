@@ -41,6 +41,13 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
   // Estado para followers
   const [followerInput, setFollowerInput] = useState('');
+  const [showFollowerDropdown, setShowFollowerDropdown] = useState(false);
+  const followerRef = useRef<HTMLDivElement>(null);
+
+  // Estado para ticket pai
+  const [parentTicketSearch, setParentTicketSearch] = useState('');
+  const [showParentTicketDropdown, setShowParentTicketDropdown] = useState(false);
+  const parentTicketRef = useRef<HTMLDivElement>(null);
 
   // Estado para modal de cadastro rápido de solicitante
   const [showQuickRequesterModal, setShowQuickRequesterModal] = useState(false);
@@ -64,6 +71,17 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     enabled: !!formData.client_id,
   });
 
+  // Buscar tickets do cliente para ticket pai
+  const { data: clientTickets } = useQuery({
+    queryKey: ['client-tickets', formData.client_id],
+    queryFn: async () => {
+      if (!formData.client_id) return { tickets: [] };
+      const response = await ticketService.getAll({ client_id: formData.client_id });
+      return response;
+    },
+    enabled: !!formData.client_id,
+  });
+
   // Buscar clientes em tempo real
   const { data: clientSearchResults } = useQuery({
     queryKey: ['client-search', clientSearchTerm],
@@ -71,11 +89,17 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     enabled: clientSearchTerm.length >= 2,
   });
 
-  // Fechar dropdown ao clicar fora
+  // Fechar dropdowns ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (clientSearchRef.current && !clientSearchRef.current.contains(event.target as Node)) {
         setShowClientDropdown(false);
+      }
+      if (followerRef.current && !followerRef.current.contains(event.target as Node)) {
+        setShowFollowerDropdown(false);
+      }
+      if (parentTicketRef.current && !parentTicketRef.current.contains(event.target as Node)) {
+        setShowParentTicketDropdown(false);
       }
     };
 
@@ -142,6 +166,18 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     'Outro',
   ];
 
+  // Catálogos de exemplo caso não haja no banco
+  const exampleCatalogs = [
+    { id: 'example-1', name: 'Suporte Técnico' },
+    { id: 'example-2', name: 'Manutenção de Hardware' },
+    { id: 'example-3', name: 'Configuração de Software' },
+    { id: 'example-4', name: 'Instalação de Rede' },
+    { id: 'example-5', name: 'Backup e Restore' },
+  ];
+
+  // Usar catálogos do banco ou exemplos
+  const availableCatalogs = (catalogs && catalogs.length > 0) ? catalogs : exampleCatalogs;
+
   // Selecionar cliente da busca
   const handleSelectClient = (client: Client) => {
     setSelectedClient(client);
@@ -154,15 +190,18 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     setShowClientDropdown(false);
   };
 
-  // Adicionar follower
-  const handleAddFollower = () => {
-    if (followerInput.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(followerInput)) {
-      if (!formData.followers.includes(followerInput.trim())) {
+  // Adicionar follower (solicitante ou email)
+  const handleAddFollower = (emailOrContact?: string) => {
+    const email = emailOrContact || followerInput.trim();
+
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (!formData.followers.includes(email)) {
         setFormData(prev => ({
           ...prev,
-          followers: [...prev.followers, followerInput.trim()],
+          followers: [...prev.followers, email],
         }));
         setFollowerInput('');
+        setShowFollowerDropdown(false);
       }
     }
   };
@@ -369,7 +408,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                   }`}
                 >
                   <option value="">Selecione um catálogo</option>
-                  {catalogs?.map((catalog) => (
+                  {availableCatalogs.map((catalog) => (
                     <option key={catalog.id} value={catalog.id}>
                       {catalog.name}
                     </option>
@@ -629,55 +668,130 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
             </h3>
             <div className="space-y-4">
               {/* Ticket Pai */}
-              <div>
+              <div ref={parentTicketRef}>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <Link2 size={16} className="inline mr-1" />
                   Ticket Relacionado (Pai)
                 </label>
-                <input
-                  type="text"
-                  name="parent_ticket_id"
-                  value={formData.parent_ticket_id}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Número do ticket pai (ex: #2024001)"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={parentTicketSearch}
+                    onChange={(e) => {
+                      setParentTicketSearch(e.target.value);
+                      setShowParentTicketDropdown(true);
+                    }}
+                    onFocus={() => setShowParentTicketDropdown(true)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="Digite o número ou título do ticket..."
+                  />
+
+                  {/* Dropdown de Tickets */}
+                  {showParentTicketDropdown && formData.client_id && clientTickets?.tickets && clientTickets.tickets.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {clientTickets.tickets
+                        .filter(ticket =>
+                          ticket.ticket_number.toLowerCase().includes(parentTicketSearch.toLowerCase()) ||
+                          ticket.title.toLowerCase().includes(parentTicketSearch.toLowerCase())
+                        )
+                        .slice(0, 10)
+                        .map((ticket) => (
+                          <button
+                            key={ticket.id}
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, parent_ticket_id: ticket.id }));
+                              setParentTicketSearch(`#${ticket.ticket_number} - ${ticket.title}`);
+                              setShowParentTicketDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                          >
+                            <p className="font-medium text-gray-900 dark:text-white text-sm">
+                              #{ticket.ticket_number}
+                            </p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                              {ticket.title}
+                            </p>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Use para vincular este ticket a outro ticket existente
+                  Use para vincular este ticket a outro ticket existente do mesmo cliente
                 </p>
               </div>
 
               {/* Seguidores (Followers) */}
-              <div>
+              <div ref={followerRef}>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <Mail size={16} className="inline mr-1" />
                   Seguidores
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    type="email"
-                    value={followerInput}
-                    onChange={(e) => setFollowerInput(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddFollower();
-                      }
-                    }}
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="email@exemplo.com"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddFollower}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
-                  >
-                    <UserPlus size={16} />
-                    Adicionar
-                  </button>
+                <div className="relative">
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={followerInput}
+                      onChange={(e) => {
+                        setFollowerInput(e.target.value);
+                        if (e.target.value.length > 0) {
+                          setShowFollowerDropdown(true);
+                        }
+                      }}
+                      onFocus={() => {
+                        if (contacts && contacts.length > 0) {
+                          setShowFollowerDropdown(true);
+                        }
+                      }}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddFollower();
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="Selecione um solicitante ou digite um email..."
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddFollower()}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <UserPlus size={16} />
+                      Adicionar
+                    </button>
+                  </div>
+
+                  {/* Dropdown de Solicitantes */}
+                  {showFollowerDropdown && contacts && contacts.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {contacts
+                        .filter(contact => contact.email && (
+                          !followerInput ||
+                          contact.name.toLowerCase().includes(followerInput.toLowerCase()) ||
+                          contact.email.toLowerCase().includes(followerInput.toLowerCase())
+                        ))
+                        .map((contact) => (
+                          <button
+                            key={contact.id}
+                            type="button"
+                            onClick={() => handleAddFollower(contact.email!)}
+                            className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                          >
+                            <p className="font-medium text-gray-900 dark:text-white text-sm">
+                              {contact.name}
+                            </p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              {contact.email}
+                            </p>
+                          </button>
+                        ))}
+                    </div>
+                  )}
                 </div>
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Pessoas que receberão notificações sobre atualizações deste ticket
+                  Selecione solicitantes ou digite emails para receber notificações
                 </p>
 
                 {/* Lista de Followers */}
