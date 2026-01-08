@@ -53,6 +53,11 @@ export enum ServiceType {
   EXTERNAL = 'external',
 }
 
+export enum ServiceLevel {
+  N1 = 'n1',
+  N2 = 'n2',
+}
+
 export interface TicketAppointment {
   id: string;
   ticket_id: string;
@@ -68,9 +73,13 @@ export interface TicketAppointment {
   type: AppointmentType;
   coverage_type: ServiceCoverageType;
   service_type?: ServiceType;
+  service_level?: ServiceLevel;
   description?: string;
   unit_price: number;
   total_amount: number;
+  manual_price_override?: boolean;
+  manual_unit_price?: number;
+  is_warranty?: boolean;
   travel_distance_km?: number;
   travel_cost?: number;
   is_timer_based: boolean;
@@ -222,8 +231,12 @@ export interface StartTimerDto {
 
 export interface StopTimerDto {
   appointment_id: string;
-  service_type: ServiceType;
-  coverage_type: ServiceCoverageType;
+  service_type: ServiceType; // Interno, Remoto ou Externo
+  coverage_type: ServiceCoverageType; // Contrato ou Avulso
+  service_level?: ServiceLevel; // N1 ou N2
+  is_warranty?: boolean; // Garantia (zera valor)
+  manual_price_override?: boolean; // Permitir editar valor manualmente
+  manual_unit_price?: number; // Valor por hora manual
   description?: string;
   send_as_response?: boolean;
   attachment_ids?: string[];

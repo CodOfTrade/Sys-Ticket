@@ -2,12 +2,18 @@ import { useState } from 'react';
 import { Play, Square, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { appointmentsService } from '@/services/ticket-details.service';
-import { AppointmentType, ServiceCoverageType, ServiceType } from '@/types/ticket-details.types';
+import {
+  AppointmentType,
+  ServiceCoverageType,
+  ServiceType,
+  ServiceLevel,
+} from '@/types/ticket-details.types';
 
 interface AppointmentTimerProps {
   ticketId: string;
 }
 
+// Labels dos campos
 const serviceTypeLabels: Record<ServiceType, string> = {
   [ServiceType.INTERNAL]: 'Interno',
   [ServiceType.REMOTE]: 'Remoto',
@@ -16,17 +22,26 @@ const serviceTypeLabels: Record<ServiceType, string> = {
 
 const coverageTypeLabels: Record<ServiceCoverageType, string> = {
   [ServiceCoverageType.CONTRACT]: 'Contrato',
-  [ServiceCoverageType.WARRANTY]: 'Garantia',
   [ServiceCoverageType.BILLABLE]: 'Avulso',
+  [ServiceCoverageType.WARRANTY]: 'Garantia',
   [ServiceCoverageType.INTERNAL]: 'Interno',
+};
+
+const serviceLevelLabels: Record<ServiceLevel, string> = {
+  [ServiceLevel.N1]: 'Nível 1 (N1)',
+  [ServiceLevel.N2]: 'Nível 2 (N2)',
 };
 
 export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
   const queryClient = useQueryClient();
   const [showStopModal, setShowStopModal] = useState(false);
   const [formData, setFormData] = useState({
-    service_type: ServiceType.REMOTE,
-    coverage_type: ServiceCoverageType.CONTRACT,
+    coverage_type: ServiceCoverageType.BILLABLE, // Avulso por padrão
+    service_level: ServiceLevel.N1, // N1 por padrão
+    service_type: ServiceType.REMOTE, // Remoto por padrão
+    is_warranty: false,
+    manual_price_override: false,
+    manual_unit_price: 0,
     description: '',
     send_as_response: false,
   });
@@ -57,8 +72,12 @@ export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
     mutationFn: () =>
       appointmentsService.stopTimer({
         appointment_id: activeTimer!.id,
-        service_type: formData.service_type,
         coverage_type: formData.coverage_type,
+        service_level: formData.service_level,
+        service_type: formData.service_type,
+        is_warranty: formData.is_warranty,
+        manual_price_override: formData.manual_price_override,
+        manual_unit_price: formData.manual_price_override ? formData.manual_unit_price : undefined,
         description: formData.description || undefined,
         send_as_response: formData.send_as_response,
       }),
@@ -72,8 +91,12 @@ export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
 
   const resetForm = () => {
     setFormData({
+      coverage_type: ServiceCoverageType.BILLABLE,
+      service_level: ServiceLevel.N1,
       service_type: ServiceType.REMOTE,
-      coverage_type: ServiceCoverageType.CONTRACT,
+      is_warranty: false,
+      manual_price_override: false,
+      manual_unit_price: 0,
       description: '',
       send_as_response: false,
     });
@@ -210,8 +233,9 @@ export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Tipo de atendimento (coverage_type) - OBRIGATÓRIO */}
+              {/* Grid com 3 campos principais */}
+              <div className="space-y-4">
+                {/* 1. Tipo de atendimento: Avulso ou Contrato */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Tipo de atendimento <span className="text-red-500">*</span>
@@ -227,21 +251,44 @@ export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     required
                   >
-                    {Object.entries(coverageTypeLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
+                    <option value={ServiceCoverageType.BILLABLE}>Avulso</option>
+                    <option value={ServiceCoverageType.CONTRACT}>Contrato</option>
                   </select>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Se o cliente possui contrato, selecione "Contrato". Caso contrário, "Avulso".
+                    Selecione "Contrato" se o cliente possui contrato ativo
                   </p>
                 </div>
 
-                {/* Classificação (service_type) - OBRIGATÓRIO */}
+                {/* 2. Contrato (aparece apenas se tipo = Contrato) */}
+                {formData.coverage_type === ServiceCoverageType.CONTRACT && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Contrato <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.service_level}
+                      onChange={(e) =>
+                        setFormData({ ...formData, service_level: e.target.value as ServiceLevel })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    >
+                      {Object.entries(serviceLevelLabels).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Selecione o contrato cadastrado para este cliente
+                    </p>
+                  </div>
+                )}
+
+                {/* 3. Modalidade: Remoto, Externo ou Interno */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Classificação <span className="text-red-500">*</span>
+                    Modalidade <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.service_type}
@@ -258,10 +305,85 @@ export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
                     ))}
                   </select>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Define o tipo de precificação do atendimento.
+                    Como foi realizado o atendimento
                   </p>
                 </div>
               </div>
+
+              {/* Checkboxes: Garantia e Editar Valor Manualmente */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    id="is_warranty"
+                    checked={formData.is_warranty}
+                    onChange={(e) => {
+                      const isWarranty = e.target.checked;
+                      setFormData({
+                        ...formData,
+                        is_warranty: isWarranty,
+                        manual_price_override: false, // Desativa override manual se marcar garantia
+                      });
+                    }}
+                    className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label
+                    htmlFor="is_warranty"
+                    className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                  >
+                    Garantia
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      Marca como garantia (valor = R$ 0,00)
+                    </span>
+                  </label>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    id="manual_price_override"
+                    checked={formData.manual_price_override}
+                    disabled={formData.is_warranty}
+                    onChange={(e) =>
+                      setFormData({ ...formData, manual_price_override: e.target.checked })
+                    }
+                    className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
+                  />
+                  <label
+                    htmlFor="manual_price_override"
+                    className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                  >
+                    Editar valor manualmente
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      Permite informar preço por hora personalizado
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Campo de valor manual (aparece apenas se checkbox marcado) */}
+              {formData.manual_price_override && !formData.is_warranty && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Valor por hora (R$) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.manual_unit_price}
+                    onChange={(e) =>
+                      setFormData({ ...formData, manual_unit_price: parseFloat(e.target.value) || 0 })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="Ex: 150.00"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Este valor será multiplicado pela duração do atendimento
+                  </p>
+                </div>
+              )}
 
               {/* Descrição */}
               <div>
