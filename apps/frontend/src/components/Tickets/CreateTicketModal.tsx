@@ -84,6 +84,35 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     enabled: !!formData.client_id,
   });
 
+  // Buscar técnicos para lista de solicitantes
+  const { data: technicians } = useQuery({
+    queryKey: ['technicians'],
+    queryFn: () => userService.getAll(),
+    enabled: isOpen,
+  });
+
+  // Combinar contatos do cliente + técnicos para o dropdown de solicitantes
+  const availableRequesters = [
+    // Contatos do cliente
+    ...(contacts?.map(contact => ({
+      id: contact.id,
+      name: contact.name,
+      email: contact.email || '',
+      phone: contact.phone || '',
+      type: 'contact' as const,
+      label: `${contact.name} - ${contact.email || contact.phone || 'Sem contato'}`,
+    })) || []),
+    // Técnicos do sistema
+    ...(technicians?.users?.map(tech => ({
+      id: tech.id,
+      name: tech.name,
+      email: tech.email,
+      phone: tech.phone || '',
+      type: 'technician' as const,
+      label: `${tech.name} - ${tech.email} (Técnico)`,
+    })) || []),
+  ];
+
   // Buscar tickets do cliente para ticket pai
   const { data: clientTickets } = useQuery({
     queryKey: ['client-tickets', formData.client_id],
@@ -629,23 +658,23 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                   </button>
                 </div>
 
-                {formData.client_id && contacts && contacts.length > 0 ? (
+                {availableRequesters.length > 0 ? (
                   <select
                     name="contact_id"
                     value={formData.contact_id}
                     onChange={(e) => {
-                      const contactId = e.target.value;
-                      setFormData(prev => ({ ...prev, contact_id: contactId }));
+                      const requesterId = e.target.value;
+                      setFormData(prev => ({ ...prev, contact_id: requesterId }));
 
                       // Preencher dados do solicitante automaticamente
-                      if (contactId) {
-                        const contact = contacts.find(c => c.id === contactId);
-                        if (contact) {
+                      if (requesterId) {
+                        const requester = availableRequesters.find(r => r.id === requesterId);
+                        if (requester) {
                           setFormData(prev => ({
                             ...prev,
-                            requester_name: contact.name,
-                            requester_email: contact.email || '',
-                            requester_phone: contact.phone || '',
+                            requester_name: requester.name,
+                            requester_email: requester.email || '',
+                            requester_phone: requester.phone || '',
                           }));
                         }
                       }
@@ -657,19 +686,15 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                     }`}
                   >
                     <option value="">Selecione um solicitante</option>
-                    {contacts.map((contact) => (
-                      <option key={contact.id} value={contact.id}>
-                        {contact.name} {contact.email ? `- ${contact.email}` : ''}
+                    {availableRequesters.map((requester) => (
+                      <option key={requester.id} value={requester.id}>
+                        {requester.label}
                       </option>
                     ))}
                   </select>
                 ) : (
                   <div className="text-sm text-gray-500 dark:text-gray-400 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                    {!formData.client_id ? (
-                      <p>Selecione um cliente primeiro para ver os solicitantes disponíveis</p>
-                    ) : (
-                      <p>Nenhum solicitante cadastrado para este cliente. Clique em "Cadastrar Novo" para adicionar.</p>
-                    )}
+                    <p>Nenhum solicitante disponível. Clique em "Cadastrar Novo" para adicionar um contato do cliente.</p>
                   </div>
                 )}
 
