@@ -76,8 +76,12 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     queryKey: ['client-tickets', formData.client_id],
     queryFn: async () => {
       if (!formData.client_id) return { tickets: [] };
-      const response = await ticketService.getAll({ client_id: formData.client_id });
-      return response;
+      // Buscar todos os tickets e filtrar por client_id no frontend
+      const response = await ticketService.getAll({});
+      const filteredTickets = response.tickets.filter(
+        ticket => ticket.client_id === formData.client_id || ticket.client_name === formData.client_name
+      );
+      return { ...response, tickets: filteredTickets };
     },
     enabled: !!formData.client_id,
   });
