@@ -56,6 +56,58 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
 
+  // Estado para preço calculado
+  const [calculatedPrice, setCalculatedPrice] = useState<{
+    unit_price: number;
+    total_amount: number;
+    duration_hours: number;
+    description: string;
+  } | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  // Calcular preço automaticamente quando campos mudarem
+  useEffect(() => {
+    const calculatePrice = async () => {
+      // Só calcular se o modal estiver aberto e tiver ticket_id
+      if (!showCreateModal || !formData.ticket_id) return;
+
+      // Validar campos obrigatórios
+      if (!formData.start_time || !formData.end_time || !formData.modality) return;
+
+      setIsCalculating(true);
+      try {
+        const pricing = await appointmentsService.calculatePrice({
+          ticket_id: formData.ticket_id,
+          start_time: formData.start_time,
+          end_time: formData.end_time,
+          service_type: formData.modality, // Modalidade (Remoto/Presencial/Interno)
+          coverage_type: formData.coverage_type,
+          is_warranty: formData.is_warranty,
+          manual_price_override: formData.manual_price_override,
+          manual_unit_price: formData.manual_unit_price,
+        });
+        setCalculatedPrice(pricing);
+      } catch (error) {
+        console.error('Erro ao calcular preço:', error);
+        setCalculatedPrice(null);
+      } finally {
+        setIsCalculating(false);
+      }
+    };
+
+    calculatePrice();
+  }, [
+    showCreateModal,
+    formData.ticket_id,
+    formData.start_time,
+    formData.end_time,
+    formData.modality,
+    formData.coverage_type,
+    formData.is_warranty,
+    formData.manual_price_override,
+    formData.manual_unit_price,
+  ]);
+
   // Inicializar Web Speech API
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -528,26 +580,38 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                     type="number"
                     step="0.01"
                     min="0"
-                    value={formData.manual_unit_price}
+                    value={
+                      formData.manual_price_override
+                        ? formData.manual_unit_price
+                        : calculatedPrice?.unit_price?.toFixed(2) || '0.00'
+                    }
                     onChange={(e) =>
                       setFormData({ ...formData, manual_unit_price: parseFloat(e.target.value) || 0 })
                     }
                     disabled={!formData.manual_price_override || formData.is_warranty}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
-                    placeholder={formData.is_warranty ? "R$ 0,00 (Garantia)" : "Será calculado automaticamente"}
+                    placeholder={isCalculating ? "Calculando..." : formData.is_warranty ? "R$ 0,00 (Garantia)" : "Aguardando cálculo..."}
                     required={formData.manual_price_override}
                   />
-                  {formData.manual_price_override ? (
+                  {isCalculating ? (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 animate-pulse">
+                      ⏳ Calculando preço...
+                    </p>
+                  ) : formData.manual_price_override ? (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      💡 Valor manual: será multiplicado pela duração
+                      💡 Valor manual: R$ {(calculatedPrice?.total_amount || 0).toFixed(2)} ({calculatedPrice?.duration_hours.toFixed(2)}h)
                     </p>
                   ) : formData.is_warranty ? (
                     <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                      ✓ Garantia: valor zerado
+                      ✓ Garantia: R$ 0,00 - Valor zerado
+                    </p>
+                  ) : calculatedPrice ? (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                      💰 Total: R$ {calculatedPrice.total_amount.toFixed(2)} ({calculatedPrice.duration_hours.toFixed(2)}h × R$ {calculatedPrice.unit_price.toFixed(2)}/h)
                     </p>
                   ) : (
-                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                      ⚙️ Será calculado automaticamente com base na configuração de preços
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      ⚙️ Preencha os campos para calcular o valor
                     </p>
                   )}
                 </div>

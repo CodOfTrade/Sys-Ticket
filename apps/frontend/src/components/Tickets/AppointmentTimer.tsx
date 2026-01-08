@@ -34,6 +34,68 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
 
+  // Estado para preço calculado
+  const [calculatedPrice, setCalculatedPrice] = useState<{
+    unit_price: number;
+    total_amount: number;
+    duration_hours: number;
+    description: string;
+  } | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  // Calcular preço automaticamente quando campos mudarem (no modal de parar)
+  useEffect(() => {
+    const calculatePrice = async () => {
+      // Só calcular se o modal de parar estiver aberto e tiver campos preenchidos
+      if (!showStopModal || !activeTimer) return;
+
+      // Validar campos obrigatórios
+      if (!formData.modality || !formData.coverage_type) return;
+
+      setIsCalculating(true);
+      try {
+        // Calcular duração baseado no timer
+        const now = new Date();
+        const startTime = new Date(activeTimer.timer_started_at!);
+        const durationMinutes = Math.round((now.getTime() - startTime.getTime()) / (1000 * 60));
+
+        // Converter duração para horários fictícios (para API)
+        const startHour = '08:00';
+        const endHourNum = 8 + Math.floor(durationMinutes / 60);
+        const endMinNum = durationMinutes % 60;
+        const endHour = `${String(endHourNum).padStart(2, '0')}:${String(endMinNum).padStart(2, '0')}`;
+
+        const pricing = await appointmentsService.calculatePrice({
+          ticket_id: ticketId,
+          start_time: startHour,
+          end_time: endHour,
+          service_type: formData.modality, // Modalidade (Remoto/Presencial/Interno)
+          coverage_type: formData.coverage_type,
+          is_warranty: formData.is_warranty,
+          manual_price_override: formData.manual_price_override,
+          manual_unit_price: formData.manual_unit_price,
+        });
+        setCalculatedPrice(pricing);
+      } catch (error) {
+        console.error('Erro ao calcular preço:', error);
+        setCalculatedPrice(null);
+      } finally {
+        setIsCalculating(false);
+      }
+    };
+
+    calculatePrice();
+  }, [
+    showStopModal,
+    activeTimer,
+    ticketId,
+    formData.modality,
+    formData.coverage_type,
+    formData.is_warranty,
+    formData.manual_price_override,
+    formData.manual_unit_price,
+  ]);
+
   // Inicializar Web Speech API
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -434,26 +496,38 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.manual_unit_price}
+                  value={
+                    formData.manual_price_override
+                      ? formData.manual_unit_price
+                      : calculatedPrice?.unit_price?.toFixed(2) || '0.00'
+                  }
                   onChange={(e) =>
                     setFormData({ ...formData, manual_unit_price: parseFloat(e.target.value) || 0 })
                   }
                   disabled={!formData.manual_price_override || formData.is_warranty}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
-                  placeholder={formData.is_warranty ? "R$ 0,00 (Garantia)" : "Será calculado automaticamente"}
+                  placeholder={isCalculating ? "Calculando..." : formData.is_warranty ? "R$ 0,00 (Garantia)" : "Aguardando cálculo..."}
                   required={formData.manual_price_override}
                 />
-                {formData.manual_price_override ? (
+                {isCalculating ? (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 animate-pulse">
+                    ⏳ Calculando preço...
+                  </p>
+                ) : formData.manual_price_override ? (
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    💡 Valor manual: será multiplicado pela duração
+                    💡 Valor manual: R$ {(calculatedPrice?.total_amount || 0).toFixed(2)} ({calculatedPrice?.duration_hours.toFixed(2)}h)
                   </p>
                 ) : formData.is_warranty ? (
                   <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                    ✓ Garantia: valor zerado
+                    ✓ Garantia: R$ 0,00 - Valor zerado
+                  </p>
+                ) : calculatedPrice ? (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    💰 Total: R$ {calculatedPrice.total_amount.toFixed(2)} ({calculatedPrice.duration_hours.toFixed(2)}h × R$ {calculatedPrice.unit_price.toFixed(2)}/h)
                   </p>
                 ) : (
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                    ⚙️ Será calculado automaticamente com base na configuração de preços
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    ⚙️ Preencha os campos para calcular o valor
                   </p>
                 )}
               </div>

@@ -79,6 +79,34 @@ export const appointmentsService = {
     return response.data.data;
   },
 
+  async calculatePrice(data: {
+    ticket_id: string;
+    start_time: string;
+    end_time: string;
+    service_type: string;
+    coverage_type: string;
+    is_warranty?: boolean;
+    manual_price_override?: boolean;
+    manual_unit_price?: number;
+  }): Promise<{
+    duration_minutes: number;
+    duration_hours: number;
+    unit_price: number;
+    total_amount: number;
+    description: string;
+  }> {
+    const response = await api.post<
+      ApiResponse<{
+        duration_minutes: number;
+        duration_hours: number;
+        unit_price: number;
+        total_amount: number;
+        description: string;
+      }>
+    >('/v1/tickets/appointments/calculate-price', data);
+    return response.data.data;
+  },
+
   async startTimer(data: StartTimerDto): Promise<TicketAppointment> {
     const response = await api.post<ApiResponse<TicketAppointment>>(
       '/v1/tickets/appointments/timer/start',

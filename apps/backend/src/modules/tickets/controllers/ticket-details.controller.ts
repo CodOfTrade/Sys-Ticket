@@ -109,6 +109,13 @@ export class TicketDetailsController {
     return { success: true, data: appointment };
   }
 
+  @Post('appointments/calculate-price')
+  @ApiOperation({ summary: 'Calcular preço estimado de apontamento' })
+  async calculateAppointmentPrice(@Body() dto: any) {
+    const pricing = await this.appointmentsService.calculatePriceEstimate(dto);
+    return { success: true, data: pricing };
+  }
+
   @Post('appointments/timer/start')
   @ApiOperation({ summary: 'Iniciar timer de apontamento' })
   async startTimer(@Body() dto: StartTimerDto, @CurrentUser('id') userId: string) {

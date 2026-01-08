@@ -46,7 +46,9 @@
       "Bash(npm install:*)",
       "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\backend\"\" && npm run build\")",
       "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend\"\" && dir dist /s\")",
-      "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend\"\" && npm run build\")"
+      "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend\"\" && npm run build\")",
+      "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\"\" && git add apps/frontend/src/components/Tickets/AppointmentTimer.tsx apps/frontend/src/components/Tickets/TicketAppointments.tsx && git commit -m \"\"Feature: Melhorias no modal de apontamentos - Campo de valor sempre visível \\(editável apenas em modo manual\\) - Implementação de voz-para-texto na descrição com Web Speech API - Reconhecimento de fala em português brasileiro \\(pt-BR\\) - Feedback visual com botão de microfone \\(azul/vermelho pulsante\\) - Mensagens de status contextuais nos campos - Aplicado em ambos os modais \\(timer e manual\\)\"\" && git push\")",
+      "Bash(cmd.exe /c 'cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\"\" && git add . && git commit -m \"\"Feature: Melhorias no modal de apontamentos - Campo de valor sempre visivel - Implementacao de voz-para-texto - Reconhecimento em portugues brasileiro - Feedback visual com botao de microfone\"\" && git push')"
     ]
   }
 }

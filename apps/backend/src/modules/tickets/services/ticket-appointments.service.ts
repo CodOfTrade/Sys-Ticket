@@ -380,6 +380,105 @@ export class TicketAppointmentsService {
   }
 
   /**
+   * Calcular preço estimado de um apontamento (para preview no frontend)
+   */
+  async calculatePriceEstimate(dto: {
+    ticket_id: string;
+    start_time: string;
+    end_time: string;
+    service_type: ServiceType;
+    coverage_type: ServiceCoverageType;
+    is_warranty?: boolean;
+    manual_price_override?: boolean;
+    manual_unit_price?: number;
+  }): Promise<{
+    duration_minutes: number;
+    duration_hours: number;
+    unit_price: number;
+    total_amount: number;
+    description: string;
+  }> {
+    // Calcular duração
+    const durationMinutes = this.calculateDuration(dto.start_time, dto.end_time);
+    const durationHours = durationMinutes / 60;
+
+    // Se é garantia, zerar valores
+    if (dto.is_warranty) {
+      return {
+        duration_minutes: durationMinutes,
+        duration_hours: durationHours,
+        unit_price: 0,
+        total_amount: 0,
+        description: 'Garantia - Valor zerado',
+      };
+    }
+
+    // Se tem override manual de preço, usar o valor manual
+    if (dto.manual_price_override && dto.manual_unit_price !== null && dto.manual_unit_price !== undefined) {
+      return {
+        duration_minutes: durationMinutes,
+        duration_hours: durationHours,
+        unit_price: dto.manual_unit_price,
+        total_amount: durationHours * dto.manual_unit_price,
+        description: 'Valor manual definido',
+      };
+    }
+
+    // Buscar ticket para pegar service_desk_id
+    const ticket = await this.ticketsRepository.findOne({
+      where: { id: dto.ticket_id },
+      relations: ['service_desk'],
+    });
+
+    if (!ticket || !ticket.service_desk_id) {
+      this.logger.warn(`Ticket ${dto.ticket_id} não encontrado ou sem service_desk_id`);
+      return {
+        duration_minutes: durationMinutes,
+        duration_hours: durationHours,
+        unit_price: 0,
+        total_amount: 0,
+        description: 'Configuração de preços não encontrada',
+      };
+    }
+
+    // Buscar configuração de pricing
+    const serviceType = dto.service_type || ServiceType.REMOTE;
+    const pricingConfig = await this.pricingRepository.findOne({
+      where: {
+        service_desk_id: ticket.service_desk_id,
+        service_type: serviceType,
+      },
+    });
+
+    if (!pricingConfig) {
+      this.logger.warn(
+        `Configuração de preços não encontrada para service_desk ${ticket.service_desk_id} e service_type ${serviceType}`,
+      );
+      return {
+        duration_minutes: durationMinutes,
+        duration_hours: durationHours,
+        unit_price: 0,
+        total_amount: 0,
+        description: 'Configuração de preços não encontrada',
+      };
+    }
+
+    // Calcular preço usando a mesma lógica de calculateAppointmentPrice
+    const pricing = this.pricingService.calculateAppointmentPrice(
+      pricingConfig,
+      durationMinutes,
+    );
+
+    return {
+      duration_minutes: durationMinutes,
+      duration_hours: durationHours,
+      unit_price: pricing.appliedRate,
+      total_amount: pricing.totalPrice,
+      description: pricing.description,
+    };
+  }
+
+  /**
    * Calcular total de horas trabalhadas em um ticket
    */
   async getTotalHours(ticketId: string): Promise<number> {
