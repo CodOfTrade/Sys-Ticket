@@ -47,6 +47,11 @@ export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
     coverage_type: ServiceCoverageType.BILLABLE, // Avulso por padrão
     service_type: ServiceType.REMOTE,
     service_level: ServiceLevel.N1,
+    modality: ServiceType.REMOTE, // NOVO: Modalidade separada
+    contract_id: '', // NOVO: ID do contrato selecionado
+    is_warranty: false,
+    manual_price_override: false,
+    manual_unit_price: 0,
     send_as_response: false,
   });
 
@@ -89,8 +94,14 @@ export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
       start_time: '08:00',
       end_time: '09:00',
       type: AppointmentType.SERVICE,
-      coverage_type: ServiceCoverageType.CONTRACT,
+      coverage_type: ServiceCoverageType.BILLABLE,
       service_type: ServiceType.REMOTE,
+      service_level: ServiceLevel.N1,
+      modality: ServiceType.REMOTE,
+      contract_id: '',
+      is_warranty: false,
+      manual_price_override: false,
+      manual_unit_price: 0,
       send_as_response: false,
     });
   };
@@ -352,9 +363,13 @@ export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
                   </label>
                   {formData.coverage_type === ServiceCoverageType.CONTRACT ? (
                     <select
-                      value={formData.service_level}
+                      value={formData.contract_id || formData.service_level}
                       onChange={(e) =>
-                        setFormData({ ...formData, service_level: e.target.value as ServiceLevel })
+                        setFormData({
+                          ...formData,
+                          service_level: e.target.value as ServiceLevel,
+                          contract_id: e.target.value,
+                        })
                       }
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       required
@@ -387,6 +402,89 @@ export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
                       : 'Tipos de atendimento avulso cadastrados'}
                   </p>
                 </div>
+
+                {/* Modalidade (NOVO - campo separado) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Modalidade <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.modality}
+                    onChange={(e) =>
+                      setFormData({ ...formData, modality: e.target.value as ServiceType })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  >
+                    <option value={ServiceType.REMOTE}>Remoto</option>
+                    <option value={ServiceType.EXTERNAL}>Presencial/Externo</option>
+                    <option value={ServiceType.INTERNAL}>Interno</option>
+                  </select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Como o atendimento foi realizado
+                  </p>
+                </div>
+
+                {/* Checkboxes de Garantia e Valor Manual */}
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_warranty}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          is_warranty: e.target.checked,
+                          manual_price_override: e.target.checked ? false : formData.manual_price_override,
+                        })
+                      }
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      Garantia (zera o valor)
+                    </span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.manual_price_override}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          manual_price_override: e.target.checked,
+                          is_warranty: e.target.checked ? false : formData.is_warranty,
+                        })
+                      }
+                      disabled={formData.is_warranty}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      Valor manual (editar preço manualmente)
+                    </span>
+                  </label>
+                </div>
+
+                {/* Campo Valor (habilitado se manual_price_override) */}
+                {formData.manual_price_override && !formData.is_warranty && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Valor por hora (R$) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.manual_unit_price}
+                      onChange={(e) =>
+                        setFormData({ ...formData, manual_unit_price: parseFloat(e.target.value) })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                )}
 
                 {/* Descrição */}
                 <div>
