@@ -683,27 +683,27 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                   </>
                 )}
 
-                  {/* Dropdown de Resultados */}
-                  {showClientDropdown && clientSearchTerm.length >= 2 && clientSearchResults?.data && clientSearchResults.data.length > 0 && !selectedClient && (
-                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {clientSearchResults.data.map((client) => (
-                        <button
-                          key={client.id}
-                          type="button"
-                          onClick={() => handleSelectClient(client)}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
-                        >
-                          <p className="font-medium text-gray-900 dark:text-white">
-                            {client.nome_fantasia || client.nome}
-                          </p>
-                          <div className="flex gap-4 mt-1 text-xs text-gray-600 dark:text-gray-400">
-                            {client.cpf_cnpj && <span>CNPJ: {client.cpf_cnpj}</span>}
-                            {client.cidade && <span>{client.cidade}/{client.estado}</span>}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                {/* Dropdown de Resultados */}
+                {showClientDropdown && clientSearchTerm.length >= 2 && clientSearchResults?.data && clientSearchResults.data.length > 0 && !selectedClient && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {clientSearchResults.data.slice(0, 10).map((client) => (
+                      <button
+                        key={client.id}
+                        type="button"
+                        onClick={() => handleSelectClient(client)}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                      >
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {client.nome_fantasia || client.nome}
+                        </p>
+                        <div className="flex gap-4 mt-1 text-xs text-gray-600 dark:text-gray-400">
+                          {client.cpf_cnpj && <span>CNPJ: {client.cpf_cnpj}</span>}
+                          {client.cidade && <span>{client.cidade}/{client.estado}</span>}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Solicitante - Busca em Tempo Real */}
