@@ -16,12 +16,6 @@ const appointmentTypeLabels: Record<AppointmentType, string> = {
   [AppointmentType.ANALYSIS]: 'Análise',
 };
 
-const serviceTypeLabels: Record<ServiceType, string> = {
-  [ServiceType.INTERNAL]: 'Interno',
-  [ServiceType.REMOTE]: 'Remoto',
-  [ServiceType.EXTERNAL]: 'Externo/Presencial',
-};
-
 const coverageTypeLabels: Record<ServiceCoverageType, string> = {
   [ServiceCoverageType.CONTRACT]: 'Contrato',
   [ServiceCoverageType.WARRANTY]: 'Garantia',
