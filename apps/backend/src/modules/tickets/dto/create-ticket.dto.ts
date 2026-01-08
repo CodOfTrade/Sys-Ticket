@@ -201,8 +201,8 @@ export class CreateTicketDto {
   parent_ticket_id?: string;
 
   @ApiPropertyOptional({
-    description: 'Lista de seguidores (IDs de usuários ou emails avulsos)',
-    example: ['uuid-usuario-1', 'email@exemplo.com', 'uuid-usuario-2'],
+    description: 'Lista de seguidores (IDs de contatos/solicitantes ou emails avulsos)',
+    example: ['uuid-contato-1', 'email@exemplo.com', 'uuid-contato-2'],
     type: [String],
   })
   @IsArray()
