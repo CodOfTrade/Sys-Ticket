@@ -22,6 +22,7 @@ import { TicketsService } from './tickets.service';
 import { CreateTicketDto, UpdateTicketDto, QueryTicketDto } from './dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { UserRole } from '../users/entities/user.entity';
 import { PaginatedResult } from './interfaces/paginated-result.interface';
 import { Ticket } from './entities/ticket.entity';
@@ -33,6 +34,7 @@ export class TicketsController {
   constructor(private readonly ticketsService: TicketsService) {}
 
   @Get()
+  @Public()
   @ApiOperation({
     summary: 'Listar todos os tickets',
     description: 'Retorna lista paginada de tickets com filtros opcionais',
@@ -128,6 +130,7 @@ export class TicketsController {
   }
 
   @Get(':id')
+  @Public()
   @ApiOperation({
     summary: 'Buscar ticket por ID',
     description: 'Retorna um ticket específico com todos os relacionamentos',
@@ -146,6 +149,7 @@ export class TicketsController {
   }
 
   @Post()
+  @Public()
   @ApiOperation({
     summary: 'Criar novo ticket',
     description: 'Cria um novo ticket no sistema',
@@ -161,7 +165,7 @@ export class TicketsController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() createTicketDto: CreateTicketDto,
-    @CurrentUser('id') userId: string,
+    @CurrentUser('id') userId?: string,
   ) {
     return this.ticketsService.create(createTicketDto, userId);
   }
