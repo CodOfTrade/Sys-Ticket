@@ -14,7 +14,7 @@ export const ticketService = {
     service_desk_id?: string;
     assignee_id?: string;
     page?: number;
-    limit?: number;
+    perPage?: number;
   }): Promise<{ tickets: Ticket[]; total: number }> {
     const response = await api.get<ApiResponse<{ data: Ticket[]; meta: { total: number } }>>(
       '/v1/tickets',
