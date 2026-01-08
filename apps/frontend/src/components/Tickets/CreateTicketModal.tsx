@@ -427,138 +427,6 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Informações do Ticket */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Informações do Ticket
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Título <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                    errors.title
-                      ? 'border-red-500 dark:border-red-500'
-                      : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  placeholder="Descreva o problema brevemente"
-                />
-                {errors.title && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.title}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Descrição <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  rows={4}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                    errors.description
-                      ? 'border-red-500 dark:border-red-500'
-                      : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  placeholder="Descreva o problema em detalhes"
-                />
-                {errors.description && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Catálogo de Serviço <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="service_catalog_id"
-                  value={formData.service_catalog_id}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                    errors.service_catalog_id
-                      ? 'border-red-500 dark:border-red-500'
-                      : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                >
-                  <option value="">Selecione um catálogo</option>
-                  {availableCatalogs.map((catalog) => (
-                    <option key={catalog.id} value={catalog.id}>
-                      {catalog.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.service_catalog_id && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {errors.service_catalog_id}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Prioridade <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="priority"
-                    value={formData.priority}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    <option value={TicketPriority.LOW}>Baixa</option>
-                    <option value={TicketPriority.MEDIUM}>Média</option>
-                    <option value={TicketPriority.HIGH}>Alta</option>
-                    <option value={TicketPriority.URGENT}>Urgente</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Tipo de Serviço <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="service_type"
-                    value={formData.service_type}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    <option value={ServiceType.REMOTE}>Remoto</option>
-                    <option value={ServiceType.INTERNAL}>Interno</option>
-                    <option value={ServiceType.EXTERNAL}>Externo</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Categoria
-                  </label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    <option value="">Selecione uma categoria</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Informações do Cliente */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -820,6 +688,140 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
               </div>
             </div>
           </div>
+
+
+          {/* Informações do Ticket */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Informações do Ticket
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Título <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                    errors.title
+                      ? 'border-red-500 dark:border-red-500'
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                  placeholder="Descreva o problema brevemente"
+                />
+                {errors.title && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.title}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Descrição <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows={4}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                    errors.description
+                      ? 'border-red-500 dark:border-red-500'
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                  placeholder="Descreva o problema em detalhes"
+                />
+                {errors.description && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Catálogo de Serviço <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="service_catalog_id"
+                  value={formData.service_catalog_id}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                    errors.service_catalog_id
+                      ? 'border-red-500 dark:border-red-500'
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                >
+                  <option value="">Selecione um catálogo</option>
+                  {availableCatalogs.map((catalog) => (
+                    <option key={catalog.id} value={catalog.id}>
+                      {catalog.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.service_catalog_id && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {errors.service_catalog_id}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Prioridade <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="priority"
+                    value={formData.priority}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value={TicketPriority.LOW}>Baixa</option>
+                    <option value={TicketPriority.MEDIUM}>Média</option>
+                    <option value={TicketPriority.HIGH}>Alta</option>
+                    <option value={TicketPriority.URGENT}>Urgente</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Tipo de Serviço <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="service_type"
+                    value={formData.service_type}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value={ServiceType.REMOTE}>Remoto</option>
+                    <option value={ServiceType.INTERNAL}>Interno</option>
+                    <option value={ServiceType.EXTERNAL}>Externo</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Categoria
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="">Selecione uma categoria</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
 
           {/* Informações Adicionais */}
           <div>
