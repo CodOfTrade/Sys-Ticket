@@ -25,6 +25,11 @@ export enum ServiceCoverageType {
   INTERNAL = 'internal', // Interno (não faturável)
 }
 
+export enum ServiceLevel {
+  N1 = 'n1', // Nível 1: Externo, Remoto e Público Interno
+  N2 = 'n2', // Nível 2: Externo, Remoto e Interno
+}
+
 @Entity('ticket_appointments')
 export class TicketAppointment {
   @PrimaryGeneratedColumn('uuid')
@@ -84,6 +89,15 @@ export class TicketAppointment {
   })
   service_type: ServiceType;
 
+  // Nível de atendimento (N1, N2) para precificação diferenciada
+  @Column({
+    type: 'enum',
+    enum: ServiceLevel,
+    default: ServiceLevel.N1,
+    nullable: true,
+  })
+  service_level: ServiceLevel;
+
   // Descrição do trabalho realizado
   @Column({ type: 'text', nullable: true })
   description: string;
@@ -94,6 +108,17 @@ export class TicketAppointment {
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   total_amount: number; // Valor total do apontamento
+
+  // Override manual de preço (permite editar valor manualmente)
+  @Column({ type: 'boolean', default: false })
+  manual_price_override: boolean;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  manual_unit_price: number; // Preço por hora definido manualmente
+
+  // Garantia (zera o valor)
+  @Column({ type: 'boolean', default: false })
+  is_warranty: boolean;
 
   // Deslocamento (para apontamentos externos)
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })

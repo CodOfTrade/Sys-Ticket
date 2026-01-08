@@ -126,6 +126,20 @@ export class TicketAppointmentsService {
     appointment.coverage_type = dto.coverage_type;
     appointment.send_as_response = dto.send_as_response || false;
 
+    // Novos campos opcionais
+    if (dto.service_level) {
+      appointment.service_level = dto.service_level;
+    }
+    if (dto.is_warranty !== undefined) {
+      appointment.is_warranty = dto.is_warranty;
+    }
+    if (dto.manual_price_override !== undefined) {
+      appointment.manual_price_override = dto.manual_price_override;
+    }
+    if (dto.manual_unit_price !== undefined) {
+      appointment.manual_unit_price = dto.manual_unit_price;
+    }
+
     // Atualizar descrição e anexos se fornecidos
     if (dto.description) {
       appointment.description = dto.description;
@@ -134,7 +148,7 @@ export class TicketAppointmentsService {
       appointment.attachment_ids = dto.attachment_ids;
     }
 
-    // Calcular preço automaticamente baseado no pricing_config
+    // Calcular preço automaticamente (considera garantia e override manual)
     await this.calculateAndApplyPrice(appointment);
 
     const savedAppointment = await this.appointmentRepository.save(appointment);
@@ -152,6 +166,25 @@ export class TicketAppointmentsService {
    */
   private async calculateAndApplyPrice(appointment: TicketAppointment): Promise<void> {
     try {
+      // Se é garantia, zerar valores
+      if (appointment.is_warranty) {
+        appointment.unit_price = 0;
+        appointment.total_amount = 0;
+        this.logger.log(`Apontamento ${appointment.id} marcado como garantia - valores zerados`);
+        return;
+      }
+
+      // Se tem override manual de preço, usar o valor manual
+      if (appointment.manual_price_override && appointment.manual_unit_price !== null) {
+        const hours = appointment.duration_minutes / 60;
+        appointment.unit_price = appointment.manual_unit_price;
+        appointment.total_amount = hours * appointment.manual_unit_price;
+        this.logger.log(
+          `Apontamento ${appointment.id} usando preço manual: R$ ${appointment.total_amount.toFixed(2)}`,
+        );
+        return;
+      }
+
       // Buscar configuração de pricing para o service_desk e service_type
       const serviceDeskId = appointment.ticket?.service_desk_id;
       if (!serviceDeskId) {
@@ -181,6 +214,9 @@ export class TicketAppointmentsService {
       // Aplicar no apontamento
       appointment.unit_price = pricing.appliedRate;
       appointment.total_amount = pricing.totalPrice;
+
+      // TODO: Aplicar multiplicador de nível (N1, N2) se necessário
+      // Isso dependerá de configuração adicional no pricing_config
 
       this.logger.log(
         `Preço calculado para apontamento ${appointment.id}: R$ ${pricing.totalPrice.toFixed(2)} (${pricing.description})`,

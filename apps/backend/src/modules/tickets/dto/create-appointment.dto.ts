@@ -12,6 +12,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   AppointmentType,
   ServiceCoverageType,
+  ServiceLevel,
 } from '../entities/ticket-appointment.entity';
 import { ServiceType } from '../../service-desks/entities/pricing-config.entity';
 
@@ -155,6 +156,31 @@ export class StopTimerDto {
   @IsEnum(ServiceCoverageType)
   @IsNotEmpty()
   coverage_type: ServiceCoverageType;
+
+  @ApiProperty({
+    description: 'Nível de atendimento (N1, N2)',
+    enum: ServiceLevel,
+    default: ServiceLevel.N1,
+    required: false,
+  })
+  @IsEnum(ServiceLevel)
+  @IsOptional()
+  service_level?: ServiceLevel;
+
+  @ApiProperty({ description: 'É garantia (zera o valor)', required: false })
+  @IsBoolean()
+  @IsOptional()
+  is_warranty?: boolean;
+
+  @ApiProperty({ description: 'Override manual de preço', required: false })
+  @IsBoolean()
+  @IsOptional()
+  manual_price_override?: boolean;
+
+  @ApiProperty({ description: 'Preço por hora manual (se manual_price_override = true)', required: false })
+  @IsNumber()
+  @IsOptional()
+  manual_unit_price?: number;
 
   @ApiProperty({ description: 'Descrição do trabalho realizado', required: false })
   @IsString()
