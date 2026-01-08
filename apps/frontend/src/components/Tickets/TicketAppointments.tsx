@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, Plus, Trash2, Edit2, Calendar, DollarSign } from 'lucide-react';
 import { appointmentsService } from '@/services/ticket-details.service';
 import { AppointmentTimer } from './AppointmentTimer';
-import { AppointmentType, ServiceCoverageType, CreateAppointmentDto } from '@/types/ticket-details.types';
+import { AppointmentType, ServiceCoverageType, ServiceType, CreateAppointmentDto } from '@/types/ticket-details.types';
 
 interface TicketAppointmentsProps {
   ticketId: string;
@@ -14,6 +14,12 @@ const appointmentTypeLabels: Record<AppointmentType, string> = {
   [AppointmentType.TRAVEL]: 'Deslocamento',
   [AppointmentType.MEETING]: 'Reunião',
   [AppointmentType.ANALYSIS]: 'Análise',
+};
+
+const serviceTypeLabels: Record<ServiceType, string> = {
+  [ServiceType.INTERNAL]: 'Interno',
+  [ServiceType.REMOTE]: 'Remoto',
+  [ServiceType.EXTERNAL]: 'Externo/Presencial',
 };
 
 const coverageTypeLabels: Record<ServiceCoverageType, string> = {
@@ -40,6 +46,8 @@ export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
     end_time: '09:00',
     type: AppointmentType.SERVICE,
     coverage_type: ServiceCoverageType.CONTRACT,
+    service_type: ServiceType.REMOTE,
+    send_as_response: false,
   });
 
   // Buscar apontamentos
@@ -82,6 +90,8 @@ export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
       end_time: '09:00',
       type: AppointmentType.SERVICE,
       coverage_type: ServiceCoverageType.CONTRACT,
+      service_type: ServiceType.REMOTE,
+      send_as_response: false,
     });
   };
 
@@ -354,6 +364,30 @@ export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
                   </div>
                 </div>
 
+                {/* Novo campo: Classificação (service_type) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Classificação <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.service_type}
+                    onChange={(e) =>
+                      setFormData({ ...formData, service_type: e.target.value as ServiceType })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  >
+                    {Object.entries(serviceTypeLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Interno, Remoto ou Externo/Presencial
+                  </p>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Descrição (opcional)
@@ -365,6 +399,28 @@ export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="Descreva o trabalho realizado..."
                   />
+                </div>
+
+                {/* Novo checkbox: Enviar como resposta ao cliente */}
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    id="manual_send_as_response"
+                    checked={formData.send_as_response || false}
+                    onChange={(e) =>
+                      setFormData({ ...formData, send_as_response: e.target.checked })
+                    }
+                    className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label
+                    htmlFor="manual_send_as_response"
+                    className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                  >
+                    Enviar como resposta ao cliente
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      Cria um comentário público visível para o cliente com os detalhes do apontamento
+                    </span>
+                  </label>
                 </div>
 
                 <div className="flex justify-end gap-3 mt-6">

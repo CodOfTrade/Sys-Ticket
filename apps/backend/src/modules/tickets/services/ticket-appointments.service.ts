@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
-import { TicketAppointment } from '../entities/ticket-appointment.entity';
+import { TicketAppointment, ServiceCoverageType } from '../entities/ticket-appointment.entity';
+import { TicketComment, CommentType, CommentVisibility } from '../entities/ticket-comment.entity';
 import {
   CreateAppointmentDto,
   StartTimerDto,
@@ -18,6 +19,8 @@ export class TicketAppointmentsService {
   constructor(
     @InjectRepository(TicketAppointment)
     private appointmentRepository: Repository<TicketAppointment>,
+    @InjectRepository(TicketComment)
+    private commentRepository: Repository<TicketComment>,
     private pricingConfigService: PricingConfigService,
   ) {}
 
@@ -118,6 +121,11 @@ export class TicketAppointmentsService {
     const duration = Math.round((now.getTime() - startTime.getTime()) / (1000 * 60));
     appointment.duration_minutes = duration;
 
+    // Atualizar campos do formulário (obrigatórios)
+    appointment.service_type = dto.service_type;
+    appointment.coverage_type = dto.coverage_type;
+    appointment.send_as_response = dto.send_as_response || false;
+
     // Atualizar descrição e anexos se fornecidos
     if (dto.description) {
       appointment.description = dto.description;
@@ -129,7 +137,14 @@ export class TicketAppointmentsService {
     // Calcular preço automaticamente baseado no pricing_config
     await this.calculateAndApplyPrice(appointment);
 
-    return this.appointmentRepository.save(appointment);
+    const savedAppointment = await this.appointmentRepository.save(appointment);
+
+    // Criar comentário se send_as_response = true
+    if (dto.send_as_response) {
+      await this.createAppointmentComment(savedAppointment, userId);
+    }
+
+    return savedAppointment;
   }
 
   /**
@@ -173,6 +188,70 @@ export class TicketAppointmentsService {
     } catch (error) {
       this.logger.error(`Erro ao calcular preço do apontamento ${appointment.id}`, error);
       // Não lançar erro, apenas logar e continuar
+    }
+  }
+
+  /**
+   * Criar comentário público a partir de um apontamento
+   */
+  private async createAppointmentComment(
+    appointment: TicketAppointment,
+    userId: string,
+  ): Promise<void> {
+    try {
+      // Formatar labels
+      const serviceTypeLabels = {
+        [ServiceType.INTERNAL]: 'Interno',
+        [ServiceType.REMOTE]: 'Remoto',
+        [ServiceType.EXTERNAL]: 'Externo/Presencial',
+      };
+
+      const coverageTypeLabels = {
+        [ServiceCoverageType.CONTRACT]: 'Contrato',
+        [ServiceCoverageType.WARRANTY]: 'Garantia',
+        [ServiceCoverageType.BILLABLE]: 'Avulso',
+        [ServiceCoverageType.INTERNAL]: 'Interno',
+      };
+
+      // Formatar duração
+      const hours = Math.floor(appointment.duration_minutes / 60);
+      const minutes = appointment.duration_minutes % 60;
+      const durationText = `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+
+      // Formatar data
+      const dateFormatted = new Date(appointment.appointment_date).toLocaleDateString('pt-BR');
+
+      // Montar conteúdo do comentário
+      let content = `**Apontamento registrado:**\n\n`;
+      content += `📅 **Data:** ${dateFormatted}\n`;
+      content += `⏰ **Horário:** ${appointment.start_time} às ${appointment.end_time} (${durationText})\n`;
+      content += `📍 **Classificação:** ${serviceTypeLabels[appointment.service_type]}\n`;
+      content += `📋 **Tipo:** ${coverageTypeLabels[appointment.coverage_type]}\n`;
+
+      if (appointment.description) {
+        content += `\n📝 **Descrição:**\n${appointment.description}`;
+      }
+
+      // Criar comentário
+      const comment = this.commentRepository.create({
+        ticket_id: appointment.ticket_id,
+        user_id: userId,
+        content,
+        type: CommentType.CLIENT,
+        visibility: CommentVisibility.PUBLIC,
+      });
+
+      await this.commentRepository.save(comment);
+
+      this.logger.log(
+        `Comentário público criado para apontamento ${appointment.id} no ticket ${appointment.ticket_id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Erro ao criar comentário para apontamento ${appointment.id}`,
+        error,
+      );
+      // Não lançar erro, apenas logar
     }
   }
 

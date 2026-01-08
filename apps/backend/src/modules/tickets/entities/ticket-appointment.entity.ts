@@ -136,6 +136,10 @@ export class TicketAppointment {
   @Column({ type: 'simple-array', nullable: true })
   attachment_ids: string[];
 
+  // Enviar como resposta ao cliente (criar comentário público)
+  @Column({ type: 'boolean', default: false, nullable: true })
+  send_as_response: boolean;
+
   // Metadados
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, any>;

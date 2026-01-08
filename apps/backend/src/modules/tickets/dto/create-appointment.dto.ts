@@ -89,6 +89,11 @@ export class CreateAppointmentDto {
   @IsOptional()
   contract_id?: string;
 
+  @ApiProperty({ description: 'Enviar como resposta ao cliente (criar comentário)', required: false })
+  @IsBoolean()
+  @IsOptional()
+  send_as_response?: boolean;
+
   @ApiProperty({ description: 'IDs dos anexos', required: false })
   @IsOptional()
   attachment_ids?: string[];
@@ -135,10 +140,31 @@ export class StopTimerDto {
   @IsNotEmpty()
   appointment_id: string;
 
+  @ApiProperty({
+    description: 'Tipo de serviço para pricing (INTERNAL, REMOTE, EXTERNAL)',
+    enum: ServiceType,
+  })
+  @IsEnum(ServiceType)
+  @IsNotEmpty()
+  service_type: ServiceType;
+
+  @ApiProperty({
+    description: 'Tipo de cobertura/faturamento',
+    enum: ServiceCoverageType,
+  })
+  @IsEnum(ServiceCoverageType)
+  @IsNotEmpty()
+  coverage_type: ServiceCoverageType;
+
   @ApiProperty({ description: 'Descrição do trabalho realizado', required: false })
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiProperty({ description: 'Enviar como resposta ao cliente (criar comentário)', required: false })
+  @IsBoolean()
+  @IsOptional()
+  send_as_response?: boolean;
 
   @ApiProperty({ description: 'IDs dos anexos', required: false })
   @IsOptional()

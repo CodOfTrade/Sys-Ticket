@@ -47,6 +47,12 @@ export enum ServiceCoverageType {
   INTERNAL = 'internal',
 }
 
+export enum ServiceType {
+  INTERNAL = 'internal',
+  REMOTE = 'remote',
+  EXTERNAL = 'external',
+}
+
 export interface TicketAppointment {
   id: string;
   ticket_id: string;
@@ -61,6 +67,7 @@ export interface TicketAppointment {
   duration_minutes: number;
   type: AppointmentType;
   coverage_type: ServiceCoverageType;
+  service_type?: ServiceType;
   description?: string;
   unit_price: number;
   total_amount: number;
@@ -69,6 +76,7 @@ export interface TicketAppointment {
   is_timer_based: boolean;
   timer_started_at?: Date;
   timer_stopped_at?: Date;
+  send_as_response?: boolean;
   contract_id?: string;
   service_order_id?: string;
   requires_approval: boolean;
@@ -195,11 +203,13 @@ export interface CreateAppointmentDto {
   end_time: string;
   type?: AppointmentType;
   coverage_type?: ServiceCoverageType;
+  service_type?: ServiceType;
   description?: string;
   unit_price?: number;
   travel_distance_km?: number;
   travel_cost?: number;
   contract_id?: string;
+  send_as_response?: boolean;
   attachment_ids?: string[];
 }
 
@@ -207,11 +217,15 @@ export interface StartTimerDto {
   ticket_id: string;
   type?: AppointmentType;
   coverage_type?: ServiceCoverageType;
+  service_type?: ServiceType;
 }
 
 export interface StopTimerDto {
   appointment_id: string;
+  service_type: ServiceType;
+  coverage_type: ServiceCoverageType;
   description?: string;
+  send_as_response?: boolean;
   attachment_ids?: string[];
 }
 
