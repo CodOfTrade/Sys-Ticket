@@ -16,7 +16,7 @@ import { ServiceCatalogService } from './service-catalog.service';
 import { CreateServiceCatalogDto } from './dto/create-service-catalog.dto';
 
 @ApiTags('Service Catalog')
-@Controller('v1/service-catalog')
+@Controller({ path: 'service-catalog', version: '1' })
 @ApiBearerAuth()
 export class ServiceCatalogController {
   constructor(private readonly serviceCatalogService: ServiceCatalogService) {}
