@@ -15,6 +15,7 @@ import { TicketChecklist } from './entities/ticket-checklist.entity';
 import { Checklist } from './entities/checklist.entity';
 import { TicketFollower } from './entities/ticket-follower.entity';
 import { TicketAttachment } from './entities/ticket-attachment.entity';
+import { PricingConfig } from '../service-desks/entities/pricing-config.entity';
 import { ContractsModule } from '../contracts/contracts.module';
 import { ClientsModule } from '../clients/clients.module';
 import { ServiceDesksModule } from '../service-desks/service-desks.module';
@@ -30,6 +31,7 @@ import { ServiceDesksModule } from '../service-desks/service-desks.module';
       Checklist,
       TicketFollower,
       TicketAttachment,
+      PricingConfig,
     ]),
     ContractsModule,
     ClientsModule,
