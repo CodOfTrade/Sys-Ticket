@@ -6,8 +6,8 @@ import { TicketPriority, ServiceType, CreateTicketDto } from '@/types/ticket.typ
 import { useAuthStore } from '@/store/auth.store';
 import { serviceCatalogService } from '@/services/service-catalog.service';
 import { clientService, Client } from '@/services/client.service';
-import { contractService, Contract } from '@/services/contract.service';
-import { userService, User } from '@/services/user.service';
+import { contractService } from '@/services/contract.service';
+import { userService } from '@/services/user.service';
 
 interface CreateTicketModalProps {
   isOpen: boolean;
