@@ -237,7 +237,7 @@ export default function TicketDetails() {
 
       {/* Conteúdo das tabs */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'appointments' && <TicketAppointments ticketId={ticket.id} />}
+        {activeTab === 'appointments' && <TicketAppointments ticketId={ticket.id} clientId={ticket.client_id} />}
         {activeTab === 'communication' && <TicketCommunication ticketId={ticket.id} />}
         {activeTab === 'valuation' && <TicketValuation ticketId={ticket.id} />}
         {activeTab === 'checklists' && <TicketChecklists ticketId={ticket.id} />}

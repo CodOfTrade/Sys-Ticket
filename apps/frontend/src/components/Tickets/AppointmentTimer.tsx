@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Play, Square, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { appointmentsService } from '@/services/ticket-details.service';
+import { clientService } from '@/services/client.service';
 import {
   AppointmentType,
   ServiceCoverageType,
@@ -11,6 +12,7 @@ import {
 
 interface AppointmentTimerProps {
   ticketId: string;
+  clientId: string;
 }
 
 // Labels dos contratos
@@ -19,7 +21,7 @@ const serviceLevelLabels: Record<ServiceLevel, string> = {
   [ServiceLevel.N2]: 'Suporte Premium',
 };
 
-export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
+export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) {
   const queryClient = useQueryClient();
   const [showStopModal, setShowStopModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -39,6 +41,13 @@ export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
     queryKey: ['active-timer'],
     queryFn: () => appointmentsService.getActiveTimer(),
     refetchInterval: 5000, // Atualizar a cada 5 segundos
+  });
+
+  // Buscar contratos do cliente
+  const { data: clientContracts = [] } = useQuery({
+    queryKey: ['client-contracts', clientId],
+    queryFn: () => clientService.getClientContracts(clientId),
+    enabled: !!clientId && formData.coverage_type === ServiceCoverageType.CONTRACT,
   });
 
   // Mutation para iniciar timer
@@ -268,23 +277,26 @@ export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
                 </label>
                 {formData.coverage_type === ServiceCoverageType.CONTRACT ? (
                   <select
-                    value={formData.contract_id || formData.service_level}
+                    value={formData.contract_id}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        service_level: e.target.value as ServiceLevel,
-                        contract_id: e.target.value
+                        contract_id: e.target.value,
                       })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     required
                   >
                     <option value="">Selecione um contrato</option>
-                    {Object.entries(serviceLevelLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
+                    {clientContracts.length > 0 ? (
+                      clientContracts.map((contract) => (
+                        <option key={contract.id} value={contract.id}>
+                          {contract.descricao || contract.numero_contrato || `Contrato #${contract.id}`}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>Nenhum contrato encontrado</option>
+                    )}
                   </select>
                 ) : (
                   <select

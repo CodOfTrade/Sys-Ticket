@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, Plus, Trash2, Edit2, Calendar, DollarSign } from 'lucide-react';
 import { appointmentsService } from '@/services/ticket-details.service';
+import { clientService } from '@/services/client.service';
 import { AppointmentTimer } from './AppointmentTimer';
 import { AppointmentType, ServiceCoverageType, ServiceType, ServiceLevel, CreateAppointmentDto } from '@/types/ticket-details.types';
 
 interface TicketAppointmentsProps {
   ticketId: string;
+  clientId: string;
 }
 
 const appointmentTypeLabels: Record<AppointmentType, string> = {
@@ -35,7 +37,7 @@ const serviceLevelLabels: Record<ServiceLevel, string> = {
   [ServiceLevel.N2]: 'Suporte Premium',
 };
 
-export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
+export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsProps) {
   const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [formData, setFormData] = useState<any>({
@@ -65,6 +67,13 @@ export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
   const { data: summary } = useQuery({
     queryKey: ['appointments-summary', ticketId],
     queryFn: () => appointmentsService.getAppointmentsSummary(ticketId),
+  });
+
+  // Buscar contratos do cliente
+  const { data: clientContracts = [] } = useQuery({
+    queryKey: ['client-contracts', clientId],
+    queryFn: () => clientService.getClientContracts(clientId),
+    enabled: !!clientId && formData.coverage_type === ServiceCoverageType.CONTRACT,
   });
 
   // Mutation para criar apontamento
@@ -127,7 +136,7 @@ export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
   return (
     <div className="space-y-6">
       {/* Timer */}
-      <AppointmentTimer ticketId={ticketId} />
+      <AppointmentTimer ticketId={ticketId} clientId={clientId} />
 
       {/* Resumo */}
       {summary && (
@@ -363,23 +372,26 @@ export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
                   </label>
                   {formData.coverage_type === ServiceCoverageType.CONTRACT ? (
                     <select
-                      value={formData.contract_id || formData.service_level}
+                      value={formData.contract_id}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          service_level: e.target.value as ServiceLevel,
                           contract_id: e.target.value,
                         })
                       }
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       required
                     >
-                      <option value="">Selecione</option>
-                      {Object.entries(serviceLevelLabels).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
+                      <option value="">Selecione um contrato</option>
+                      {clientContracts.length > 0 ? (
+                        clientContracts.map((contract) => (
+                          <option key={contract.id} value={contract.id}>
+                            {contract.descricao || contract.numero_contrato || `Contrato #${contract.id}`}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="" disabled>Nenhum contrato encontrado</option>
+                      )}
                     </select>
                   ) : (
                     <select

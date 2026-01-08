@@ -13,6 +13,19 @@ export interface ClientContact {
   is_active: boolean;
 }
 
+export interface ClientContract {
+  id: string;
+  numero_contrato: string;
+  descricao: string;
+  valor_mensal: number | null;
+  data_inicio: string;
+  data_fim: string | null;
+  status: string;
+  tipo: string;
+  observacoes: string | null;
+  ativo: boolean;
+}
+
 export interface Client {
   id: string; // ID do SIGE
   localId?: string; // UUID do banco local
@@ -81,6 +94,13 @@ export const clientService = {
     const response = await api.post<ApiResponse<ClientContact>>(
       '/v1/clients/contacts',
       data
+    );
+    return response.data.data;
+  },
+
+  async getClientContracts(clientId: string): Promise<ClientContract[]> {
+    const response = await api.get<ApiResponse<ClientContract[]>>(
+      `/v1/clients/contract/client/${clientId}`
     );
     return response.data.data;
   },
