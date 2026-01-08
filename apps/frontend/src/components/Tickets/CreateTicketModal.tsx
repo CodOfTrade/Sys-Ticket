@@ -52,6 +52,11 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
   // Estado para ticket pai
   const [parentTicketSearch, setParentTicketSearch] = useState('');
   const [showParentTicketDropdown, setShowParentTicketDropdown] = useState(false);
+
+  // Estado para dropdown customizado de solicitantes
+  const [showRequesterDropdown, setShowRequesterDropdown] = useState(false);
+  const [selectedRequester, setSelectedRequester] = useState<{ id: string; name: string; email: string; phone: string; type: 'contact' | 'user' } | null>(null);
+  const requesterRef = useRef<HTMLDivElement>(null);
   const parentTicketRef = useRef<HTMLDivElement>(null);
 
   // Estado para modal de cadastro rápido de solicitante
@@ -212,9 +217,27 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     });
     setClientSearchTerm('');
     setSelectedClient(null);
+    setSelectedRequester(null);
     setFollowerInput('');
     setErrors({});
   };
+
+  // Fechar dropdown de solicitantes ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (requesterRef.current && !requesterRef.current.contains(event.target as Node)) {
+        setShowRequesterDropdown(false);
+      }
+    };
+
+    if (showRequesterDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showRequesterDropdown]);
 
   // Categorias de exemplo
   const categories = [
@@ -454,7 +477,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Novo Ticket</h2>
@@ -644,7 +667,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
               </div>
 
               {/* Solicitante - Busca em Tempo Real */}
-              <div>
+              <div className="relative" ref={requesterRef}>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Solicitante <span className="text-red-500">*</span>
@@ -660,39 +683,56 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                 </div>
 
                 {availableRequesters.length > 0 ? (
-                  <select
-                    name="contact_id"
-                    value={formData.contact_id}
-                    onChange={(e) => {
-                      const requesterId = e.target.value;
-                      setFormData(prev => ({ ...prev, contact_id: requesterId }));
+                  <>
+                    {/* Botão que abre o dropdown */}
+                    <button
+                      type="button"
+                      onClick={() => setShowRequesterDropdown(!showRequesterDropdown)}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-left flex items-center justify-between ${
+                        errors.requester_name
+                          ? 'border-red-500 dark:border-red-500'
+                          : 'border-gray-300 dark:border-gray-600'
+                      }`}
+                    >
+                      <span className="text-gray-900 dark:text-white text-sm truncate">
+                        {selectedRequester ? selectedRequester.name : 'Selecione um solicitante'}
+                      </span>
+                      <ChevronDown size={16} className="text-gray-400 flex-shrink-0 ml-2" />
+                    </button>
 
-                      // Preencher dados do solicitante automaticamente
-                      if (requesterId) {
-                        const requester = availableRequesters.find(r => r.id === requesterId);
-                        if (requester) {
-                          setFormData(prev => ({
-                            ...prev,
-                            requester_name: requester.name,
-                            requester_email: requester.email || '',
-                            requester_phone: requester.phone || '',
-                          }));
-                        }
-                      }
-                    }}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                      errors.requester_name
-                        ? 'border-red-500 dark:border-red-500'
-                        : 'border-gray-300 dark:border-gray-600'
-                    }`}
-                  >
-                    <option value="">Selecione um solicitante</option>
-                    {availableRequesters.map((requester) => (
-                      <option key={requester.id} value={requester.id}>
-                        {requester.label}
-                      </option>
-                    ))}
-                  </select>
+                    {/* Dropdown customizado */}
+                    {showRequesterDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {availableRequesters.map((requester) => (
+                          <button
+                            key={requester.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedRequester(requester);
+                              setFormData(prev => ({
+                                ...prev,
+                                contact_id: requester.id,
+                                requester_name: requester.name,
+                                requester_email: requester.email || '',
+                                requester_phone: requester.phone || '',
+                              }));
+                              setShowRequesterDropdown(false);
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 flex items-center gap-2"
+                          >
+                            <span className="flex-1 text-sm text-gray-900 dark:text-white truncate">
+                              {requester.name}
+                            </span>
+                            {requester.type === 'user' && (
+                              <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium rounded whitespace-nowrap">
+                                Técnico
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="text-sm text-gray-500 dark:text-gray-400 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
                     <p>Nenhum solicitante disponível. Clique em "Cadastrar Novo" para adicionar um contato do cliente.</p>
