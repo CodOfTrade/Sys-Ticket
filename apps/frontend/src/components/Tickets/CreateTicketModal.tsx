@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Search, Upload, Link2, UserPlus, Mail, FileText, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Search, Upload, Link2, UserPlus, Mail, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { ticketService } from '@/services/ticket.service';
 import { TicketPriority, ServiceType, CreateTicketDto } from '@/types/ticket.types';
