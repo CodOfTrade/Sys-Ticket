@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useThemeStore } from '@store/theme.store';
+import FloatingNewTicketButton from '@/components/FloatingNewTicketButton';
 
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -39,6 +40,9 @@ export function Layout() {
           <Outlet />
         </div>
       </main>
+
+      {/* Botão Flutuante de Novo Ticket */}
+      <FloatingNewTicketButton />
     </div>
   );
 }

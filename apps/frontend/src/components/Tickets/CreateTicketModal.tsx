@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Search, Upload, Link2, UserPlus, Mail } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { ticketService } from '@/services/ticket.service';
 import { TicketPriority, ServiceType, CreateTicketDto } from '@/types/ticket.types';
 import { useAuthStore } from '@/store/auth.store';
 import { serviceCatalogService } from '@/services/service-catalog.service';
-import { clientService } from '@/services/client.service';
+import { clientService, Client } from '@/services/client.service';
 
 interface CreateTicketModalProps {
   isOpen: boolean;
@@ -29,7 +29,18 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     requester_email: '',
     requester_phone: '',
     category: '',
+    parent_ticket_id: '',
+    followers: [] as string[],
   });
+
+  // Estados para busca de cliente
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const clientSearchRef = useRef<HTMLDivElement>(null);
+
+  // Estado para followers
+  const [followerInput, setFollowerInput] = useState('');
 
   // Buscar catálogos de serviço
   const { data: catalogs } = useQuery({
@@ -44,6 +55,25 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     queryFn: () => clientService.getContacts(formData.client_id),
     enabled: !!formData.client_id,
   });
+
+  // Buscar clientes em tempo real
+  const { data: clientSearchResults } = useQuery({
+    queryKey: ['client-search', clientSearchTerm],
+    queryFn: () => clientService.searchByName(clientSearchTerm, 1, 10),
+    enabled: clientSearchTerm.length >= 2,
+  });
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (clientSearchRef.current && !clientSearchRef.current.contains(event.target as Node)) {
+        setShowClientDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -80,8 +110,61 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
       requester_email: '',
       requester_phone: '',
       category: '',
+      parent_ticket_id: '',
+      followers: [],
     });
+    setClientSearchTerm('');
+    setSelectedClient(null);
+    setFollowerInput('');
     setErrors({});
+  };
+
+  // Categorias de exemplo
+  const categories = [
+    'Hardware',
+    'Software',
+    'Rede',
+    'Impressora',
+    'E-mail',
+    'Sistema',
+    'Telefonia',
+    'Infraestrutura',
+    'Backup',
+    'Segurança',
+    'Outro',
+  ];
+
+  // Selecionar cliente da busca
+  const handleSelectClient = (client: Client) => {
+    setSelectedClient(client);
+    setFormData(prev => ({
+      ...prev,
+      client_id: client.localId || client.id,
+      client_name: client.nome_fantasia || client.nome,
+    }));
+    setClientSearchTerm(client.nome_fantasia || client.nome);
+    setShowClientDropdown(false);
+  };
+
+  // Adicionar follower
+  const handleAddFollower = () => {
+    if (followerInput.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(followerInput)) {
+      if (!formData.followers.includes(followerInput.trim())) {
+        setFormData(prev => ({
+          ...prev,
+          followers: [...prev.followers, followerInput.trim()],
+        }));
+        setFollowerInput('');
+      }
+    }
+  };
+
+  // Remover follower
+  const handleRemoveFollower = (email: string) => {
+    setFormData(prev => ({
+      ...prev,
+      followers: prev.followers.filter(f => f !== email),
+    }));
   };
 
   const validateForm = (): boolean => {
@@ -309,14 +392,19 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Categoria
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="category"
                     value={formData.category}
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Ex: Hardware, Software"
-                  />
+                  >
+                    <option value="">Selecione uma categoria</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -328,22 +416,85 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
               Informações do Cliente
             </h3>
             <div className="space-y-4">
-              <div>
+              {/* Busca de Cliente em Tempo Real */}
+              <div ref={clientSearchRef}>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Nome do Cliente <span className="text-red-500">*</span>
+                  Buscar Cliente <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  name="client_name"
-                  value={formData.client_name}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                    errors.client_name
-                      ? 'border-red-500 dark:border-red-500'
-                      : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  placeholder="Nome da empresa ou cliente"
-                />
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <Search size={18} className="text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={clientSearchTerm}
+                    onChange={(e) => {
+                      setClientSearchTerm(e.target.value);
+                      setShowClientDropdown(true);
+                    }}
+                    onFocus={() => setShowClientDropdown(true)}
+                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                      errors.client_name
+                        ? 'border-red-500 dark:border-red-500'
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                    placeholder="Digite o nome, CNPJ ou cidade do cliente..."
+                  />
+                  {selectedClient && (
+                    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {selectedClient.nome_fantasia || selectedClient.nome}
+                          </p>
+                          {selectedClient.cpf_cnpj && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              CNPJ: {selectedClient.cpf_cnpj}
+                            </p>
+                          )}
+                          {selectedClient.cidade && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              {selectedClient.cidade}/{selectedClient.estado}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedClient(null);
+                            setClientSearchTerm('');
+                            setFormData(prev => ({ ...prev, client_id: '', client_name: '' }));
+                          }}
+                          className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 rounded"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dropdown de Resultados */}
+                  {showClientDropdown && clientSearchTerm.length >= 2 && clientSearchResults?.data && clientSearchResults.data.length > 0 && !selectedClient && (
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {clientSearchResults.data.map((client) => (
+                        <button
+                          key={client.id}
+                          type="button"
+                          onClick={() => handleSelectClient(client)}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                        >
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {client.nome_fantasia || client.nome}
+                          </p>
+                          <div className="flex gap-4 mt-1 text-xs text-gray-600 dark:text-gray-400">
+                            {client.cpf_cnpj && <span>CNPJ: {client.cpf_cnpj}</span>}
+                            {client.cidade && <span>{client.cidade}/{client.estado}</span>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 {errors.client_name && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.client_name}</p>
                 )}
@@ -431,6 +582,120 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="(11) 98765-4321"
                   />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Informações Adicionais */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Informações Adicionais
+            </h3>
+            <div className="space-y-4">
+              {/* Ticket Pai */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <Link2 size={16} className="inline mr-1" />
+                  Ticket Relacionado (Pai)
+                </label>
+                <input
+                  type="text"
+                  name="parent_ticket_id"
+                  value={formData.parent_ticket_id}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Número do ticket pai (ex: #2024001)"
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Use para vincular este ticket a outro ticket existente
+                </p>
+              </div>
+
+              {/* Seguidores (Followers) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <Mail size={16} className="inline mr-1" />
+                  Seguidores
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={followerInput}
+                    onChange={(e) => setFollowerInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddFollower();
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="email@exemplo.com"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddFollower}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    <UserPlus size={16} />
+                    Adicionar
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Pessoas que receberão notificações sobre atualizações deste ticket
+                </p>
+
+                {/* Lista de Followers */}
+                {formData.followers.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {formData.followers.map((email) => (
+                      <div
+                        key={email}
+                        className="flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full text-sm"
+                      >
+                        <span>{email}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFollower(email)}
+                          className="hover:text-red-600 dark:hover:text-red-400"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Upload de Arquivos */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <Upload size={16} className="inline mr-1" />
+                  Anexar Arquivos
+                </label>
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
+                  <input
+                    type="file"
+                    multiple
+                    id="file-upload"
+                    className="hidden"
+                    onChange={(e) => {
+                      // TODO: Implementar lógica de upload
+                      console.log('Arquivos selecionados:', e.target.files);
+                    }}
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="cursor-pointer flex flex-col items-center"
+                  >
+                    <Upload size={32} className="text-gray-400 dark:text-gray-500 mb-2" />
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Clique para selecionar ou arraste arquivos aqui
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      Máx: 10MB por arquivo
+                    </p>
+                  </label>
                 </div>
               </div>
             </div>
