@@ -645,23 +645,27 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
                 {/* Dropdown de Resultados */}
                 {showClientDropdown && clientSearchTerm.length >= 2 && clientSearchResults?.data && clientSearchResults.data.length > 0 && !selectedClient && (
-                  <div className="absolute z-10 left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {clientSearchResults.data.slice(0, 10).map((client) => (
-                      <button
-                        key={client.id}
-                        type="button"
-                        onClick={() => handleSelectClient(client)}
-                        className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 overflow-hidden"
-                      >
-                        <p className="font-medium text-sm text-gray-900 dark:text-white truncate pr-2">
-                          {client.nome_fantasia || client.nome}
-                        </p>
-                        <div className="flex gap-x-3 mt-0.5 text-xs text-gray-600 dark:text-gray-400">
-                          {client.cpf_cnpj && <span className="truncate flex-shrink-0">CNPJ: {client.cpf_cnpj}</span>}
-                          {client.cidade && <span className="truncate flex-shrink">{client.cidade}/{client.estado}</span>}
-                        </div>
-                      </button>
-                    ))}
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-hidden">
+                    <div className="overflow-y-auto max-h-60">
+                      {clientSearchResults.data.slice(0, 10).map((client) => (
+                        <button
+                          key={client.id}
+                          type="button"
+                          onClick={() => handleSelectClient(client)}
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                        >
+                          <div className="overflow-hidden">
+                            <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                              {client.nome_fantasia || client.nome}
+                            </p>
+                            <div className="flex gap-x-3 mt-0.5 text-xs text-gray-600 dark:text-gray-400 overflow-hidden">
+                              {client.cpf_cnpj && <span className="truncate">CNPJ: {client.cpf_cnpj}</span>}
+                              {client.cidade && <span className="truncate">{client.cidade}/{client.estado}</span>}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
