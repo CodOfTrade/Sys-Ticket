@@ -57,7 +57,7 @@ export const commentsService = {
 export const appointmentsService = {
   async getAppointments(ticketId: string): Promise<TicketAppointment[]> {
     const response = await api.get<ApiResponse<TicketAppointment[]>>(
-      `/tickets/${ticketId}/appointments`
+      `/v1/tickets/${ticketId}/appointments`
     );
     return response.data.data;
   },
@@ -67,13 +67,13 @@ export const appointmentsService = {
   ): Promise<{ total_hours: number; total_cost: number }> {
     const response = await api.get<
       ApiResponse<{ total_hours: number; total_cost: number }>
-    >(`/tickets/${ticketId}/appointments/summary`);
+    >(`/v1/tickets/${ticketId}/appointments/summary`);
     return response.data.data;
   },
 
   async createAppointment(data: CreateAppointmentDto): Promise<TicketAppointment> {
     const response = await api.post<ApiResponse<TicketAppointment>>(
-      '/tickets/appointments',
+      '/v1/tickets/appointments',
       data
     );
     return response.data.data;
@@ -81,7 +81,7 @@ export const appointmentsService = {
 
   async startTimer(data: StartTimerDto): Promise<TicketAppointment> {
     const response = await api.post<ApiResponse<TicketAppointment>>(
-      '/tickets/appointments/timer/start',
+      '/v1/tickets/appointments/timer/start',
       data
     );
     return response.data.data;
@@ -89,7 +89,7 @@ export const appointmentsService = {
 
   async stopTimer(data: StopTimerDto): Promise<TicketAppointment> {
     const response = await api.post<ApiResponse<TicketAppointment>>(
-      '/tickets/appointments/timer/stop',
+      '/v1/tickets/appointments/timer/stop',
       data
     );
     return response.data.data;
@@ -97,7 +97,7 @@ export const appointmentsService = {
 
   async getActiveTimer(): Promise<TicketAppointment | null> {
     const response = await api.get<ApiResponse<TicketAppointment | null>>(
-      '/tickets/appointments/timer/active'
+      '/v1/tickets/appointments/timer/active'
     );
     return response.data.data;
   },
@@ -107,14 +107,14 @@ export const appointmentsService = {
     data: Partial<CreateAppointmentDto>
   ): Promise<TicketAppointment> {
     const response = await api.patch<ApiResponse<TicketAppointment>>(
-      `/tickets/appointments/${appointmentId}`,
+      `/v1/tickets/appointments/${appointmentId}`,
       data
     );
     return response.data.data;
   },
 
   async deleteAppointment(appointmentId: string): Promise<void> {
-    await api.delete(`/tickets/appointments/${appointmentId}`);
+    await api.delete(`/v1/tickets/appointments/${appointmentId}`);
   },
 };
 
