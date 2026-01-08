@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, Plus, Trash2, Edit2, Calendar, DollarSign } from 'lucide-react';
 import { appointmentsService } from '@/services/ticket-details.service';
 import { AppointmentTimer } from './AppointmentTimer';
-import { AppointmentType, ServiceCoverageType, ServiceType, CreateAppointmentDto } from '@/types/ticket-details.types';
+import { AppointmentType, ServiceCoverageType, ServiceType, ServiceLevel, CreateAppointmentDto } from '@/types/ticket-details.types';
 
 interface TicketAppointmentsProps {
   ticketId: string;
@@ -36,17 +36,23 @@ const coverageTypeColors: Record<ServiceCoverageType, string> = {
   [ServiceCoverageType.INTERNAL]: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
 };
 
+const serviceLevelLabels: Record<ServiceLevel, string> = {
+  [ServiceLevel.N1]: 'Suporte Standard',
+  [ServiceLevel.N2]: 'Suporte Premium',
+};
+
 export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
   const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [formData, setFormData] = useState<CreateAppointmentDto>({
+  const [formData, setFormData] = useState<any>({
     ticket_id: ticketId,
     appointment_date: new Date().toISOString().split('T')[0],
     start_time: '08:00',
     end_time: '09:00',
     type: AppointmentType.SERVICE,
-    coverage_type: ServiceCoverageType.CONTRACT,
+    coverage_type: ServiceCoverageType.BILLABLE, // Avulso por padrão
     service_type: ServiceType.REMOTE,
+    service_level: ServiceLevel.N1,
     send_as_response: false,
   });
 
@@ -321,73 +327,74 @@ export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Tipo
-                    </label>
-                    <select
-                      value={formData.type}
-                      onChange={(e) =>
-                        setFormData({ ...formData, type: e.target.value as AppointmentType })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      {Object.entries(appointmentTypeLabels).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Tipo de Cobertura
-                    </label>
-                    <select
-                      value={formData.coverage_type}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          coverage_type: e.target.value as ServiceCoverageType,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      {Object.entries(coverageTypeLabels).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Novo campo: Classificação (service_type) */}
+                {/* Tipo de atendimento */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Classificação <span className="text-red-500">*</span>
+                    Tipo de atendimento <span className="text-red-500">*</span>
                   </label>
                   <select
-                    value={formData.service_type}
+                    value={formData.coverage_type}
                     onChange={(e) =>
-                      setFormData({ ...formData, service_type: e.target.value as ServiceType })
+                      setFormData({
+                        ...formData,
+                        coverage_type: e.target.value as ServiceCoverageType,
+                      })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     required
                   >
-                    {Object.entries(serviceTypeLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
+                    <option value={ServiceCoverageType.BILLABLE}>Avulso</option>
+                    <option value={ServiceCoverageType.CONTRACT}>Contrato</option>
                   </select>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Interno, Remoto ou Externo/Presencial
+                    Selecione "Contrato" se o cliente possui contrato ativo
                   </p>
                 </div>
 
+                {/* Tipo de contrato (dinâmico) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Tipo de contrato <span className="text-red-500">*</span>
+                  </label>
+                  {formData.coverage_type === ServiceCoverageType.CONTRACT ? (
+                    <select
+                      value={formData.service_level}
+                      onChange={(e) =>
+                        setFormData({ ...formData, service_level: e.target.value as ServiceLevel })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    >
+                      <option value="">Selecione</option>
+                      {Object.entries(serviceLevelLabels).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      value={formData.service_type}
+                      onChange={(e) =>
+                        setFormData({ ...formData, service_type: e.target.value as ServiceType })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    >
+                      <option value="">Selecione</option>
+                      <option value={ServiceType.REMOTE}>Atendimento avulso N1</option>
+                      <option value={ServiceType.EXTERNAL}>Atendimento avulso N2</option>
+                      <option value={ServiceType.INTERNAL}>Demanda interna</option>
+                    </select>
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {formData.coverage_type === ServiceCoverageType.CONTRACT
+                      ? 'Contratos disponíveis para este cliente'
+                      : 'Tipos de atendimento avulso cadastrados'}
+                  </p>
+                </div>
+
+                {/* Descrição */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Descrição (opcional)
@@ -395,32 +402,10 @@ export function TicketAppointments({ ticketId }: TicketAppointmentsProps) {
                   <textarea
                     value={formData.description || ''}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
                     placeholder="Descreva o trabalho realizado..."
                   />
-                </div>
-
-                {/* Novo checkbox: Enviar como resposta ao cliente */}
-                <div className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    id="manual_send_as_response"
-                    checked={formData.send_as_response || false}
-                    onChange={(e) =>
-                      setFormData({ ...formData, send_as_response: e.target.checked })
-                    }
-                    className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label
-                    htmlFor="manual_send_as_response"
-                    className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
-                  >
-                    Enviar como resposta ao cliente
-                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      Cria um comentário público visível para o cliente com os detalhes do apontamento
-                    </span>
-                  </label>
                 </div>
 
                 <div className="flex justify-end gap-3 mt-6">
