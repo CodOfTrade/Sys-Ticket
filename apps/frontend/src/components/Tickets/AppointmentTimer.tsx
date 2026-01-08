@@ -171,56 +171,45 @@ export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
             >
               {/* Informações do timer (readonly) */}
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                <h4 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
-                  Informações do Timer:
+                <h4 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-3">
+                  Informações do Apontamento:
                 </h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="text-blue-700 dark:text-blue-400">Data:</span>
-                    <span className="ml-2 font-medium text-blue-900 dark:text-blue-200">
+                <div className="grid grid-cols-1 gap-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-blue-700 dark:text-blue-400">📅 Data:</span>
+                    <span className="font-medium text-blue-900 dark:text-blue-200">
                       {new Date(activeTimer.appointment_date).toLocaleDateString('pt-BR')}
                     </span>
                   </div>
-                  <div>
-                    <span className="text-blue-700 dark:text-blue-400">Início:</span>
-                    <span className="ml-2 font-medium text-blue-900 dark:text-blue-200">
+                  <div className="flex justify-between">
+                    <span className="text-blue-700 dark:text-blue-400">⏰ Início:</span>
+                    <span className="font-medium text-blue-900 dark:text-blue-200">
                       {activeTimer.start_time}
                     </span>
                   </div>
-                  <div>
-                    <span className="text-blue-700 dark:text-blue-400">Fim (agora):</span>
-                    <span className="ml-2 font-medium text-blue-900 dark:text-blue-200">
+                  <div className="flex justify-between">
+                    <span className="text-blue-700 dark:text-blue-400">⏱️ Fim (agora):</span>
+                    <span className="font-medium text-blue-900 dark:text-blue-200">
                       {new Date().toTimeString().slice(0, 5)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-blue-200 dark:border-blue-700 pt-2 mt-1">
+                    <span className="text-blue-700 dark:text-blue-400 font-medium">⏳ Duração:</span>
+                    <span className="font-semibold text-blue-900 dark:text-blue-200">
+                      {(() => {
+                        const start = new Date(activeTimer.timer_started_at);
+                        const now = new Date();
+                        const diffMinutes = Math.round((now.getTime() - start.getTime()) / (1000 * 60));
+                        const hours = Math.floor(diffMinutes / 60);
+                        const minutes = diffMinutes % 60;
+                        return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+                      })()}
                     </span>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Classificação (service_type) - OBRIGATÓRIO */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Classificação <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.service_type}
-                    onChange={(e) =>
-                      setFormData({ ...formData, service_type: e.target.value as ServiceType })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    required
-                  >
-                    {Object.entries(serviceTypeLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Interno, Remoto ou Externo/Presencial
-                  </p>
-                </div>
-
                 {/* Tipo de atendimento (coverage_type) - OBRIGATÓRIO */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -244,7 +233,31 @@ export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
                     ))}
                   </select>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Contrato, Avulso, Garantia ou Interno
+                    Se o cliente possui contrato, selecione "Contrato". Caso contrário, "Avulso".
+                  </p>
+                </div>
+
+                {/* Classificação (service_type) - OBRIGATÓRIO */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Classificação <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.service_type}
+                    onChange={(e) =>
+                      setFormData({ ...formData, service_type: e.target.value as ServiceType })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  >
+                    {Object.entries(serviceTypeLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Define o tipo de precificação do atendimento.
                   </p>
                 </div>
               </div>
