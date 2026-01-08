@@ -333,7 +333,10 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
   // Criar ticket com ou sem atribuição de técnico
   const handleCreateTicket = async (assignToTechnician: boolean) => {
     try {
-      console.log('Iniciando criação de ticket...', { assignToTechnician, selectedTechnician });
+      console.log('=== INICIANDO CRIAÇÃO DE TICKET ===');
+      console.log('assignToTechnician:', assignToTechnician);
+      console.log('selectedTechnician:', selectedTechnician);
+      console.log('formData:', formData);
 
       // Usar service_desk_id do usuário logado
       const serviceDeskId = user?.service_desk_id || '3d316765-6615-4082-9bb7-d7d6a266db09';
@@ -373,16 +376,26 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
       // Adicionar técnico atribuído se selecionado
       if (assignToTechnician && selectedTechnician) {
         ticketData.assigned_to_id = selectedTechnician;
+        console.log('Técnico será atribuído:', selectedTechnician);
       }
 
-      console.log('Dados do ticket a ser criado:', ticketData);
-      await createMutation.mutateAsync(ticketData);
-      console.log('Ticket criado com sucesso!');
+      console.log('Dados do ticket a ser criado:', JSON.stringify(ticketData, null, 2));
+
+      const result = await createMutation.mutateAsync(ticketData);
+
+      console.log('✓ Ticket criado com sucesso!', result);
+      alert('Ticket criado com sucesso!');
 
       setShowAssignmentModal(false);
       setSelectedTechnician('');
-    } catch (error) {
-      console.error('Erro ao criar ticket:', error);
+    } catch (error: any) {
+      console.error('✗ ERRO AO CRIAR TICKET:', error);
+      console.error('Detalhes do erro:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      alert(`Erro ao criar ticket: ${error.response?.data?.message || error.message || 'Erro desconhecido'}`);
     }
   };
 
