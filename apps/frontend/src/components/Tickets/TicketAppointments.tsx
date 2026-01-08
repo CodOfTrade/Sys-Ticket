@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Clock, Plus, Trash2, Edit2, Calendar, DollarSign, Mic, MicOff } from 'lucide-react';
+import { Clock, Plus, Trash2, Edit2, Calendar, DollarSign } from 'lucide-react';
 import { appointmentsService } from '@/services/ticket-details.service';
 import { clientService } from '@/services/client.service';
 import { AppointmentTimer } from './AppointmentTimer';
+import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
 import { AppointmentType, ServiceCoverageType, ServiceType, ServiceLevel, CreateAppointmentDto } from '@/types/ticket-details.types';
 
 interface TicketAppointmentsProps {
@@ -51,10 +52,6 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
     manual_unit_price: 0,
     send_as_response: false,
   });
-
-  // Estado para reconhecimento de voz
-  const [isRecording, setIsRecording] = useState(false);
-  const recognitionRef = useRef<any>(null);
 
   // Estado para preço calculado
   const [calculatedPrice, setCalculatedPrice] = useState<{
@@ -107,49 +104,6 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
     formData.manual_price_override,
     formData.manual_unit_price,
   ]);
-
-  // Inicializar Web Speech API
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'pt-BR';
-
-      recognitionRef.current.onresult = (event: any) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        setFormData((prev: any) => ({ ...prev, description: (prev.description || '') + ' ' + transcript }));
-      };
-
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Erro no reconhecimento de voz:', event.error);
-        setIsRecording(false);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsRecording(false);
-      };
-    }
-  }, []);
-
-  const toggleVoiceRecording = () => {
-    if (!recognitionRef.current) {
-      alert('Reconhecimento de voz não suportado neste navegador. Use Chrome ou Edge.');
-      return;
-    }
-
-    if (isRecording) {
-      recognitionRef.current.stop();
-      setIsRecording(false);
-    } else {
-      recognitionRef.current.start();
-      setIsRecording(true);
-    }
-  };
 
   // Buscar apontamentos
   const { data: appointments = [], isLoading } = useQuery({
@@ -571,10 +525,10 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                   </label>
                 </div>
 
-                {/* Campo Valor por hora (sempre visível, editável se manual) */}
+                {/* Campo Valor do ticket */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Valor por hora (R$) {formData.manual_price_override && <span className="text-red-500">*</span>}
+                    Valor do ticket {formData.manual_price_override && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="number"
@@ -582,77 +536,52 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                     min="0"
                     value={
                       formData.manual_price_override
-                        ? formData.manual_unit_price
-                        : calculatedPrice?.unit_price?.toFixed(2) || '0.00'
+                        ? (formData.manual_unit_price * (calculatedPrice?.duration_hours || 1)).toFixed(2)
+                        : calculatedPrice?.total_amount?.toFixed(2) || '0.00'
                     }
-                    onChange={(e) =>
-                      setFormData({ ...formData, manual_unit_price: parseFloat(e.target.value) || 0 })
-                    }
+                    onChange={(e) => {
+                      const totalValue = parseFloat(e.target.value) || 0;
+                      const hours = calculatedPrice?.duration_hours || 1;
+                      const unitPrice = totalValue / hours;
+                      setFormData({ ...formData, manual_unit_price: unitPrice });
+                    }}
                     disabled={!formData.manual_price_override || formData.is_warranty}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
-                    placeholder={isCalculating ? "Calculando..." : formData.is_warranty ? "R$ 0,00 (Garantia)" : "Aguardando cálculo..."}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed font-semibold text-lg"
+                    placeholder={isCalculating ? "Calculando..." : formData.is_warranty ? "R$ 0,00" : "Aguardando..."}
                     required={formData.manual_price_override}
                   />
                   {isCalculating ? (
                     <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 animate-pulse">
                       ⏳ Calculando preço...
                     </p>
-                  ) : formData.manual_price_override ? (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      💡 Valor manual: R$ {(calculatedPrice?.total_amount || 0).toFixed(2)} ({calculatedPrice?.duration_hours.toFixed(2)}h)
-                    </p>
                   ) : formData.is_warranty ? (
                     <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                      ✓ Garantia: R$ 0,00 - Valor zerado
+                      ✓ Garantia - Valor zerado
                     </p>
                   ) : calculatedPrice ? (
-                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                      💰 Total: R$ {calculatedPrice.total_amount.toFixed(2)} ({calculatedPrice.duration_hours.toFixed(2)}h × R$ {calculatedPrice.unit_price.toFixed(2)}/h)
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      💰 <strong>R$ {calculatedPrice.unit_price.toFixed(2)}/h</strong> ({formData.modality === 'remote' ? 'Remoto' : formData.modality === 'external' ? 'Presencial' : 'Interno'}) • {calculatedPrice.duration_hours.toFixed(2)}h
+                      {formData.manual_price_override && (
+                        <span className="text-orange-600 dark:text-orange-400 ml-1">(Valor manual)</span>
+                      )}
                     </p>
                   ) : (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      ⚙️ Preencha os campos para calcular o valor
+                      ⚙️ Preencha os campos para calcular
                     </p>
                   )}
                 </div>
 
-                {/* Descrição com voz-para-texto */}
+                {/* Descrição com Rich Text Editor e voz-para-texto */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Descrição (opcional)
                   </label>
-                  <div className="relative">
-                    <textarea
-                      value={formData.description || ''}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      rows={4}
-                      className="w-full px-3 py-2 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-                      placeholder="Descreva o trabalho realizado ou clique no microfone para falar..."
-                    />
-                    <button
-                      type="button"
-                      onClick={toggleVoiceRecording}
-                      className={`absolute right-2 top-2 p-2 rounded-lg transition-all ${
-                        isRecording
-                          ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'
-                          : 'bg-blue-500 hover:bg-blue-600 text-white'
-                      }`}
-                      title={isRecording ? 'Parar gravação' : 'Gravar voz'}
-                    >
-                      {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {isRecording ? (
-                      <span className="text-red-600 dark:text-red-400 font-semibold">
-                        🎙️ Gravando... Fale agora!
-                      </span>
-                    ) : (
-                      <span>
-                        💡 Clique no microfone para usar reconhecimento de voz
-                      </span>
-                    )}
-                  </p>
+                  <RichTextEditor
+                    value={formData.description || ''}
+                    onChange={(value) => setFormData({ ...formData, description: value })}
+                    placeholder="Descreva o trabalho realizado ou clique no microfone para falar..."
+                  />
                 </div>
 
                 <div className="flex justify-end gap-3 mt-6">
