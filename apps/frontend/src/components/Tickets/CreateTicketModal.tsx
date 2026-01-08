@@ -345,7 +345,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
       // Adicionar técnico atribuído se selecionado
       if (assignToTechnician && selectedTechnician) {
-        ticketData.assigned_to = selectedTechnician;
+        ticketData.assigned_to_id = selectedTechnician;
       }
 
       console.log('Dados do ticket a ser criado:', ticketData);

@@ -68,12 +68,26 @@ export interface Ticket {
 }
 
 export interface CreateTicketDto {
+  client_id: string;
+  client_name: string;
+  requester_name: string;
+  requester_email?: string;
+  requester_phone?: string;
   title: string;
   description: string;
-  priority: TicketPriority;
-  service_type: ServiceType;
-  client_id?: string;
+  priority?: TicketPriority;
+  type?: ServiceType;
+  category?: string;
+  tags?: string[];
   service_desk_id: string;
+  assigned_to_id?: string;
+  contract_id?: string;
+  parent_ticket_id?: string;
+  contact_id?: string;
+  followers?: string[];
+  service_catalog_id?: string;
+  custom_fields?: Record<string, any>;
+  metadata?: Record<string, any>;
 }
 
 export interface UpdateTicketDto {
