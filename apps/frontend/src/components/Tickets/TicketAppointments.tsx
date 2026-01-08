@@ -196,11 +196,14 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
       send_as_response: formData.send_as_response,
     };
 
-    // Se tiver override manual de preço
-    if (formData.manual_price_override && calculatedPrice) {
-      dto.unit_price = calculatedPrice.unit_price;
+    // SEMPRE enviar o preço calculado (seja manual ou automático)
+    if (calculatedPrice) {
+      dto.unit_price = formData.manual_price_override
+        ? formData.manual_unit_price
+        : calculatedPrice.unit_price;
     }
 
+    console.log('Enviando apontamento:', dto);
     createMutation.mutate(dto);
   };
 
