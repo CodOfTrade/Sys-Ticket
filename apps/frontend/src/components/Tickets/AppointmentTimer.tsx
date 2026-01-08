@@ -21,8 +21,8 @@ const serviceTypeLabels: Record<ServiceType, string> = {
 };
 
 const serviceLevelLabels: Record<ServiceLevel, string> = {
-  [ServiceLevel.N1]: 'Nível 1 (N1)',
-  [ServiceLevel.N2]: 'Nível 2 (N2)',
+  [ServiceLevel.N1]: 'Suporte Standard',
+  [ServiceLevel.N2]: 'Suporte Premium',
 };
 
 export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
@@ -263,12 +263,12 @@ export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
                 </p>
               </div>
 
-              {/* 5. Tipo/Contrato (condicional baseado no tipo de atendimento) */}
-              {formData.coverage_type === ServiceCoverageType.CONTRACT ? (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Contrato <span className="text-red-500">*</span>
-                  </label>
+              {/* 5. Tipo de contrato (sempre visível, muda label e opções) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Tipo de contrato <span className="text-red-500">*</span>
+                </label>
+                {formData.coverage_type === ServiceCoverageType.CONTRACT ? (
                   <select
                     value={formData.service_level}
                     onChange={(e) =>
@@ -277,21 +277,14 @@ export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     required
                   >
+                    <option value="">Selecione</option>
                     {Object.entries(serviceLevelLabels).map(([value, label]) => (
                       <option key={value} value={value}>
                         {label}
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Selecione o contrato cadastrado para este cliente
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Tipo de atendimento cadastrado <span className="text-red-500">*</span>
-                  </label>
+                ) : (
                   <select
                     value={formData.service_type}
                     onChange={(e) =>
@@ -300,17 +293,18 @@ export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     required
                   >
-                    {Object.entries(serviceTypeLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
+                    <option value="">Selecione</option>
+                    <option value={ServiceType.REMOTE}>Atendimento avulso N1</option>
+                    <option value={ServiceType.EXTERNAL}>Atendimento avulso N2</option>
+                    <option value={ServiceType.INTERNAL}>Demanda interna</option>
                   </select>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Tipos cadastrados em configurações
-                  </p>
-                </div>
-              )}
+                )}
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {formData.coverage_type === ServiceCoverageType.CONTRACT
+                    ? 'Contratos disponíveis para este cliente'
+                    : 'Tipos de atendimento avulso cadastrados'}
+                </p>
+              </div>
 
               {/* 6. Checkboxes: Garantia e Valor manual */}
               <div className="space-y-3">
