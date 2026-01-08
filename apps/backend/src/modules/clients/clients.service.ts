@@ -9,6 +9,7 @@ import { CreateServiceOrderDto, SigeServiceOrder, SigeServiceOrderResponse } fro
 import { SigeProduct } from './entities/sige-product.entity';
 import { SigeClient } from './entities/sige-client.entity';
 import { SigeContract } from './entities/sige-contract.entity';
+import { ClientContact } from './entities/client-contact.entity';
 
 @Injectable()
 export class ClientsService {
@@ -24,6 +25,8 @@ export class ClientsService {
     private clientRepository: Repository<SigeClient>,
     @InjectRepository(SigeContract)
     private contractRepository: Repository<SigeContract>,
+    @InjectRepository(ClientContact)
+    private contactRepository: Repository<ClientContact>,
   ) {}
 
   /**
@@ -331,6 +334,73 @@ export class ClientsService {
       }));
     } catch (error) {
       this.logger.error(`Erro ao buscar contratos do cliente ${clientId}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lista contatos de um cliente
+   */
+  async getClientContacts(clientId: string): Promise<ClientContact[]> {
+    try {
+      return await this.contactRepository.find({
+        where: { client_id: clientId, is_active: true },
+        order: { is_primary: 'DESC', name: 'ASC' },
+      });
+    } catch (error) {
+      this.logger.error(`Erro ao buscar contatos do cliente ${clientId}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Busca contato por ID
+   */
+  async getContact(contactId: string): Promise<ClientContact | null> {
+    try {
+      return await this.contactRepository.findOne({
+        where: { id: contactId },
+      });
+    } catch (error) {
+      this.logger.error(`Erro ao buscar contato ${contactId}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cria novo contato para um cliente
+   */
+  async createContact(contactData: Partial<ClientContact>): Promise<ClientContact> {
+    try {
+      const contact = this.contactRepository.create(contactData);
+      return await this.contactRepository.save(contact);
+    } catch (error) {
+      this.logger.error('Erro ao criar contato', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Atualiza contato existente
+   */
+  async updateContact(contactId: string, contactData: Partial<ClientContact>): Promise<ClientContact | null> {
+    try {
+      await this.contactRepository.update(contactId, contactData);
+      return await this.getContact(contactId);
+    } catch (error) {
+      this.logger.error(`Erro ao atualizar contato ${contactId}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Desativa contato (soft delete)
+   */
+  async deactivateContact(contactId: string): Promise<void> {
+    try {
+      await this.contactRepository.update(contactId, { is_active: false });
+    } catch (error) {
+      this.logger.error(`Erro ao desativar contato ${contactId}`, error);
       throw error;
     }
   }

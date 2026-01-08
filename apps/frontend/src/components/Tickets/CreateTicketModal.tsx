@@ -8,6 +8,8 @@ import { serviceCatalogService } from '@/services/service-catalog.service';
 import { clientService, Client } from '@/services/client.service';
 import { contractService } from '@/services/contract.service';
 import { userService } from '@/services/user.service';
+import { contactService } from '@/services/contact.service';
+import { formatPhoneNumber } from '@/utils/phone-formatter';
 
 interface CreateTicketModalProps {
   isOpen: boolean;
@@ -57,6 +59,8 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     name: '',
     email: '',
     phone: '',
+    department: '',
+    position: '',
   });
 
   // Estado para contratos
@@ -242,23 +246,46 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
   };
 
   // Salvar solicitante rápido
-  const handleSaveQuickRequester = () => {
+  const handleSaveQuickRequester = async () => {
     if (!quickRequesterData.name.trim()) {
       alert('Nome do solicitante é obrigatório');
       return;
     }
 
-    // Preencher dados do solicitante no form principal
-    setFormData(prev => ({
-      ...prev,
-      requester_name: quickRequesterData.name,
-      requester_email: quickRequesterData.email,
-      requester_phone: quickRequesterData.phone,
-    }));
+    if (!formData.client_id) {
+      alert('Selecione um cliente antes de cadastrar o solicitante');
+      return;
+    }
 
-    // Fechar modal e limpar
-    setShowQuickRequesterModal(false);
-    setQuickRequesterData({ name: '', email: '', phone: '' });
+    try {
+      // Criar contato permanente no banco de dados
+      const contact = await contactService.create({
+        client_id: formData.client_id,
+        name: quickRequesterData.name,
+        email: quickRequesterData.email || undefined,
+        phone: quickRequesterData.phone || undefined,
+        department: quickRequesterData.department || undefined,
+        position: quickRequesterData.position || undefined,
+      });
+
+      if (contact) {
+        // Preencher dados do solicitante no form principal
+        setFormData(prev => ({
+          ...prev,
+          contact_id: contact.id,
+          requester_name: contact.name,
+          requester_email: contact.email || '',
+          requester_phone: contact.phone || '',
+        }));
+
+        // Fechar modal e limpar
+        setShowQuickRequesterModal(false);
+        setQuickRequesterData({ name: '', email: '', phone: '', department: '', position: '' });
+      }
+    } catch (error) {
+      console.error('Erro ao cadastrar contato:', error);
+      alert('Erro ao cadastrar contato. Tente novamente.');
+    }
   };
 
   const validateForm = (): boolean => {
@@ -1023,7 +1050,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
               <button
                 onClick={() => {
                   setShowQuickRequesterModal(false);
-                  setQuickRequesterData({ name: '', email: '', phone: '' });
+                  setQuickRequesterData({ name: '', email: '', phone: '', department: '', position: '' });
                 }}
                 className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
@@ -1067,14 +1094,43 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                 <input
                   type="tel"
                   value={quickRequesterData.phone}
-                  onChange={(e) => setQuickRequesterData(prev => ({ ...prev, phone: e.target.value }))}
+                  onChange={(e) => {
+                    const formatted = formatPhoneNumber(e.target.value);
+                    setQuickRequesterData(prev => ({ ...prev, phone: formatted }));
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="(11) 98765-4321"
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Departamento
+                </label>
+                <input
+                  type="text"
+                  value={quickRequesterData.department}
+                  onChange={(e) => setQuickRequesterData(prev => ({ ...prev, department: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Ex: TI, Financeiro, Comercial"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Cargo
+                </label>
+                <input
+                  type="text"
+                  value={quickRequesterData.position}
+                  onChange={(e) => setQuickRequesterData(prev => ({ ...prev, position: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Ex: Gerente, Analista, Assistente"
+                />
+              </div>
+
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                O solicitante será preenchido temporariamente neste ticket. Para salvá-lo permanentemente, acesse a página do cliente.
+                O solicitante será salvo permanentemente na base de clientes e ficará disponível para futuros tickets.
               </p>
             </div>
 
@@ -1083,7 +1139,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
               <button
                 onClick={() => {
                   setShowQuickRequesterModal(false);
-                  setQuickRequesterData({ name: '', email: '', phone: '' });
+                  setQuickRequesterData({ name: '', email: '', phone: '', department: '', position: '' });
                 }}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
