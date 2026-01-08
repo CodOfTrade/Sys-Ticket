@@ -154,6 +154,7 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
       manual_price_override: false,
       manual_unit_price: 0,
       description: '',
+      send_as_response: false,
     });
   };
 
