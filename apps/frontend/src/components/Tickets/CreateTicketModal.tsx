@@ -10,6 +10,7 @@ import { contractService } from '@/services/contract.service';
 import { userService } from '@/services/user.service';
 import { contactService } from '@/services/contact.service';
 import { formatPhoneNumber } from '@/utils/phone-formatter';
+import { RichTextEditor } from '@/components/RichTextEditor';
 
 interface CreateTicketModalProps {
   isOpen: boolean;
@@ -758,17 +759,11 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Descrição <span className="text-red-500">*</span>
                 </label>
-                <textarea
-                  name="description"
+                <RichTextEditor
                   value={formData.description}
-                  onChange={handleChange}
-                  rows={4}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                    errors.description
-                      ? 'border-red-500 dark:border-red-500'
-                      : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  placeholder="Descreva o problema em detalhes"
+                  onChange={(value) => setFormData(prev => ({ ...prev, description: value }))}
+                  placeholder="Descreva o problema em detalhes..."
+                  className={errors.description ? 'border-red-500 dark:border-red-500' : ''}
                 />
                 {errors.description && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description}</p>

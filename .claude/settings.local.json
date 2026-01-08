@@ -42,7 +42,8 @@
       "Bash(cmd.exe /c 'cd /d \"\"d:\\\\\\\\Arquivos do Usuário\\\\\\\\OneDrive\\\\\\\\3 - Pessoal José\\\\\\\\Programaçao\\\\\\\\Sys-Ticket\"\" && git add . && git commit -m \"\"Feature: Implementar melhorias no modal de criação de tickets - Busca de cliente em tempo real com autocomplete - Categoria como dropdown com exemplos - Campo de seguidores \\(followers\\) - Campo de ticket pai \\(relacionado\\) - Área de upload de arquivos - Botão flutuante global de novo ticket integrado no layout\"\" && git push')",
       "Bash(git checkout:*)",
       "Bash(python reorganize_sections.py:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(npm install:*)"
     ]
   }
 }
