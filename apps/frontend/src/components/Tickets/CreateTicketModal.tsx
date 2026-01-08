@@ -84,9 +84,9 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     enabled: !!formData.client_id,
   });
 
-  // Buscar técnicos para lista de solicitantes
-  const { data: technicians } = useQuery({
-    queryKey: ['technicians'],
+  // Buscar todos usuários para lista de solicitantes (inclui técnicos)
+  const { data: allUsers } = useQuery({
+    queryKey: ['all-users'],
     queryFn: () => userService.getAll(),
     enabled: isOpen,
   });
@@ -103,13 +103,13 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
       label: `${contact.name} - ${contact.email || contact.phone || 'Sem contato'}`,
     })) || []),
     // Técnicos do sistema
-    ...(technicians?.users?.map(tech => ({
-      id: tech.id,
-      name: tech.name,
-      email: tech.email,
-      phone: tech.phone || '',
-      type: 'technician' as const,
-      label: `${tech.name} - ${tech.email} (Técnico)`,
+    ...(allUsers?.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || '',
+      type: 'user' as const,
+      label: `${user.name} - ${user.email} (Técnico)`,
     })) || []),
   ];
 
