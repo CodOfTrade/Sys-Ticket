@@ -201,6 +201,15 @@ export class CreateTicketDto {
   parent_ticket_id?: string;
 
   @ApiPropertyOptional({
+    description: 'Lista de IDs de usuários que devem acompanhar o ticket',
+    example: ['uuid-usuario-1', 'uuid-usuario-2'],
+    type: [String],
+  })
+  @IsArray()
+  @IsOptional()
+  followers?: string[];
+
+  @ApiPropertyOptional({
     description: 'Campos customizados (JSON)',
     example: { campo1: 'valor1', campo2: 123 },
   })
