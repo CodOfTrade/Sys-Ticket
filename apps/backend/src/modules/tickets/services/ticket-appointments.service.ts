@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { TicketAppointment, ServiceCoverageType } from '../entities/ticket-appointment.entity';
 import { TicketComment, CommentType, CommentVisibility } from '../entities/ticket-comment.entity';
+import { Ticket } from '../entities/ticket.entity';
 import {
   CreateAppointmentDto,
   StartTimerDto,
@@ -10,7 +11,7 @@ import {
   UpdateAppointmentDto,
 } from '../dto/create-appointment.dto';
 import { PricingConfigService } from '../../service-desks/services/pricing-config.service';
-import { ServiceType } from '../../service-desks/entities/pricing-config.entity';
+import { ServiceType, PricingConfig } from '../../service-desks/entities/pricing-config.entity';
 
 @Injectable()
 export class TicketAppointmentsService {
@@ -21,6 +22,10 @@ export class TicketAppointmentsService {
     private appointmentRepository: Repository<TicketAppointment>,
     @InjectRepository(TicketComment)
     private commentRepository: Repository<TicketComment>,
+    @InjectRepository(Ticket)
+    private ticketsRepository: Repository<Ticket>,
+    @InjectRepository(PricingConfig)
+    private pricingRepository: Repository<PricingConfig>,
     private pricingConfigService: PricingConfigService,
   ) {}
 
@@ -464,7 +469,7 @@ export class TicketAppointmentsService {
     }
 
     // Calcular preço usando a mesma lógica de calculateAppointmentPrice
-    const pricing = this.pricingService.calculateAppointmentPrice(
+    const pricing = this.pricingConfigService.calculateAppointmentPrice(
       pricingConfig,
       durationMinutes,
     );
