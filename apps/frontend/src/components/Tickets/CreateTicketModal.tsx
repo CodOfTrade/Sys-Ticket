@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Search, Upload, Link2, UserPlus, Mail } from 'lucide-react';
+import { X, Search, Upload, Link2, UserPlus, Mail, FileText, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { ticketService } from '@/services/ticket.service';
 import { TicketPriority, ServiceType, CreateTicketDto } from '@/types/ticket.types';
 import { useAuthStore } from '@/store/auth.store';
 import { serviceCatalogService } from '@/services/service-catalog.service';
 import { clientService, Client } from '@/services/client.service';
+import { contractService, Contract } from '@/services/contract.service';
+import { userService, User } from '@/services/user.service';
 
 interface CreateTicketModalProps {
   isOpen: boolean;
@@ -57,6 +59,13 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     phone: '',
   });
 
+  // Estado para contratos
+  const [showContractDetails, setShowContractDetails] = useState(false);
+
+  // Estado para modal de atribuição de técnico
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [selectedTechnician, setSelectedTechnician] = useState<string>('');
+
   // Buscar catálogos de serviço
   const { data: catalogs } = useQuery({
     queryKey: ['service-catalogs', user?.service_desk_id],
@@ -91,6 +100,20 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     queryKey: ['client-search', clientSearchTerm],
     queryFn: () => clientService.searchByName(clientSearchTerm, 1, 10),
     enabled: clientSearchTerm.length >= 2,
+  });
+
+  // Buscar contratos do cliente
+  const { data: clientContracts } = useQuery({
+    queryKey: ['client-contracts', formData.client_id],
+    queryFn: () => contractService.getByClient(formData.client_id),
+    enabled: !!formData.client_id,
+  });
+
+  // Buscar técnicos disponíveis
+  const { data: technicians } = useQuery({
+    queryKey: ['technicians'],
+    queryFn: () => userService.getAllTechnicians(),
+    enabled: showAssignmentModal,
   });
 
   // Fechar dropdowns ao clicar fora
@@ -276,6 +299,12 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
       return;
     }
 
+    // Mostrar modal de atribuição em vez de criar diretamente
+    setShowAssignmentModal(true);
+  };
+
+  // Criar ticket com ou sem atribuição de técnico
+  const handleCreateTicket = async (assignToTechnician: boolean) => {
     // Usar service_desk_id do usuário logado
     const serviceDeskId = user?.service_desk_id || '3d316765-6615-4082-9bb7-d7d6a266db09';
 
@@ -304,8 +333,21 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     if (formData.category) {
       ticketData.category = formData.category;
     }
+    if (formData.parent_ticket_id) {
+      ticketData.parent_ticket_id = formData.parent_ticket_id;
+    }
+    if (formData.followers.length > 0) {
+      ticketData.followers = formData.followers;
+    }
+
+    // Adicionar técnico atribuído se selecionado
+    if (assignToTechnician && selectedTechnician) {
+      ticketData.assigned_to = selectedTechnician;
+    }
 
     await createMutation.mutateAsync(ticketData);
+    setShowAssignmentModal(false);
+    setSelectedTechnician('');
   };
 
   const handleChange = (
@@ -519,39 +561,125 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
                 {/* Cliente Selecionado */}
                 {selectedClient && (
-                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                          ✓ {selectedClient.nome_fantasia || selectedClient.nome}
-                        </p>
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
-                          {selectedClient.cpf_cnpj && (
-                            <p className="text-xs text-gray-600 dark:text-gray-400">
-                              CNPJ: {selectedClient.cpf_cnpj}
-                            </p>
-                          )}
-                          {selectedClient.cidade && (
-                            <p className="text-xs text-gray-600 dark:text-gray-400">
-                              {selectedClient.cidade}/{selectedClient.estado}
-                            </p>
-                          )}
+                  <>
+                    <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                            ✓ {selectedClient.nome_fantasia || selectedClient.nome}
+                          </p>
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                            {selectedClient.cpf_cnpj && (
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                CNPJ: {selectedClient.cpf_cnpj}
+                              </p>
+                            )}
+                            {selectedClient.cidade && (
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                {selectedClient.cidade}/{selectedClient.estado}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedClient(null);
+                            setClientSearchTerm('');
+                            setFormData(prev => ({ ...prev, client_id: '', client_name: '' }));
+                          }}
+                          className="flex-shrink-0 p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 rounded transition-colors"
+                          title="Remover cliente"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Card de Contratos */}
+                    {clientContracts && clientContracts.length > 0 && (
+                      <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                        <button
+                          type="button"
+                          onClick={() => setShowContractDetails(!showContractDetails)}
+                          className="w-full flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-2">
+                            <FileText size={16} className="text-amber-600 dark:text-amber-400" />
+                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                              Contratos ({clientContracts.length})
+                            </span>
+                            {clientContracts.some(c => c.ativo && (!c.data_fim || new Date(c.data_fim) >= new Date())) && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded">
+                                <CheckCircle2 size={12} />
+                                Ativo
+                              </span>
+                            )}
+                            {clientContracts.some(c => c.data_fim && new Date(c.data_fim) < new Date()) && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded">
+                                <AlertCircle size={12} />
+                                Vencido
+                              </span>
+                            )}
+                          </div>
+                          {showContractDetails ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </button>
+
+                        {showContractDetails && (
+                          <div className="mt-3 space-y-2 border-t border-amber-200 dark:border-amber-800 pt-3">
+                            {clientContracts.map((contract) => {
+                              const isActive = contract.ativo && (!contract.data_fim || new Date(contract.data_fim) >= new Date());
+                              const isExpired = contract.data_fim && new Date(contract.data_fim) < new Date();
+
+                              return (
+                                <div key={contract.id} className="p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {contract.numero_contrato || 'Sem número'}
+                                      </p>
+                                      {contract.descricao && (
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                          {contract.descricao}
+                                        </p>
+                                      )}
+                                      <div className="flex gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        {contract.data_inicio && (
+                                          <span>Início: {new Date(contract.data_inicio).toLocaleDateString('pt-BR')}</span>
+                                        )}
+                                        {contract.data_fim && (
+                                          <span>Fim: {new Date(contract.data_fim).toLocaleDateString('pt-BR')}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <span className={`flex-shrink-0 px-2 py-0.5 text-xs font-medium rounded ${
+                                      isActive
+                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                        : isExpired
+                                        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                    }`}>
+                                      {isActive ? 'Ativo' : isExpired ? 'Vencido' : 'Inativo'}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Aviso se não tiver contratos */}
+                    {clientContracts && clientContracts.length === 0 && (
+                      <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                          <AlertCircle size={16} />
+                          <span className="text-sm">Cliente sem contratos cadastrados</span>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedClient(null);
-                          setClientSearchTerm('');
-                          setFormData(prev => ({ ...prev, client_id: '', client_name: '' }));
-                        }}
-                        className="flex-shrink-0 p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 rounded transition-colors"
-                        title="Remover cliente"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </div>
+                    )}
+                  </>
                 )}
 
                   {/* Dropdown de Resultados */}
@@ -965,6 +1093,76 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               >
                 Adicionar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Atribuição de Técnico */}
+      {showAssignmentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full mx-4">
+            {/* Header */}
+            <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Atribuir Ticket a um Técnico?
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Você pode atribuir este ticket a um técnico agora ou deixar sem atribuição.
+              </p>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              {/* Lista de Técnicos */}
+              {technicians && technicians.length > 0 ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Selecionar Técnico
+                  </label>
+                  <select
+                    value={selectedTechnician}
+                    onChange={(e) => setSelectedTechnician(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="">Selecione um técnico (opcional)</option>
+                    {technicians.map((tech) => (
+                      <option key={tech.id} value={tech.id}>
+                        {tech.name} - {tech.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                  <p>Nenhum técnico disponível no momento</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex gap-3 justify-end">
+              <button
+                onClick={() => handleCreateTicket(false)}
+                disabled={createMutation.isPending}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {createMutation.isPending ? 'Criando...' : 'Criar Sem Atribuir'}
+              </button>
+              <button
+                onClick={() => handleCreateTicket(true)}
+                disabled={createMutation.isPending || !selectedTechnician}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {createMutation.isPending ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Criando...
+                  </div>
+                ) : (
+                  'Criar e Atribuir'
+                )}
               </button>
             </div>
           </div>

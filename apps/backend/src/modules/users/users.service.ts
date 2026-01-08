@@ -38,4 +38,15 @@ export class UsersService {
   async remove(id: string): Promise<void> {
     await this.usersRepository.delete(id);
   }
+
+  async findTechnicians(): Promise<User[]> {
+    return this.usersRepository.find({
+      where: [
+        { role: 'agent' as any, status: 'active' as any },
+        { role: 'manager' as any, status: 'active' as any },
+        { role: 'admin' as any, status: 'active' as any },
+      ],
+      select: ['id', 'name', 'email', 'role', 'avatar_url', 'status'],
+    });
+  }
 }

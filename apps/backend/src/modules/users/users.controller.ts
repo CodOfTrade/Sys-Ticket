@@ -17,6 +17,12 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Get('technicians')
+  @ApiOperation({ summary: 'Listar todos os técnicos (agents, managers e admins ativos)' })
+  async findTechnicians(): Promise<User[]> {
+    return this.usersService.findTechnicians();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Buscar usuário por ID' })
   async findOne(@Param('id') id: string): Promise<User | null> {
