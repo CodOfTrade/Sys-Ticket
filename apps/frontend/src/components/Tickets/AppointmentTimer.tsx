@@ -197,6 +197,7 @@ export function AppointmentTimer({ ticketId }: AppointmentTimerProps) {
                     <span className="text-blue-700 dark:text-blue-400 font-medium">⏳ Duração:</span>
                     <span className="font-semibold text-blue-900 dark:text-blue-200">
                       {(() => {
+                        if (!activeTimer.timer_started_at) return '0h 00m';
                         const start = new Date(activeTimer.timer_started_at);
                         const now = new Date();
                         const diffMinutes = Math.round((now.getTime() - start.getTime()) / (1000 * 60));

@@ -44,7 +44,9 @@
       "Bash(python reorganize_sections.py:*)",
       "Bash(python3:*)",
       "Bash(npm install:*)",
-      "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\backend\"\" && npm run build\")"
+      "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\backend\"\" && npm run build\")",
+      "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend\"\" && dir dist /s\")",
+      "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend\"\" && npm run build\")"
     ]
   }
 }
