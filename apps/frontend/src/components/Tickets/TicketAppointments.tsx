@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, Plus, Trash2, Edit2, Calendar, DollarSign } from 'lucide-react';
 import { appointmentsService } from '@/services/ticket-details.service';
 import { clientService } from '@/services/client.service';
-import { AppointmentTimer } from './AppointmentTimer';
 import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
 import { AppointmentType, ServiceCoverageType, ServiceType, ServiceLevel, CreateAppointmentDto } from '@/types/ticket-details.types';
 
@@ -222,9 +221,6 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
 
   return (
     <div className="space-y-6">
-      {/* Timer */}
-      <AppointmentTimer ticketId={ticketId} clientId={clientId} />
-
       {/* Resumo */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
