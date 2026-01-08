@@ -468,8 +468,8 @@ export class TicketAppointmentsService {
       };
     }
 
-    // Calcular preço usando a mesma lógica de calculateAppointmentPrice
-    const pricing = this.pricingConfigService.calculateAppointmentPrice(
+    // Calcular preço usando a mesma lógica de calculatePrice
+    const pricing = this.pricingConfigService.calculatePrice(
       pricingConfig,
       durationMinutes,
     );
