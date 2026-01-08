@@ -7,6 +7,7 @@ import Dashboard from '@pages/Dashboard';
 import Tickets from '@pages/Tickets';
 import TicketDetails from '@pages/TicketDetails';
 import Clients from '@pages/Clients';
+import { Settings } from '@pages/Settings';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,9 +53,7 @@ function App() {
             <Route path="reports" element={
               <div className="text-gray-600 dark:text-gray-400">Página em desenvolvimento...</div>
             } />
-            <Route path="settings" element={
-              <div className="text-gray-600 dark:text-gray-400">Página em desenvolvimento...</div>
-            } />
+            <Route path="settings" element={<Settings />} />
             <Route path="profile" element={
               <div className="text-gray-600 dark:text-gray-400">Página em desenvolvimento...</div>
             } />

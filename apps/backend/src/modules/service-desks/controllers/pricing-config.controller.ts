@@ -20,6 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { PricingConfigService } from '../services/pricing-config.service';
 import { Roles } from '../../auth/decorators/roles.decorator';
+import { Public } from '../../auth/decorators/public.decorator';
 import { UserRole } from '../../users/entities/user.entity';
 
 @ApiTags('Pricing')
@@ -29,6 +30,7 @@ export class PricingConfigController {
   constructor(private readonly pricingConfigService: PricingConfigService) {}
 
   @Get()
+  @Public()
   @ApiOperation({
     summary: 'Listar configurações de preço',
     description: 'Retorna lista de configurações de preço por tipo de atendimento',
@@ -43,7 +45,8 @@ export class PricingConfigController {
     description: 'Lista de configurações retornada com sucesso',
   })
   async findAll(@Query('service_desk_id') serviceDeskId?: string) {
-    return this.pricingConfigService.findAll(serviceDeskId);
+    const configs = await this.pricingConfigService.findAll(serviceDeskId);
+    return { success: true, data: configs };
   }
 
   @Get(':id')
@@ -61,7 +64,8 @@ export class PricingConfigController {
     description: 'Configuração não encontrada',
   })
   async findOne(@Param('id') id: string) {
-    return this.pricingConfigService.findOne(id);
+    const config = await this.pricingConfigService.findOne(id);
+    return { success: true, data: config };
   }
 
   @Post()
@@ -80,7 +84,8 @@ export class PricingConfigController {
   })
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createDto: any) {
-    return this.pricingConfigService.create(createDto);
+    const config = await this.pricingConfigService.create(createDto);
+    return { success: true, data: config };
   }
 
   @Patch(':id')
@@ -99,7 +104,8 @@ export class PricingConfigController {
     description: 'Configuração não encontrada',
   })
   async update(@Param('id') id: string, @Body() updateDto: any) {
-    return this.pricingConfigService.update(id, updateDto);
+    const config = await this.pricingConfigService.update(id, updateDto);
+    return { success: true, data: config };
   }
 
   @Delete(':id')
