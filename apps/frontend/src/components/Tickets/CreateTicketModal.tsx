@@ -42,6 +42,14 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
   // Estado para followers
   const [followerInput, setFollowerInput] = useState('');
 
+  // Estado para modal de cadastro rápido de solicitante
+  const [showQuickRequesterModal, setShowQuickRequesterModal] = useState(false);
+  const [quickRequesterData, setQuickRequesterData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+  });
+
   // Buscar catálogos de serviço
   const { data: catalogs } = useQuery({
     queryKey: ['service-catalogs', user?.service_desk_id],
@@ -167,6 +175,26 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     }));
   };
 
+  // Salvar solicitante rápido
+  const handleSaveQuickRequester = () => {
+    if (!quickRequesterData.name.trim()) {
+      alert('Nome do solicitante é obrigatório');
+      return;
+    }
+
+    // Preencher dados do solicitante no form principal
+    setFormData(prev => ({
+      ...prev,
+      requester_name: quickRequesterData.name,
+      requester_email: quickRequesterData.email,
+      requester_phone: quickRequesterData.phone,
+    }));
+
+    // Fechar modal e limpar
+    setShowQuickRequesterModal(false);
+    setQuickRequesterData({ name: '', email: '', phone: '' });
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -263,7 +291,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Novo Ticket</h2>
@@ -440,13 +468,21 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                     }`}
                     placeholder="Digite o nome, CNPJ ou cidade do cliente..."
                   />
-                  {selectedClient && (
-                    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            {selectedClient.nome_fantasia || selectedClient.nome}
-                          </p>
+
+                </div>
+                {errors.client_name && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.client_name}</p>
+                )}
+
+                {/* Cliente Selecionado */}
+                {selectedClient && (
+                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                          ✓ {selectedClient.nome_fantasia || selectedClient.nome}
+                        </p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
                           {selectedClient.cpf_cnpj && (
                             <p className="text-xs text-gray-600 dark:text-gray-400">
                               CNPJ: {selectedClient.cpf_cnpj}
@@ -458,20 +494,22 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                             </p>
                           )}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedClient(null);
-                            setClientSearchTerm('');
-                            setFormData(prev => ({ ...prev, client_id: '', client_name: '' }));
-                          }}
-                          className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 rounded"
-                        >
-                          <X size={16} />
-                        </button>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedClient(null);
+                          setClientSearchTerm('');
+                          setFormData(prev => ({ ...prev, client_id: '', client_name: '' }));
+                        }}
+                        className="flex-shrink-0 p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 rounded transition-colors"
+                        title="Remover cliente"
+                      >
+                        <X size={16} />
+                      </button>
                     </div>
-                  )}
+                  </div>
+                )}
 
                   {/* Dropdown de Resultados */}
                   {showClientDropdown && clientSearchTerm.length >= 2 && clientSearchResults?.data && clientSearchResults.data.length > 0 && !selectedClient && (
@@ -494,95 +532,92 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                       ))}
                     </div>
                   )}
+              </div>
+
+              {/* Solicitante - Busca em Tempo Real */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Solicitante <span className="text-red-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickRequesterModal(true)}
+                    className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium flex items-center gap-1"
+                  >
+                    <UserPlus size={14} />
+                    Cadastrar Novo
+                  </button>
                 </div>
-                {errors.client_name && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.client_name}</p>
+
+                {formData.client_id && contacts && contacts.length > 0 ? (
+                  <select
+                    name="contact_id"
+                    value={formData.contact_id}
+                    onChange={(e) => {
+                      const contactId = e.target.value;
+                      setFormData(prev => ({ ...prev, contact_id: contactId }));
+
+                      // Preencher dados do solicitante automaticamente
+                      if (contactId) {
+                        const contact = contacts.find(c => c.id === contactId);
+                        if (contact) {
+                          setFormData(prev => ({
+                            ...prev,
+                            requester_name: contact.name,
+                            requester_email: contact.email || '',
+                            requester_phone: contact.phone || '',
+                          }));
+                        }
+                      }
+                    }}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                      errors.requester_name
+                        ? 'border-red-500 dark:border-red-500'
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  >
+                    <option value="">Selecione um solicitante</option>
+                    {contacts.map((contact) => (
+                      <option key={contact.id} value={contact.id}>
+                        {contact.name} {contact.email ? `- ${contact.email}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="text-sm text-gray-500 dark:text-gray-400 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                    {!formData.client_id ? (
+                      <p>Selecione um cliente primeiro para ver os solicitantes disponíveis</p>
+                    ) : (
+                      <p>Nenhum solicitante cadastrado para este cliente. Clique em "Cadastrar Novo" para adicionar.</p>
+                    )}
+                  </div>
                 )}
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Solicitante
-                </label>
-                <select
-                  name="contact_id"
-                  value={formData.contact_id}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  disabled={!formData.client_id}
-                >
-                  <option value="">Selecione um contato existente</option>
-                  {contacts?.map((contact) => (
-                    <option key={contact.id} value={contact.id}>
-                      {contact.name} {contact.email ? `- ${contact.email}` : ''}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Caso não encontre o contato, preencha os dados manualmente abaixo
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Nome do Solicitante <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="requester_name"
-                  value={formData.requester_name}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                    errors.requester_name
-                      ? 'border-red-500 dark:border-red-500'
-                      : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  placeholder="Nome da pessoa que solicitou"
-                />
                 {errors.requester_name && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">
                     {errors.requester_name}
                   </p>
                 )}
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    E-mail do Solicitante
-                  </label>
-                  <input
-                    type="email"
-                    name="requester_email"
-                    value={formData.requester_email}
-                    onChange={handleChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                      errors.requester_email
-                        ? 'border-red-500 dark:border-red-500'
-                        : 'border-gray-300 dark:border-gray-600'
-                    }`}
-                    placeholder="email@exemplo.com"
-                  />
-                  {errors.requester_email && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                      {errors.requester_email}
+                {/* Preview do Solicitante Selecionado */}
+                {formData.requester_name && (
+                  <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {formData.requester_name}
                     </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Telefone do Solicitante
-                  </label>
-                  <input
-                    type="tel"
-                    name="requester_phone"
-                    value={formData.requester_phone}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="(11) 98765-4321"
-                  />
-                </div>
+                    {formData.requester_email && (
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        Email: {formData.requester_email}
+                      </p>
+                    )}
+                    {formData.requester_phone && (
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        Tel: {formData.requester_phone}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -728,6 +763,95 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
           </div>
         </form>
       </div>
+
+      {/* Modal de Cadastro Rápido de Solicitante */}
+      {showQuickRequesterModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full mx-4">
+            {/* Header */}
+            <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Cadastro Rápido de Solicitante
+              </h3>
+              <button
+                onClick={() => {
+                  setShowQuickRequesterModal(false);
+                  setQuickRequesterData({ name: '', email: '', phone: '' });
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nome <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={quickRequesterData.name}
+                  onChange={(e) => setQuickRequesterData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Nome completo"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  E-mail
+                </label>
+                <input
+                  type="email"
+                  value={quickRequesterData.email}
+                  onChange={(e) => setQuickRequesterData(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="email@exemplo.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Telefone
+                </label>
+                <input
+                  type="tel"
+                  value={quickRequesterData.phone}
+                  onChange={(e) => setQuickRequesterData(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="(11) 98765-4321"
+                />
+              </div>
+
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                O solicitante será preenchido temporariamente neste ticket. Para salvá-lo permanentemente, acesse a página do cliente.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowQuickRequesterModal(false);
+                  setQuickRequesterData({ name: '', email: '', phone: '' });
+                }}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveQuickRequester}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Adicionar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
