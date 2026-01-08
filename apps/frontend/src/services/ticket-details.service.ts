@@ -25,7 +25,7 @@ export const commentsService = {
   async getComments(ticketId: string, type?: string): Promise<TicketComment[]> {
     const params = type ? { type } : {};
     const response = await api.get<ApiResponse<TicketComment[]>>(
-      `/tickets/${ticketId}/comments`,
+      `/v1/tickets/${ticketId}/comments`,
       { params }
     );
     return response.data.data;
@@ -33,7 +33,7 @@ export const commentsService = {
 
   async createComment(ticketId: string, data: CreateCommentDto): Promise<TicketComment> {
     const response = await api.post<ApiResponse<TicketComment>>(
-      `/tickets/${ticketId}/comments`,
+      `/v1/tickets/${ticketId}/comments`,
       data
     );
     return response.data.data;
@@ -41,14 +41,14 @@ export const commentsService = {
 
   async updateComment(commentId: string, content: string): Promise<TicketComment> {
     const response = await api.patch<ApiResponse<TicketComment>>(
-      `/tickets/comments/${commentId}`,
+      `/v1/tickets/comments/${commentId}`,
       { content }
     );
     return response.data.data;
   },
 
   async deleteComment(commentId: string): Promise<void> {
-    await api.delete(`/tickets/comments/${commentId}`);
+    await api.delete(`/v1/tickets/comments/${commentId}`);
   },
 };
 
@@ -124,7 +124,7 @@ export const valuationsService = {
   async getValuations(ticketId: string, category?: string): Promise<TicketValuation[]> {
     const params = category ? { category } : {};
     const response = await api.get<ApiResponse<TicketValuation[]>>(
-      `/tickets/${ticketId}/valuations`,
+      `/v1/tickets/${ticketId}/valuations`,
       { params }
     );
     return response.data.data;
@@ -135,13 +135,13 @@ export const valuationsService = {
   ): Promise<{ client_charges: number; internal_costs: number; total: number }> {
     const response = await api.get<
       ApiResponse<{ client_charges: number; internal_costs: number; total: number }>
-    >(`/tickets/${ticketId}/valuations/summary`);
+    >(`/v1/tickets/${ticketId}/valuations/summary`);
     return response.data.data;
   },
 
   async createValuation(data: CreateValuationDto): Promise<TicketValuation> {
     const response = await api.post<ApiResponse<TicketValuation>>(
-      '/tickets/valuations',
+      '/v1/tickets/valuations',
       data
     );
     return response.data.data;
@@ -152,7 +152,7 @@ export const valuationsService = {
     data: Partial<CreateValuationDto>
   ): Promise<TicketValuation> {
     const response = await api.patch<ApiResponse<TicketValuation>>(
-      `/tickets/valuations/${valuationId}`,
+      `/v1/tickets/valuations/${valuationId}`,
       data
     );
     return response.data.data;
@@ -160,14 +160,14 @@ export const valuationsService = {
 
   async approveValuation(valuationId: string, isApproved: boolean): Promise<TicketValuation> {
     const response = await api.post<ApiResponse<TicketValuation>>(
-      '/tickets/valuations/approve',
+      '/v1/tickets/valuations/approve',
       { valuation_id: valuationId, is_approved: isApproved }
     );
     return response.data.data;
   },
 
   async deleteValuation(valuationId: string): Promise<void> {
-    await api.delete(`/tickets/valuations/${valuationId}`);
+    await api.delete(`/v1/tickets/valuations/${valuationId}`);
   },
 };
 
@@ -181,7 +181,7 @@ export const checklistsService = {
     if (category) params.category = category;
 
     const response = await api.get<ApiResponse<Checklist[]>>(
-      '/tickets/checklists/templates',
+      '/v1/tickets/checklists/templates',
       { params }
     );
     return response.data.data;
@@ -190,7 +190,7 @@ export const checklistsService = {
   // Ticket Checklists
   async getTicketChecklists(ticketId: string): Promise<TicketChecklist[]> {
     const response = await api.get<ApiResponse<TicketChecklist[]>>(
-      `/tickets/${ticketId}/checklists`
+      `/v1/tickets/${ticketId}/checklists`
     );
     return response.data.data;
   },
@@ -200,7 +200,7 @@ export const checklistsService = {
     data: AddChecklistToTicketDto
   ): Promise<TicketChecklist> {
     const response = await api.post<ApiResponse<TicketChecklist>>(
-      `/tickets/${ticketId}/checklists`,
+      `/v1/tickets/${ticketId}/checklists`,
       data
     );
     return response.data.data;
@@ -211,13 +211,13 @@ export const checklistsService = {
     data: UpdateChecklistItemDto
   ): Promise<TicketChecklist> {
     const response = await api.patch<ApiResponse<TicketChecklist>>(
-      `/tickets/checklists/${checklistId}/items`,
+      `/v1/tickets/checklists/${checklistId}/items`,
       data
     );
     return response.data.data;
   },
 
   async removeChecklistFromTicket(ticketId: string, checklistId: string): Promise<void> {
-    await api.delete(`/tickets/${ticketId}/checklists/${checklistId}`);
+    await api.delete(`/v1/tickets/${ticketId}/checklists/${checklistId}`);
   },
 };
