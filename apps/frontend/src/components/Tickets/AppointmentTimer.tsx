@@ -20,13 +20,6 @@ const serviceTypeLabels: Record<ServiceType, string> = {
   [ServiceType.EXTERNAL]: 'Externo/Presencial',
 };
 
-const coverageTypeLabels: Record<ServiceCoverageType, string> = {
-  [ServiceCoverageType.CONTRACT]: 'Contrato',
-  [ServiceCoverageType.BILLABLE]: 'Avulso',
-  [ServiceCoverageType.WARRANTY]: 'Garantia',
-  [ServiceCoverageType.INTERNAL]: 'Interno',
-};
-
 const serviceLevelLabels: Record<ServiceLevel, string> = {
   [ServiceLevel.N1]: 'Nível 1 (N1)',
   [ServiceLevel.N2]: 'Nível 2 (N2)',
