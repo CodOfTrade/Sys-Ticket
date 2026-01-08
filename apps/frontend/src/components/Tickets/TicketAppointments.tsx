@@ -182,7 +182,26 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate(formData);
+
+    // Montar DTO apenas com campos aceitos pelo backend
+    const dto: CreateAppointmentDto = {
+      ticket_id: formData.ticket_id,
+      appointment_date: formData.appointment_date,
+      start_time: formData.start_time,
+      end_time: formData.end_time,
+      type: formData.type,
+      coverage_type: formData.coverage_type,
+      service_type: formData.modality, // Modalidade vai para service_type
+      description: formData.description || undefined,
+      send_as_response: formData.send_as_response,
+    };
+
+    // Se tiver override manual de preço
+    if (formData.manual_price_override && calculatedPrice) {
+      dto.unit_price = calculatedPrice.unit_price;
+    }
+
+    createMutation.mutate(dto);
   };
 
   const formatDuration = (minutes: number): string => {
