@@ -71,13 +71,23 @@ export class TicketsService {
     try {
       const ticketNumber = this.generateTicketNumber();
 
+      // Extrair followers do DTO para tratar separadamente
+      const { followers, ...ticketData } = createTicketDto;
+
       const ticket = this.ticketsRepository.create({
-        ...createTicketDto,
+        ...ticketData,
         ticket_number: ticketNumber,
         created_by_id: createdById,
       });
 
       const savedTicket = await this.ticketsRepository.save(ticket);
+
+      // TODO: Implementar criação de followers se necessário
+      // if (followers && followers.length > 0) {
+      //   await this.ticketFollowersRepository.save(
+      //     followers.map(userId => ({ ticket_id: savedTicket.id, user_id: userId }))
+      //   );
+      // }
 
       // Emitir evento de criação
       this.eventEmitter.emit('ticket.created', savedTicket);
