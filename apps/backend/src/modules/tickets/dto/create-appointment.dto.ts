@@ -13,6 +13,7 @@ import {
   AppointmentType,
   ServiceCoverageType,
 } from '../entities/ticket-appointment.entity';
+import { ServiceType } from '../../service-desks/entities/pricing-config.entity';
 
 export class CreateAppointmentDto {
   @ApiProperty({ description: 'ID do ticket' })
@@ -52,6 +53,16 @@ export class CreateAppointmentDto {
   @IsEnum(ServiceCoverageType)
   @IsOptional()
   coverage_type?: ServiceCoverageType;
+
+  @ApiProperty({
+    description: 'Tipo de serviço para pricing (INTERNAL, REMOTE, EXTERNAL)',
+    enum: ServiceType,
+    default: ServiceType.REMOTE,
+    required: false,
+  })
+  @IsEnum(ServiceType)
+  @IsOptional()
+  service_type?: ServiceType;
 
   @ApiProperty({ description: 'Descrição do trabalho realizado', required: false })
   @IsString()
@@ -106,6 +117,16 @@ export class StartTimerDto {
   @IsEnum(ServiceCoverageType)
   @IsOptional()
   coverage_type?: ServiceCoverageType;
+
+  @ApiProperty({
+    description: 'Tipo de serviço para pricing (INTERNAL, REMOTE, EXTERNAL)',
+    enum: ServiceType,
+    default: ServiceType.REMOTE,
+    required: false,
+  })
+  @IsEnum(ServiceType)
+  @IsOptional()
+  service_type?: ServiceType;
 }
 
 export class StopTimerDto {

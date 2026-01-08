@@ -17,6 +17,7 @@ import { TicketFollower } from './entities/ticket-follower.entity';
 import { TicketAttachment } from './entities/ticket-attachment.entity';
 import { ContractsModule } from '../contracts/contracts.module';
 import { ClientsModule } from '../clients/clients.module';
+import { ServiceDesksModule } from '../service-desks/service-desks.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ClientsModule } from '../clients/clients.module';
     ]),
     ContractsModule,
     ClientsModule,
+    ServiceDesksModule,
   ],
   controllers: [TicketsController, TicketDetailsController],
   providers: [

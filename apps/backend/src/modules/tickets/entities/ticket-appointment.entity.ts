@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Ticket } from './ticket.entity';
 import { User } from '../../users/entities/user.entity';
+import { ServiceType } from '../../service-desks/entities/pricing-config.entity';
 
 export enum AppointmentType {
   SERVICE = 'service', // Atendimento
@@ -73,6 +74,15 @@ export class TicketAppointment {
     default: ServiceCoverageType.CONTRACT,
   })
   coverage_type: ServiceCoverageType;
+
+  // Tipo de serviço para pricing (INTERNAL, REMOTE, EXTERNAL)
+  @Column({
+    type: 'enum',
+    enum: ServiceType,
+    default: ServiceType.REMOTE,
+    nullable: true,
+  })
+  service_type: ServiceType;
 
   // Descrição do trabalho realizado
   @Column({ type: 'text', nullable: true })

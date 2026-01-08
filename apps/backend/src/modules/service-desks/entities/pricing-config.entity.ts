@@ -74,6 +74,14 @@ export class PricingConfig {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   minimum_charge: number; // Valor mínimo a cobrar
 
+  // Tempo mínimo para aplicar cobrança mínima (em minutos)
+  @Column({ type: 'integer', default: 60 })
+  minimum_charge_threshold_minutes: number; // Se < 60min, cobra o mínimo
+
+  // Cobrança excedente - por minuto ou por hora
+  @Column({ type: 'boolean', default: false })
+  charge_excess_per_minute: boolean; // true = por minuto, false = por hora completa
+
   // Arredondamento de horas
   @Column({ type: 'integer', default: 30 })
   round_to_minutes: number; // Arredondar para X minutos (15, 30, 60)

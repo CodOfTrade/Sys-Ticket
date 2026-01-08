@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TicketAppointment } from '../entities/ticket-appointment.entity';
@@ -8,12 +8,17 @@ import {
   StopTimerDto,
   UpdateAppointmentDto,
 } from '../dto/create-appointment.dto';
+import { PricingConfigService } from '../../service-desks/services/pricing-config.service';
+import { ServiceType } from '../../service-desks/entities/pricing-config.entity';
 
 @Injectable()
 export class TicketAppointmentsService {
+  private readonly logger = new Logger(TicketAppointmentsService.name);
+
   constructor(
     @InjectRepository(TicketAppointment)
     private appointmentRepository: Repository<TicketAppointment>,
+    private pricingConfigService: PricingConfigService,
   ) {}
 
   /**
@@ -65,6 +70,7 @@ export class TicketAppointmentsService {
       created_by_id: userId,
       type: dto.type,
       coverage_type: dto.coverage_type,
+      service_type: dto.service_type || ServiceType.REMOTE,
       appointment_date: new Date().toISOString().split('T')[0],
       start_time: new Date().toTimeString().slice(0, 5),
       end_time: new Date().toTimeString().slice(0, 5),
@@ -84,6 +90,7 @@ export class TicketAppointmentsService {
   async stopTimer(userId: string, dto: StopTimerDto) {
     const appointment = await this.appointmentRepository.findOne({
       where: { id: dto.appointment_id, user_id: userId },
+      relations: ['ticket', 'ticket.service_desk'],
     });
 
     if (!appointment) {
@@ -115,7 +122,54 @@ export class TicketAppointmentsService {
       appointment.attachment_ids = dto.attachment_ids;
     }
 
+    // Calcular preço automaticamente baseado no pricing_config
+    await this.calculateAndApplyPrice(appointment);
+
     return this.appointmentRepository.save(appointment);
+  }
+
+  /**
+   * Calcular e aplicar preço automaticamente ao apontamento
+   */
+  private async calculateAndApplyPrice(appointment: TicketAppointment): Promise<void> {
+    try {
+      // Buscar configuração de pricing para o service_desk e service_type
+      const serviceDeskId = appointment.ticket?.service_desk_id;
+      if (!serviceDeskId) {
+        this.logger.warn(`Ticket ${appointment.ticket_id} não possui service_desk_id`);
+        return;
+      }
+
+      const serviceType = appointment.service_type || ServiceType.REMOTE;
+      const pricingConfig = await this.pricingConfigService.findByServiceDeskAndType(
+        serviceDeskId,
+        serviceType,
+      );
+
+      if (!pricingConfig) {
+        this.logger.warn(
+          `Nenhuma configuração de preço encontrada para service_desk ${serviceDeskId} e tipo ${serviceType}`,
+        );
+        return;
+      }
+
+      // Calcular preço
+      const pricing = this.pricingConfigService.calculatePrice(
+        pricingConfig,
+        appointment.duration_minutes,
+      );
+
+      // Aplicar no apontamento
+      appointment.unit_price = pricing.appliedRate;
+      appointment.total_amount = pricing.totalPrice;
+
+      this.logger.log(
+        `Preço calculado para apontamento ${appointment.id}: R$ ${pricing.totalPrice.toFixed(2)} (${pricing.description})`,
+      );
+    } catch (error) {
+      this.logger.error(`Erro ao calcular preço do apontamento ${appointment.id}`, error);
+      // Não lançar erro, apenas logar e continuar
+    }
   }
 
   /**
