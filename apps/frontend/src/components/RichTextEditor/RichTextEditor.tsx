@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -15,6 +16,8 @@ import {
   Link2,
   Undo,
   Redo,
+  Mic,
+  MicOff,
 } from 'lucide-react';
 import './RichTextEditor.css';
 
@@ -26,6 +29,10 @@ interface RichTextEditorProps {
 }
 
 export function RichTextEditor({ value, onChange, placeholder = 'Digite aqui...', className = '' }: RichTextEditorProps) {
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const recognitionRef = useRef<any>(null);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -44,6 +51,76 @@ export function RichTextEditor({ value, onChange, placeholder = 'Digite aqui...'
       onChange(editor.getHTML());
     },
   });
+
+  // Inicializar reconhecimento de voz
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'pt-BR';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onresult = (event: any) => {
+          let interimTranscript = '';
+          let finalTranscript = '';
+
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcriptPart = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcriptPart + ' ';
+            } else {
+              interimTranscript += transcriptPart;
+            }
+          }
+
+          if (finalTranscript && editor) {
+            // Inserir texto no editor
+            const currentContent = editor.getText();
+            const newContent = currentContent ? currentContent + ' ' + finalTranscript : finalTranscript;
+            editor.commands.setContent(newContent);
+            setTranscript('');
+          } else {
+            setTranscript(interimTranscript);
+          }
+        };
+
+        recognition.onerror = (event: any) => {
+          console.error('Erro no reconhecimento de voz:', event.error);
+          setIsListening(false);
+        };
+
+        recognition.onend = () => {
+          setIsListening(false);
+        };
+
+        recognitionRef.current = recognition;
+      }
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, [editor]);
+
+  const toggleVoiceRecognition = () => {
+    if (!recognitionRef.current) {
+      alert('Reconhecimento de voz não suportado neste navegador. Use Chrome ou Edge.');
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
 
   if (!editor) {
     return null;
@@ -195,7 +272,28 @@ export function RichTextEditor({ value, onChange, placeholder = 'Digite aqui...'
         >
           <Link2 size={16} />
         </button>
+
+        <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
+
+        {/* Voice Recognition */}
+        <button
+          type="button"
+          onClick={toggleVoiceRecognition}
+          className={`p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 ${
+            isListening ? 'bg-red-500 text-white animate-pulse' : ''
+          }`}
+          title={isListening ? 'Parar gravação' : 'Gravar voz'}
+        >
+          {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+        </button>
       </div>
+
+      {/* Transcrição em tempo real */}
+      {transcript && (
+        <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300">
+          <span className="font-medium">Transcrevendo:</span> {transcript}...
+        </div>
+      )}
 
       {/* Editor Content */}
       <EditorContent
