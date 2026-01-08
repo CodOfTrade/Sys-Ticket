@@ -305,49 +305,58 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
   // Criar ticket com ou sem atribuição de técnico
   const handleCreateTicket = async (assignToTechnician: boolean) => {
-    // Usar service_desk_id do usuário logado
-    const serviceDeskId = user?.service_desk_id || '3d316765-6615-4082-9bb7-d7d6a266db09';
+    try {
+      console.log('Iniciando criação de ticket...', { assignToTechnician, selectedTechnician });
 
-    const ticketData: any = {
-      title: formData.title,
-      description: formData.description,
-      priority: formData.priority,
-      type: formData.service_type,
-      service_catalog_id: formData.service_catalog_id,
-      client_id: formData.client_id || 'CLI-' + Date.now(), // Gerar ID temporário se não houver
-      client_name: formData.client_name,
-      requester_name: formData.requester_name,
-      service_desk_id: serviceDeskId,
-    };
+      // Usar service_desk_id do usuário logado
+      const serviceDeskId = user?.service_desk_id || '3d316765-6615-4082-9bb7-d7d6a266db09';
 
-    // Adicionar campos opcionais apenas se preenchidos
-    if (formData.contact_id) {
-      ticketData.contact_id = formData.contact_id;
-    }
-    if (formData.requester_email) {
-      ticketData.requester_email = formData.requester_email;
-    }
-    if (formData.requester_phone) {
-      ticketData.requester_phone = formData.requester_phone;
-    }
-    if (formData.category) {
-      ticketData.category = formData.category;
-    }
-    if (formData.parent_ticket_id) {
-      ticketData.parent_ticket_id = formData.parent_ticket_id;
-    }
-    if (formData.followers.length > 0) {
-      ticketData.followers = formData.followers;
-    }
+      const ticketData: any = {
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
+        type: formData.service_type,
+        service_catalog_id: formData.service_catalog_id,
+        client_id: formData.client_id || 'CLI-' + Date.now(), // Gerar ID temporário se não houver
+        client_name: formData.client_name,
+        requester_name: formData.requester_name,
+        service_desk_id: serviceDeskId,
+      };
 
-    // Adicionar técnico atribuído se selecionado
-    if (assignToTechnician && selectedTechnician) {
-      ticketData.assigned_to = selectedTechnician;
-    }
+      // Adicionar campos opcionais apenas se preenchidos
+      if (formData.contact_id) {
+        ticketData.contact_id = formData.contact_id;
+      }
+      if (formData.requester_email) {
+        ticketData.requester_email = formData.requester_email;
+      }
+      if (formData.requester_phone) {
+        ticketData.requester_phone = formData.requester_phone;
+      }
+      if (formData.category) {
+        ticketData.category = formData.category;
+      }
+      if (formData.parent_ticket_id) {
+        ticketData.parent_ticket_id = formData.parent_ticket_id;
+      }
+      if (formData.followers.length > 0) {
+        ticketData.followers = formData.followers;
+      }
 
-    await createMutation.mutateAsync(ticketData);
-    setShowAssignmentModal(false);
-    setSelectedTechnician('');
+      // Adicionar técnico atribuído se selecionado
+      if (assignToTechnician && selectedTechnician) {
+        ticketData.assigned_to = selectedTechnician;
+      }
+
+      console.log('Dados do ticket a ser criado:', ticketData);
+      await createMutation.mutateAsync(ticketData);
+      console.log('Ticket criado com sucesso!');
+
+      setShowAssignmentModal(false);
+      setSelectedTechnician('');
+    } catch (error) {
+      console.error('Erro ao criar ticket:', error);
+    }
   };
 
   const handleChange = (
