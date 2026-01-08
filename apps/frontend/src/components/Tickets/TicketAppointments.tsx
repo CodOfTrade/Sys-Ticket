@@ -32,11 +32,6 @@ const coverageTypeColors: Record<ServiceCoverageType, string> = {
   [ServiceCoverageType.INTERNAL]: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
 };
 
-const serviceLevelLabels: Record<ServiceLevel, string> = {
-  [ServiceLevel.N1]: 'Suporte Standard',
-  [ServiceLevel.N2]: 'Suporte Premium',
-};
-
 export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsProps) {
   const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);

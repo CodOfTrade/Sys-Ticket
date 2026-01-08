@@ -15,12 +15,6 @@ interface AppointmentTimerProps {
   clientId: string;
 }
 
-// Labels dos contratos
-const serviceLevelLabels: Record<ServiceLevel, string> = {
-  [ServiceLevel.N1]: 'Suporte Standard',
-  [ServiceLevel.N2]: 'Suporte Premium',
-};
-
 export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) {
   const queryClient = useQueryClient();
   const [showStopModal, setShowStopModal] = useState(false);
