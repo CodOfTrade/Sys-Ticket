@@ -20,6 +20,9 @@ const commentTypeColors: Record<CommentType, string> = {
   [CommentType.CHAT]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
 };
 
+// Tipos de comentário permitidos para criação (sem Chat)
+const allowedCommentTypes = [CommentType.CLIENT, CommentType.INTERNAL];
+
 export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
   const queryClient = useQueryClient();
   const [selectedType, setSelectedType] = useState<CommentType | 'all'>('all');
@@ -122,17 +125,24 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
             Tipo de Comentário
           </label>
           <div className="flex gap-3">
-            {Object.entries(commentTypeLabels).map(([value, label]) => (
-              <label key={value} className="flex items-center gap-2 cursor-pointer">
+            {allowedCommentTypes.map((type) => (
+              <label key={type} className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
                   name="commentType"
-                  value={value}
-                  checked={commentType === value}
-                  onChange={(e) => setCommentType(e.target.value as CommentType)}
+                  value={type}
+                  checked={commentType === type}
+                  onChange={(e) => {
+                    const newType = e.target.value as CommentType;
+                    setCommentType(newType);
+                    // Se mudar para INTERNO, desmarcar checkbox de enviar para cliente
+                    if (newType === CommentType.INTERNAL) {
+                      setSendToClient(false);
+                    }
+                  }}
                   className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{commentTypeLabels[type]}</span>
               </label>
             ))}
           </div>
@@ -182,15 +192,19 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
         </div>
 
         <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className={`flex items-center gap-2 ${commentType === CommentType.INTERNAL ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
             <input
               type="checkbox"
               checked={sendToClient}
               onChange={(e) => setSendToClient(e.target.checked)}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              disabled={commentType === CommentType.INTERNAL}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">
               Enviar notificação para o cliente
+              {commentType === CommentType.INTERNAL && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">(Apenas para tipo Cliente)</span>
+              )}
             </span>
           </label>
 
