@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MessageSquare, Send, User, Clock, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
+import { MessageSquare, Send, User, Clock, Trash2, Eye, EyeOff } from 'lucide-react';
 import { commentsService } from '@/services/ticket-details.service';
 import { CommentType, CommentVisibility, CreateCommentDto } from '@/types/ticket-details.types';
 
@@ -27,11 +27,13 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
   const queryClient = useQueryClient();
   const [selectedType, setSelectedType] = useState<CommentType>(CommentType.CLIENT);
   const [newComment, setNewComment] = useState('');
-  const [commentType, setCommentType] = useState<CommentType>(CommentType.INTERNAL);
   const [commentVisibility, setCommentVisibility] = useState<CommentVisibility>(
     CommentVisibility.PRIVATE
   );
-  const [sendToClient, setSendToClient] = useState(false);
+
+  // commentType e sendToClient agora derivam de selectedType
+  const commentType = selectedType;
+  const sendToClient = selectedType === CommentType.CLIENT;
 
   // Buscar comentários
   const { data: comments = [], isLoading } = useQuery({
@@ -45,7 +47,6 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', ticketId] });
       setNewComment('');
-      setSendToClient(false);
     },
   });
 
@@ -61,14 +62,11 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
     e.preventDefault();
     if (!newComment.trim()) return;
 
-    // Se for tipo CLIENTE, sempre enviar email
-    const shouldSendEmail = commentType === CommentType.CLIENT ? true : sendToClient;
-
     createMutation.mutate({
       content: newComment,
       type: commentType,
       visibility: commentVisibility,
-      sent_to_client: shouldSendEmail,
+      sent_to_client: sendToClient,
     });
   };
 
@@ -112,34 +110,6 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
 
       {/* Formulário de novo comentário */}
       <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Tipo de Comentário
-          </label>
-          <div className="flex gap-3">
-            {allowedCommentTypes.map((type) => (
-              <label key={type} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="commentType"
-                  value={type}
-                  checked={commentType === type}
-                  onChange={(e) => {
-                    const newType = e.target.value as CommentType;
-                    setCommentType(newType);
-                    // Se mudar para INTERNO, desmarcar checkbox de enviar para cliente
-                    if (newType === CommentType.INTERNAL) {
-                      setSendToClient(false);
-                    }
-                  }}
-                  className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">{commentTypeLabels[type]}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Visibilidade
@@ -277,27 +247,19 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
                   </div>
                 </div>
 
-                {/* Ações - Apenas para comentários INTERNOS */}
+                {/* Ações - Apenas excluir para comentários INTERNOS */}
                 {comment.type === CommentType.INTERNAL && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                      title="Editar"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm('Deseja realmente excluir este comentário?')) {
-                          deleteMutation.mutate(comment.id);
-                        }
-                      }}
-                      className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                      title="Excluir"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => {
+                      if (confirm('Deseja realmente excluir este comentário?')) {
+                        deleteMutation.mutate(comment.id);
+                      }
+                    }}
+                    className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                    title="Excluir"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 )}
               </div>
 
