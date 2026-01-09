@@ -19,6 +19,7 @@ import { PricingConfig } from '../service-desks/entities/pricing-config.entity';
 import { ContractsModule } from '../contracts/contracts.module';
 import { ClientsModule } from '../clients/clients.module';
 import { ServiceDesksModule } from '../service-desks/service-desks.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ServiceDesksModule } from '../service-desks/service-desks.module';
     ContractsModule,
     ClientsModule,
     ServiceDesksModule,
+    EmailModule,
   ],
   controllers: [TicketsController, TicketDetailsController],
   providers: [

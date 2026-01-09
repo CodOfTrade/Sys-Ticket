@@ -20,6 +20,7 @@ import { SignaturesModule } from './modules/signatures/signatures.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { ServiceCatalogModule } from './modules/service-catalog/service-catalog.module';
+import { EmailModule } from './modules/email/email.module';
 
 // Guards
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -81,6 +82,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     SignaturesModule,
     WebhooksModule,
     SyncModule,
+    EmailModule,
   ],
   providers: [
     {
