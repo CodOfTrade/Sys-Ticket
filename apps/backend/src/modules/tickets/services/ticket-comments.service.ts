@@ -50,11 +50,11 @@ export class TicketCommentsService {
       // Buscar ticket com relações necessárias
       const ticket = await this.ticketRepository.findOne({
         where: { id: comment.ticket_id },
-        relations: ['client', 'assigned_to', 'created_by'],
+        relations: ['assigned_to', 'created_by'],
       });
 
-      if (!ticket || !ticket.client) {
-        this.logger.warn(`Ticket ${comment.ticket_id} não encontrado ou sem cliente`);
+      if (!ticket) {
+        this.logger.warn(`Ticket ${comment.ticket_id} não encontrado`);
         return;
       }
 
@@ -69,10 +69,10 @@ export class TicketCommentsService {
         return;
       }
 
-      // Email do cliente (assumindo que existe campo email no client)
-      const clientEmail = ticket.client.email;
+      // Email do solicitante (requester_email)
+      const clientEmail = ticket.requester_email;
       if (!clientEmail) {
-        this.logger.warn(`Cliente ${ticket.client.id} não possui email`);
+        this.logger.warn(`Ticket ${ticket.id} não possui email do solicitante`);
         return;
       }
 
