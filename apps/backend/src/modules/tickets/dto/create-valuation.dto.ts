@@ -40,6 +40,16 @@ export class CreateValuationDto {
   @IsOptional()
   sige_product_id?: string;
 
+  @ApiProperty({ description: 'Código do produto no SIGE Cloud', required: false })
+  @IsString()
+  @IsOptional()
+  sige_product_code?: string;
+
+  @ApiProperty({ description: 'Nome do produto no SIGE Cloud', required: false })
+  @IsString()
+  @IsOptional()
+  sige_product_name?: string;
+
   @ApiProperty({ description: 'Nome do produto/serviço' })
   @IsString()
   @IsNotEmpty()

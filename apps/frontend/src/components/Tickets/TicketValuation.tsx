@@ -139,11 +139,16 @@ export function TicketValuation({ ticketId }: TicketValuationProps) {
   }, []);
 
   const handleProductSelect = (product: SigeProduct) => {
+    // Converter preço de string para número
+    const price = typeof product.preco_venda === 'string'
+      ? parseFloat(product.preco_venda)
+      : (product.preco_venda || 0);
+
     setFormData({
       ...formData,
       description: product.nome,
       unit: product.unidade || 'un',
-      unit_price: product.preco_venda || 0,
+      unit_price: price,
       sige_product_code: product.codigo,
       sige_product_name: product.nome,
     });
