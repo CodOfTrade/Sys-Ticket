@@ -29,7 +29,8 @@ export const sigeProductsService = {
     const response = await api.get('/v1/clients/products/search', {
       params: { query, page, per_page: perPage },
     });
-    return response.data;
+    // API retorna { success: true, data: { data: [...], meta: {...} } }
+    return response.data.data || response.data;
   },
 
   /**
