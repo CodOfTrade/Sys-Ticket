@@ -163,28 +163,36 @@ export class SigeSyncService {
   /**
    * Insere ou atualiza um produto no banco local
    */
-  private async upsertProduct(productData: any): Promise<SigeProduct> {
+  private async upsertProduct(productData: any): Promise<SigeProduct | null> {
     try {
+      // API SIGE retorna ID (maiúsculo) como identificador único
+      const sigeId = String(productData.ID || productData.id || productData.IdProduto);
+
+      if (!sigeId || sigeId === 'undefined') {
+        this.logger.warn('Produto sem ID, pulando...', productData);
+        return null;
+      }
+
       const existing = await this.productRepository.findOne({
-        where: { sigeId: productData.id || productData.IdProduto },
+        where: { sigeId },
       });
 
       const product = existing || this.productRepository.create();
 
-      product.sigeId = productData.id || productData.IdProduto;
-      product.nome = productData.nome || productData.Nome || productData.Descricao;
-      product.descricao = productData.descricao || productData.DescricaoCompleta;
-      product.codigo = productData.codigo || productData.Codigo;
-      product.precoVenda = productData.preco_venda || productData.PrecoVenda;
-      product.precoCusto = productData.preco_custo || productData.PrecoCusto;
-      product.unidade = productData.unidade || productData.Unidade;
-      product.tipo = productData.tipo || productData.Tipo;
-      product.ativo = productData.ativo !== undefined ? productData.ativo : (productData.Ativo !== undefined ? productData.Ativo : true);
+      product.sigeId = sigeId;
+      product.nome = productData.Nome || productData.nome || productData.Descricao;
+      product.descricao = productData.Especificacao || productData.descricao || productData.DescricaoCompleta;
+      product.codigo = productData.Codigo || productData.codigo;
+      product.precoVenda = productData.PrecoVenda || productData.preco_venda;
+      product.precoCusto = productData.PrecoCusto || productData.preco_custo;
+      product.unidade = productData.UnidadeComercial || productData.unidade || productData.Unidade || 'UN';
+      product.tipo = productData.Genero || productData.tipo || productData.Tipo;
+      product.ativo = productData.VisivelVendas !== undefined ? productData.VisivelVendas : true;
       product.lastSyncedAt = new Date();
 
       return await this.productRepository.save(product);
     } catch (error) {
-      this.logger.error(`Erro ao fazer upsert do produto ${productData.id}`, error);
+      this.logger.error(`Erro ao fazer upsert do produto ${productData.ID || productData.id}`, error);
       throw error;
     }
   }
