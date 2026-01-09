@@ -196,6 +196,30 @@ export class ClientsController {
     return this.clientsService.getServiceOrder(id);
   }
 
+  @Get('products/search')
+  @Public()
+  @ApiOperation({ summary: 'Buscar produtos no SIGE Cloud' })
+  @ApiQuery({ name: 'query', required: true, type: String, description: 'Termo de busca' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'per_page', required: false, type: Number, example: 20 })
+  @ApiResponse({ status: 200, description: 'Lista de produtos retornada com sucesso' })
+  async searchProducts(
+    @Query('query') query: string,
+    @Query('page') page = 1,
+    @Query('per_page') perPage = 20,
+  ) {
+    return this.clientsService.searchProducts(query, page, perPage);
+  }
+
+  @Get('products/:id')
+  @Public()
+  @ApiOperation({ summary: 'Buscar produto por ID no SIGE Cloud' })
+  @ApiResponse({ status: 200, description: 'Produto encontrado' })
+  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
+  async getProduct(@Param('id') id: string) {
+    return this.clientsService.getProduct(id);
+  }
+
   @Get('contract/client/:clientId')
   @Public()
   @ApiOperation({ summary: 'Listar contratos de um cliente' })
@@ -214,27 +238,5 @@ export class ClientsController {
   @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
   async findOne(@Param('id') id: string) {
     return this.clientsService.findOne(id);
-  }
-
-  @Get('products/search')
-  @ApiOperation({ summary: 'Buscar produtos no SIGE Cloud' })
-  @ApiQuery({ name: 'query', required: true, type: String, description: 'Termo de busca' })
-  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-  @ApiQuery({ name: 'per_page', required: false, type: Number, example: 20 })
-  @ApiResponse({ status: 200, description: 'Lista de produtos retornada com sucesso' })
-  async searchProducts(
-    @Query('query') query: string,
-    @Query('page') page = 1,
-    @Query('per_page') perPage = 20,
-  ) {
-    return this.clientsService.searchProducts(query, page, perPage);
-  }
-
-  @Get('products/:id')
-  @ApiOperation({ summary: 'Buscar produto por ID no SIGE Cloud' })
-  @ApiResponse({ status: 200, description: 'Produto encontrado' })
-  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
-  async getProduct(@Param('id') id: string) {
-    return this.clientsService.getProduct(id);
   }
 }
