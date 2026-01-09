@@ -25,7 +25,7 @@ const allowedCommentTypes = [CommentType.CLIENT, CommentType.INTERNAL];
 
 export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
   const queryClient = useQueryClient();
-  const [selectedType, setSelectedType] = useState<CommentType | 'all'>('all');
+  const [selectedType, setSelectedType] = useState<CommentType>(CommentType.CLIENT);
   const [newComment, setNewComment] = useState('');
   const [commentType, setCommentType] = useState<CommentType>(CommentType.INTERNAL);
   const [commentVisibility, setCommentVisibility] = useState<CommentVisibility>(
@@ -36,8 +36,7 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
   // Buscar comentários
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ['comments', ticketId, selectedType],
-    queryFn: () =>
-      commentsService.getComments(ticketId, selectedType !== 'all' ? selectedType : undefined),
+    queryFn: () => commentsService.getComments(ticketId, selectedType),
   });
 
   // Mutation para criar comentário
@@ -96,27 +95,17 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
     <div className="space-y-6">
       {/* Filtros */}
       <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() => setSelectedType('all')}
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            selectedType === 'all'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-          }`}
-        >
-          Todos
-        </button>
-        {Object.entries(commentTypeLabels).map(([value, label]) => (
+        {allowedCommentTypes.map((type) => (
           <button
-            key={value}
-            onClick={() => setSelectedType(value as CommentType)}
+            key={type}
+            onClick={() => setSelectedType(type)}
             className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedType === value
+              selectedType === type
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
-            {label}
+            {commentTypeLabels[type]}
           </button>
         ))}
       </div>
@@ -195,18 +184,24 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
         </div>
 
         <div className="flex items-center justify-between">
-          <div>
-            {commentType === CommentType.CLIENT ? (
-              <span className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
-                <Send className="w-4 h-4" />
-                Email será enviado automaticamente para o cliente
-              </span>
-            ) : commentType === CommentType.INTERNAL ? (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                Comentário interno - não será enviado ao cliente
-              </span>
-            ) : null}
-          </div>
+          <label
+            className={`flex items-center gap-2 ${
+              commentType === CommentType.INTERNAL
+                ? 'cursor-not-allowed opacity-50'
+                : 'cursor-pointer'
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={commentType === CommentType.CLIENT ? true : sendToClient}
+              onChange={(e) => setSendToClient(e.target.checked)}
+              disabled={commentType === CommentType.INTERNAL}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              Enviar notificação para o cliente
+            </span>
+          </label>
 
           <button
             type="submit"
