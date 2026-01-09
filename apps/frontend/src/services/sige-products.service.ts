@@ -23,20 +23,20 @@ export interface SigeProductsResponse {
 
 export const sigeProductsService = {
   /**
-   * Busca produtos no SIGE Cloud
+   * Busca produtos no banco local (sincronizado do SIGE Cloud)
    */
-  async searchProducts(query: string, page = 1, perPage = 20): Promise<SigeProductsResponse> {
-    const response = await api.get('/v1/clients/products/search', {
-      params: { query, page, per_page: perPage },
+  async searchProducts(query: string): Promise<SigeProduct[]> {
+    const response = await api.get('/products/search', {
+      params: { q: query },
     });
     return response.data;
   },
 
   /**
-   * Busca produto por ID no SIGE Cloud
+   * Sincroniza produtos do SIGE Cloud para o banco local
    */
-  async getProduct(productId: string): Promise<SigeProduct> {
-    const response = await api.get(`/v1/clients/products/${productId}`);
+  async syncProducts(): Promise<{ success: boolean; message: string; synced: number }> {
+    const response = await api.post('/products/sync');
     return response.data;
   },
 };
