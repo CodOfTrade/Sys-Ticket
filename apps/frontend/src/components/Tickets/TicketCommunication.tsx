@@ -154,18 +154,16 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
         </div>
 
         <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 cursor-default">
-            <input
-              type="checkbox"
-              checked={sendToClient}
-              readOnly
-              disabled
-              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-            />
-            <span className="text-sm text-gray-700 dark:text-gray-300">
-              {sendToClient ? 'Email será enviado ao cliente' : 'Comentário interno - não será enviado'}
+          {sendToClient ? (
+            <span className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2 font-medium">
+              <Send className="w-4 h-4" />
+              Email será enviado automaticamente para o cliente
             </span>
-          </label>
+          ) : (
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Comentário interno - não será enviado ao cliente
+            </span>
+          )}
 
           <button
             type="submit"

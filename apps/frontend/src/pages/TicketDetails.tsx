@@ -33,7 +33,7 @@ const tabs = [
   },
   {
     id: 'valuation' as TabType,
-    label: 'Valorização',
+    label: 'Valorização Extra',
     icon: DollarSign,
   },
   {
