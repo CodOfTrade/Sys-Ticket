@@ -69,8 +69,8 @@ export class ProductsService {
       this.logger.log('Iniciando sincronização de produtos do SIGE Cloud...');
 
       // Buscar produtos da API SIGE Cloud usando endpoint GetAll
-      // https://api.sigecloud.com.br/swagger/ui/index#!/Produtos/Produtos_GetAll
-      const response = await this.sigeCloudService.get<any>('/api/v1/produtos');
+      // GET /request/Produtos/GetAll (conforme Swagger SIGE Cloud)
+      const response = await this.sigeCloudService.get<any>('/request/Produtos/GetAll');
 
       // Verificar estrutura de resposta do SIGE
       let products: SigeProductResponse[] = [];

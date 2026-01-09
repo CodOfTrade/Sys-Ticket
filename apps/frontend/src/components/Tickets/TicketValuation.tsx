@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { DollarSign, Plus, Trash2, Edit2, Package, CheckCircle, XCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import { DollarSign, Plus, Trash2, Edit2, Package, CheckCircle, XCircle, TrendingUp, TrendingDown, Search } from 'lucide-react';
 import { valuationsService } from '@/services/ticket-details.service';
 import { ValuationType, ValuationCategory, CreateValuationDto } from '@/types/ticket-details.types';
+import { sigeProductsService, SigeProduct } from '@/services/sige-products.service';
 
 interface TicketValuationProps {
   ticketId: string;
@@ -41,6 +42,14 @@ export function TicketValuation({ ticketId }: TicketValuationProps) {
     discount_percent: 0,
     tax_percent: 0,
   });
+
+  // Autocomplete states
+  const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
+  const [productSuggestions, setProductSuggestions] = useState<SigeProduct[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
 
   // Buscar valorizações
   const { data: valuations = [], isLoading } = useQuery({
@@ -84,6 +93,64 @@ export function TicketValuation({ ticketId }: TicketValuationProps) {
     },
   });
 
+  // Debounced product search
+  useEffect(() => {
+    if (productSearchQuery.trim().length < 2) {
+      setProductSuggestions([]);
+      setShowProductSuggestions(false);
+      return;
+    }
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        setIsSearching(true);
+        const response = await sigeProductsService.searchProducts(productSearchQuery, 1, 10);
+        setProductSuggestions(response.data || []);
+        setShowProductSuggestions(true);
+      } catch (error) {
+        console.error('Erro ao buscar produtos:', error);
+        setProductSuggestions([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [productSearchQuery]);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target as Node)) {
+        setShowProductSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleProductSelect = (product: SigeProduct) => {
+    setFormData({
+      ...formData,
+      description: product.nome,
+      unit: product.unidade || 'un',
+      unit_price: product.preco_venda || 0,
+      sige_product_code: product.codigo,
+      sige_product_name: product.nome,
+    });
+    setProductSearchQuery(product.nome);
+    setShowProductSuggestions(false);
+  };
+
   const resetForm = () => {
     setFormData({
       ticket_id: ticketId,
@@ -97,6 +164,9 @@ export function TicketValuation({ ticketId }: TicketValuationProps) {
       discount_percent: 0,
       tax_percent: 0,
     });
+    setProductSearchQuery('');
+    setProductSuggestions([]);
+    setShowProductSuggestions(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -377,53 +447,92 @@ export function TicketValuation({ ticketId }: TicketValuationProps) {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Tipo
-                    </label>
-                    <select
-                      value={formData.type}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value as ValuationType })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      {Object.entries(valuationTypeLabels).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Categoria
-                    </label>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value as ValuationCategory })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      {Object.entries(valuationCategoryLabels).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Descrição
+                    Categoria
                   </label>
-                  <input
-                    type="text"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value as ValuationCategory })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    required
-                  />
+                  >
+                    {Object.entries(valuationCategoryLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="relative" ref={autocompleteRef}>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Buscar Produto
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={productSearchQuery}
+                      onChange={(e) => {
+                        setProductSearchQuery(e.target.value);
+                        setFormData({ ...formData, description: e.target.value });
+                      }}
+                      placeholder="Digite para buscar produtos do SIGE..."
+                      className="w-full px-3 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    {isSearching && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Suggestions dropdown */}
+                  {showProductSuggestions && productSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {productSuggestions.map((product) => (
+                        <button
+                          key={product.id}
+                          type="button"
+                          onClick={() => handleProductSelect(product)}
+                          className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900 dark:text-white">
+                                {product.nome}
+                              </div>
+                              {product.codigo && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  Código: {product.codigo}
+                                </div>
+                              )}
+                              {product.descricao && (
+                                <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                                  {product.descricao}
+                                </div>
+                              )}
+                            </div>
+                            {product.preco_venda && (
+                              <div className="ml-3 text-sm font-semibold text-green-600 dark:text-green-400">
+                                {new Intl.NumberFormat('pt-BR', {
+                                  style: 'currency',
+                                  currency: 'BRL',
+                                }).format(product.preco_venda)}
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {showProductSuggestions && productSuggestions.length === 0 && !isSearching && productSearchQuery.length >= 2 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4 text-center text-gray-500 dark:text-gray-400">
+                      Nenhum produto encontrado
+                    </div>
+                  )}
                 </div>
 
                 <div>

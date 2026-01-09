@@ -35,7 +35,7 @@ export class SigeSyncService {
       let totalSynced = 0;
 
       while (hasMore) {
-        const rawResponse = await this.sigeCloudService.get<any>('/request/Produtos/Pesquisar', {
+        const rawResponse = await this.sigeCloudService.get<any>('/request/Produtos/GetAll', {
           pageSize: this.BATCH_SIZE,
           skip: (page - 1) * this.BATCH_SIZE,
         });

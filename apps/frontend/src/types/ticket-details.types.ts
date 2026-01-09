@@ -247,6 +247,8 @@ export interface CreateValuationDto {
   type?: ValuationType;
   category?: ValuationCategory;
   sige_product_id?: string;
+  sige_product_code?: string;
+  sige_product_name?: string;
   description: string;
   valuation_date: string;
   quantity?: number;
