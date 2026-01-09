@@ -277,26 +277,28 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
                   </div>
                 </div>
 
-                {/* Ações */}
-                <div className="flex items-center gap-2">
-                  <button
-                    className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                    title="Editar"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm('Deseja realmente excluir este comentário?')) {
-                        deleteMutation.mutate(comment.id);
-                      }
-                    }}
-                    className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                    title="Excluir"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                {/* Ações - Apenas para comentários INTERNOS */}
+                {comment.type === CommentType.INTERNAL && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      title="Editar"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm('Deseja realmente excluir este comentário?')) {
+                          deleteMutation.mutate(comment.id);
+                        }
+                      }}
+                      className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                      title="Excluir"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Conteúdo do comentário */}
