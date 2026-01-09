@@ -154,22 +154,16 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
         </div>
 
         <div className="flex items-center justify-between">
-          <label
-            className={`flex items-center gap-2 ${
-              commentType === CommentType.INTERNAL
-                ? 'cursor-not-allowed opacity-50'
-                : 'cursor-pointer'
-            }`}
-          >
+          <label className="flex items-center gap-2 cursor-default">
             <input
               type="checkbox"
-              checked={commentType === CommentType.CLIENT ? true : sendToClient}
-              onChange={(e) => setSendToClient(e.target.checked)}
-              disabled={commentType === CommentType.INTERNAL}
+              checked={sendToClient}
+              readOnly
+              disabled
               className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">
-              Enviar notificação para o cliente
+              {sendToClient ? 'Email será enviado ao cliente' : 'Comentário interno - não será enviado'}
             </span>
           </label>
 
