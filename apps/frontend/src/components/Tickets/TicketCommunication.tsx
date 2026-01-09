@@ -62,11 +62,14 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
     e.preventDefault();
     if (!newComment.trim()) return;
 
+    // Se for tipo CLIENTE, sempre enviar email
+    const shouldSendEmail = commentType === CommentType.CLIENT ? true : sendToClient;
+
     createMutation.mutate({
       content: newComment,
       type: commentType,
       visibility: commentVisibility,
-      sent_to_client: sendToClient,
+      sent_to_client: shouldSendEmail,
     });
   };
 
@@ -192,21 +195,18 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
         </div>
 
         <div className="flex items-center justify-between">
-          <label className={`flex items-center gap-2 ${commentType === CommentType.INTERNAL ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
-            <input
-              type="checkbox"
-              checked={sendToClient}
-              onChange={(e) => setSendToClient(e.target.checked)}
-              disabled={commentType === CommentType.INTERNAL}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed"
-            />
-            <span className="text-sm text-gray-700 dark:text-gray-300">
-              Enviar notificação para o cliente
-              {commentType === CommentType.INTERNAL && (
-                <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">(Apenas para tipo Cliente)</span>
-              )}
-            </span>
-          </label>
+          <div>
+            {commentType === CommentType.CLIENT ? (
+              <span className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                <Send className="w-4 h-4" />
+                Email será enviado automaticamente para o cliente
+              </span>
+            ) : commentType === CommentType.INTERNAL ? (
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Comentário interno - não será enviado ao cliente
+              </span>
+            ) : null}
+          </div>
 
           <button
             type="submit"
