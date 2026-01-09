@@ -108,12 +108,12 @@ export class ProductsService {
           if (product) {
             // Atualizar produto existente
             product.nome = sigeProduct.nome;
-            product.descricao = sigeProduct.descricao || null;
-            product.codigo = sigeProduct.codigo || null;
-            product.precoVenda = sigeProduct.preco_venda || null;
-            product.precoCusto = sigeProduct.preco_custo || null;
-            product.unidade = sigeProduct.unidade || null;
-            product.tipo = sigeProduct.tipo || null;
+            product.descricao = sigeProduct.descricao || undefined;
+            product.codigo = sigeProduct.codigo || undefined;
+            product.precoVenda = sigeProduct.preco_venda || undefined;
+            product.precoCusto = sigeProduct.preco_custo || undefined;
+            product.unidade = sigeProduct.unidade || undefined;
+            product.tipo = sigeProduct.tipo || undefined;
             product.ativo = sigeProduct.ativo !== undefined ? sigeProduct.ativo : true;
             product.lastSyncedAt = new Date();
           } else {
@@ -121,12 +121,12 @@ export class ProductsService {
             product = this.productRepository.create({
               sigeId: sigeProduct.id,
               nome: sigeProduct.nome,
-              descricao: sigeProduct.descricao || null,
-              codigo: sigeProduct.codigo || null,
-              precoVenda: sigeProduct.preco_venda || null,
-              precoCusto: sigeProduct.preco_custo || null,
-              unidade: sigeProduct.unidade || null,
-              tipo: sigeProduct.tipo || null,
+              descricao: sigeProduct.descricao,
+              codigo: sigeProduct.codigo,
+              precoVenda: sigeProduct.preco_venda,
+              precoCusto: sigeProduct.preco_custo,
+              unidade: sigeProduct.unidade,
+              tipo: sigeProduct.tipo,
               ativo: sigeProduct.ativo !== undefined ? sigeProduct.ativo : true,
               lastSyncedAt: new Date(),
             });
