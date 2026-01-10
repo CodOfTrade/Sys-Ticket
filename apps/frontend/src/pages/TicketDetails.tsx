@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -100,13 +100,16 @@ export default function TicketDetails() {
     queryKey: ['ticket', id],
     queryFn: () => ticketService.getById(id!),
     enabled: !!id,
-    onSuccess: (data) => {
-      // Inicializar campos de edição com valores atuais
-      setEditedClient(data.client_id || '');
-      setEditedRequester(data.requester_name || '');
-      setEditedAssignee(data.assigned_to?.id || '');
-    },
   });
+
+  // Inicializar campos de edição quando ticket carregar
+  useEffect(() => {
+    if (ticket) {
+      setEditedClient(ticket.client_id || '');
+      setEditedRequester(ticket.requester_name || '');
+      setEditedAssignee(ticket.assigned_to?.id || '');
+    }
+  }, [ticket]);
 
   if (isLoading) {
     return (
