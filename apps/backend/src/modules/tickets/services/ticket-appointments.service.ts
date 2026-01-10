@@ -316,7 +316,7 @@ export class TicketAppointmentsService {
   async findAll(ticketId: string) {
     return this.appointmentRepository.find({
       where: { ticket_id: ticketId },
-      relations: ['user', 'created_by'],
+      relations: ['user', 'created_by', 'attachments'],
       order: { appointment_date: 'DESC', start_time: 'DESC' },
     });
   }
@@ -327,7 +327,7 @@ export class TicketAppointmentsService {
   async findOne(id: string) {
     const appointment = await this.appointmentRepository.findOne({
       where: { id },
-      relations: ['user', 'ticket'],
+      relations: ['user', 'ticket', 'attachments'],
     });
 
     if (!appointment) {

@@ -248,6 +248,10 @@ export class TicketsService {
           'children',
           'timesheets',
           'timesheets.user',
+          'client',
+          'attachments',
+          'followers',
+          'followers.user',
         ],
       });
 
