@@ -22,6 +22,9 @@ import { TicketCommunication } from '@/components/Tickets/TicketCommunication';
 import { TicketValuation } from '@/components/Tickets/TicketValuation';
 import { TicketChecklists } from '@/components/Tickets/TicketChecklists';
 import { TicketHistory } from '@/components/Tickets/TicketHistory';
+import { Autocomplete, AutocompleteOption } from '@/components/Common/Autocomplete';
+import { clientService, Client } from '@/services/client.service';
+import { userService, User as UserType } from '@/services/user.service';
 
 type TabType = 'appointments' | 'communication' | 'valuation' | 'checklists' | 'history';
 
@@ -95,6 +98,14 @@ export default function TicketDetails() {
   const [editedRequester, setEditedRequester] = useState<string>('');
   const [editedAssignee, setEditedAssignee] = useState<string>('');
 
+  // Autocomplete states
+  const [clientOptions, setClientOptions] = useState<AutocompleteOption[]>([]);
+  const [technicianOptions, setTechnicianOptions] = useState<AutocompleteOption[]>([]);
+  const [userOptions, setUserOptions] = useState<AutocompleteOption[]>([]);
+  const [isLoadingClients, setIsLoadingClients] = useState(false);
+  const [isLoadingTechnicians, setIsLoadingTechnicians] = useState(false);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+
   // Buscar detalhes do ticket
   const { data: ticket, isLoading, error } = useQuery({
     queryKey: ['ticket', id],
@@ -105,11 +116,84 @@ export default function TicketDetails() {
   // Inicializar campos de edição quando ticket carregar
   useEffect(() => {
     if (ticket) {
-      setEditedClient(ticket.client_id || '');
+      setEditedClient(ticket.client?.name || ticket.client_id || '');
       setEditedRequester(ticket.requester_name || '');
-      setEditedAssignee(ticket.assigned_to?.id || '');
+      setEditedAssignee(ticket.assigned_to?.name || '');
     }
   }, [ticket]);
+
+  // Funções de busca para autocomplete
+  const handleClientSearch = async (query: string) => {
+    if (query.trim().length < 2) {
+      setClientOptions([]);
+      return;
+    }
+
+    setIsLoadingClients(true);
+    try {
+      const response = await clientService.searchByName(query);
+      const options: AutocompleteOption[] = response.data.map((client: Client) => ({
+        id: client.id,
+        label: client.nome || client.nome_fantasia || client.razao_social || '',
+        sublabel: client.cpf_cnpj || client.cidade || '',
+        metadata: client,
+      }));
+      setClientOptions(options);
+    } catch (error) {
+      console.error('Erro ao buscar clientes:', error);
+      setClientOptions([]);
+    } finally {
+      setIsLoadingClients(false);
+    }
+  };
+
+  const handleTechnicianSearch = async (query: string) => {
+    setIsLoadingTechnicians(true);
+    try {
+      const technicians = await userService.getAllTechnicians();
+      const filteredOptions: AutocompleteOption[] = technicians
+        .filter((tech: UserType) =>
+          tech.name.toLowerCase().includes(query.toLowerCase()) ||
+          tech.email.toLowerCase().includes(query.toLowerCase())
+        )
+        .map((tech: UserType) => ({
+          id: tech.id,
+          label: tech.name,
+          sublabel: tech.email,
+          metadata: tech,
+        }));
+      setTechnicianOptions(filteredOptions);
+    } catch (error) {
+      console.error('Erro ao buscar técnicos:', error);
+      setTechnicianOptions([]);
+    } finally {
+      setIsLoadingTechnicians(false);
+    }
+  };
+
+  const handleRequesterSearch = async (query: string) => {
+    setIsLoadingUsers(true);
+    try {
+      const users = await userService.getAll();
+      const filteredOptions: AutocompleteOption[] = users
+        .filter((user: UserType) =>
+          user.name.toLowerCase().includes(query.toLowerCase()) ||
+          user.email.toLowerCase().includes(query.toLowerCase())
+        )
+        .map((user: UserType) => ({
+          id: user.id,
+          label: user.name,
+          sublabel: user.email,
+          metadata: user,
+        }));
+      setUserOptions(filteredOptions);
+    } catch (error) {
+      console.error('Erro ao buscar usuários:', error);
+      setUserOptions([]);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -198,12 +282,21 @@ export default function TicketDetails() {
                   <div className="flex-1">
                     <p className="text-gray-600 dark:text-gray-400">Cliente</p>
                     {isEditingFields ? (
-                      <input
-                        type="text"
+                      <Autocomplete
                         value={editedClient}
-                        onChange={(e) => setEditedClient(e.target.value)}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        placeholder="ID do cliente"
+                        onChange={(option) => {
+                          if (option) {
+                            setEditedClient(option.label);
+                          } else {
+                            setEditedClient('');
+                          }
+                        }}
+                        onSearchChange={handleClientSearch}
+                        options={clientOptions}
+                        placeholder="Digite o nome do cliente..."
+                        isLoading={isLoadingClients}
+                        minChars={2}
+                        className="w-full"
                       />
                     ) : (
                       <p className="font-medium text-gray-900 dark:text-white">
@@ -219,12 +312,21 @@ export default function TicketDetails() {
                   <div className="flex-1">
                     <p className="text-gray-600 dark:text-gray-400">Solicitante</p>
                     {isEditingFields ? (
-                      <input
-                        type="text"
+                      <Autocomplete
                         value={editedRequester}
-                        onChange={(e) => setEditedRequester(e.target.value)}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        placeholder="Nome do solicitante"
+                        onChange={(option) => {
+                          if (option) {
+                            setEditedRequester(option.label);
+                          } else {
+                            setEditedRequester('');
+                          }
+                        }}
+                        onSearchChange={handleRequesterSearch}
+                        options={userOptions}
+                        placeholder="Digite o nome do solicitante..."
+                        isLoading={isLoadingUsers}
+                        minChars={2}
+                        className="w-full"
                       />
                     ) : (
                       <p className="font-medium text-gray-900 dark:text-white">
@@ -240,12 +342,21 @@ export default function TicketDetails() {
                   <div className="flex-1">
                     <p className="text-gray-600 dark:text-gray-400">Responsável</p>
                     {isEditingFields ? (
-                      <input
-                        type="text"
+                      <Autocomplete
                         value={editedAssignee}
-                        onChange={(e) => setEditedAssignee(e.target.value)}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        placeholder="ID do técnico"
+                        onChange={(option) => {
+                          if (option) {
+                            setEditedAssignee(option.label);
+                          } else {
+                            setEditedAssignee('');
+                          }
+                        }}
+                        onSearchChange={handleTechnicianSearch}
+                        options={technicianOptions}
+                        placeholder="Digite o nome do técnico..."
+                        isLoading={isLoadingTechnicians}
+                        minChars={2}
+                        className="w-full"
                       />
                     ) : (
                       <p className="font-medium text-gray-900 dark:text-white">

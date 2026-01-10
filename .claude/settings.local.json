@@ -54,7 +54,8 @@
       "Bash(cmd.exe /c 'cd /d \"\"d:\\\\\\\\Arquivos do Usuário\\\\\\\\OneDrive\\\\\\\\3 - Pessoal José\\\\\\\\Programaçao\\\\\\\\Sys-Ticket\"\" && git add . && git commit -m \"\"Fix: Simplificar interface de comunicação - apenas filtros Cliente/Interno e checkbox restaurado\"\" && git push')",
       "Bash(cmd.exe /c 'cd /d \"\"d:\\\\\\\\Arquivos do Usuário\\\\\\\\OneDrive\\\\\\\\3 - Pessoal José\\\\\\\\Programaçao\\\\\\\\Sys-Ticket\"\" && git log --oneline -3')",
       "Bash(cmd.exe /c 'cd /d \"\"d:\\\\\\\\Arquivos do Usuário\\\\\\\\OneDrive\\\\\\\\3 - Pessoal José\\\\\\\\Programaçao\\\\\\\\Sys-Ticket\"\" && git status')",
-      "Bash(cmd.exe /c 'cd /d \"\"d:\\\\\\\\Arquivos do Usuário\\\\\\\\OneDrive\\\\\\\\3 - Pessoal José\\\\\\\\Programaçao\\\\\\\\Sys-Ticket\"\" && git add . && git status')"
+      "Bash(cmd.exe /c 'cd /d \"\"d:\\\\\\\\Arquivos do Usuário\\\\\\\\OneDrive\\\\\\\\3 - Pessoal José\\\\\\\\Programaçao\\\\\\\\Sys-Ticket\"\" && git add . && git status')",
+      "Bash(cmd.exe /c 'dir \"\"C:\\\\Users\\\\José D Oliveira\\\\.ssh\"\" /b')"
     ]
   }
 }
