@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Logger,
   Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -15,6 +16,7 @@ import { QueryTicketDto } from './dto/query-ticket.dto';
 import { CACHE_MANAGER } from '../../shared/shared.module';
 import { SimpleCacheService } from '../../shared/services/simple-cache.service';
 import { PaginatedResult } from './interfaces/paginated-result.interface';
+import { ClientsService } from '../clients/clients.service';
 
 @Injectable()
 export class TicketsService {
@@ -26,6 +28,8 @@ export class TicketsService {
     private ticketsRepository: Repository<Ticket>,
     private eventEmitter: EventEmitter2,
     @Inject(CACHE_MANAGER) private cacheManager: SimpleCacheService,
+    @Inject(forwardRef(() => ClientsService))
+    private clientsService: ClientsService,
   ) {
     this.initializeTicketCounter();
   }
@@ -248,16 +252,31 @@ export class TicketsService {
           'children',
           'timesheets',
           'timesheets.user',
-          'client',
           'attachments',
           'followers',
           'followers.user',
+          'contact',
         ],
       });
 
       if (!ticket) {
         this.logger.warn(`Ticket com ID ${id} não encontrado`);
         throw new NotFoundException(`Ticket com ID ${id} não encontrado`);
+      }
+
+      // Buscar informações do cliente se houver client_id
+      if (ticket.client_id) {
+        try {
+          const client = await this.clientsService.findOne(ticket.client_id);
+          if (client) {
+            (ticket as any).client = {
+              id: client.id,
+              name: client.nome || client.nome_fantasia || client.razao_social,
+            };
+          }
+        } catch (error) {
+          this.logger.warn(`Erro ao buscar cliente ${ticket.client_id}: ${error.message}`);
+        }
       }
 
       this.logger.log(`Ticket ${id} encontrado com sucesso`);
