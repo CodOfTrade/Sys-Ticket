@@ -460,7 +460,11 @@ export default function TicketDetails() {
                   <button
                     onClick={() => {
                       // TODO: Implementar salvamento das alterações
-                      console.log('Salvar alterações:', { editedClient, editedRequester, editedAssignee });
+                      console.log('Salvar alterações:', {
+                        client_id: editedClientId,
+                        requester_name: editedRequesterId,
+                        assigned_to_id: editedAssigneeId
+                      });
                       setIsEditingFields(false);
                     }}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -472,9 +476,12 @@ export default function TicketDetails() {
                     onClick={() => {
                       setIsEditingFields(false);
                       // Resetar valores
-                      setEditedClient(ticket.client_id || '');
-                      setEditedRequester(ticket.requester_name || '');
-                      setEditedAssignee(ticket.assigned_to?.id || '');
+                      setEditedClientId(ticket.client_id || '');
+                      setClientDisplayValue(ticket.client?.name || '');
+                      setEditedRequesterId(ticket.requester_name || '');
+                      setRequesterDisplayValue(ticket.requester_name || '');
+                      setEditedAssigneeId(ticket.assigned_to?.id || '');
+                      setAssigneeDisplayValue(ticket.assigned_to?.name || '');
                     }}
                     className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >
