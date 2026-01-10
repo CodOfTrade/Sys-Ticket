@@ -94,9 +94,16 @@ export default function TicketDetails() {
   const [activeTab, setActiveTab] = useState<TabType>('appointments');
   const [showAttachments, setShowAttachments] = useState(false);
   const [isEditingFields, setIsEditingFields] = useState(false);
-  const [editedClient, setEditedClient] = useState<string>('');
-  const [editedRequester, setEditedRequester] = useState<string>('');
-  const [editedAssignee, setEditedAssignee] = useState<string>('');
+
+  // Store IDs for editing
+  const [editedClientId, setEditedClientId] = useState<string>('');
+  const [editedRequesterId, setEditedRequesterId] = useState<string>('');
+  const [editedAssigneeId, setEditedAssigneeId] = useState<string>('');
+
+  // Display values for autocomplete
+  const [clientDisplayValue, setClientDisplayValue] = useState<string>('');
+  const [requesterDisplayValue, setRequesterDisplayValue] = useState<string>('');
+  const [assigneeDisplayValue, setAssigneeDisplayValue] = useState<string>('');
 
   // Autocomplete states
   const [clientOptions, setClientOptions] = useState<AutocompleteOption[]>([]);
@@ -116,9 +123,17 @@ export default function TicketDetails() {
   // Inicializar campos de edição quando ticket carregar
   useEffect(() => {
     if (ticket) {
-      setEditedClient(ticket.client?.name || ticket.client_id || '');
-      setEditedRequester(ticket.requester_name || '');
-      setEditedAssignee(ticket.assigned_to?.name || '');
+      // Cliente
+      setEditedClientId(ticket.client_id || '');
+      setClientDisplayValue(ticket.client?.name || '');
+
+      // Solicitante (requester não tem ID separado, usa o nome)
+      setEditedRequesterId(ticket.requester_name || '');
+      setRequesterDisplayValue(ticket.requester_name || '');
+
+      // Responsável
+      setEditedAssigneeId(ticket.assigned_to?.id || '');
+      setAssigneeDisplayValue(ticket.assigned_to?.name || '');
     }
   }, [ticket]);
 
@@ -283,12 +298,15 @@ export default function TicketDetails() {
                     <p className="text-gray-600 dark:text-gray-400">Cliente</p>
                     {isEditingFields ? (
                       <Autocomplete
-                        value={editedClient}
+                        value={clientDisplayValue}
                         onChange={(option) => {
                           if (option) {
-                            setEditedClient(option.label);
+                            setEditedClientId(option.id);
+                            setClientDisplayValue(option.label);
+                            setClientOptions([]); // Limpar opções para parar busca
                           } else {
-                            setEditedClient('');
+                            setEditedClientId('');
+                            setClientDisplayValue('');
                           }
                         }}
                         onSearchChange={handleClientSearch}
@@ -313,12 +331,15 @@ export default function TicketDetails() {
                     <p className="text-gray-600 dark:text-gray-400">Solicitante</p>
                     {isEditingFields ? (
                       <Autocomplete
-                        value={editedRequester}
+                        value={requesterDisplayValue}
                         onChange={(option) => {
                           if (option) {
-                            setEditedRequester(option.label);
+                            setEditedRequesterId(option.label);
+                            setRequesterDisplayValue(option.label);
+                            setUserOptions([]); // Limpar opções para parar busca
                           } else {
-                            setEditedRequester('');
+                            setEditedRequesterId('');
+                            setRequesterDisplayValue('');
                           }
                         }}
                         onSearchChange={handleRequesterSearch}
@@ -343,12 +364,15 @@ export default function TicketDetails() {
                     <p className="text-gray-600 dark:text-gray-400">Responsável</p>
                     {isEditingFields ? (
                       <Autocomplete
-                        value={editedAssignee}
+                        value={assigneeDisplayValue}
                         onChange={(option) => {
                           if (option) {
-                            setEditedAssignee(option.label);
+                            setEditedAssigneeId(option.id);
+                            setAssigneeDisplayValue(option.label);
+                            setTechnicianOptions([]); // Limpar opções para parar busca
                           } else {
-                            setEditedAssignee('');
+                            setEditedAssigneeId('');
+                            setAssigneeDisplayValue('');
                           }
                         }}
                         onSearchChange={handleTechnicianSearch}
