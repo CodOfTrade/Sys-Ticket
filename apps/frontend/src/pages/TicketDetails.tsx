@@ -11,7 +11,10 @@ import {
   Calendar,
   Tag,
   AlertCircle,
-  History
+  History,
+  Paperclip,
+  Download,
+  Edit
 } from 'lucide-react';
 import { ticketService } from '@/services/ticket.service';
 import { TicketAppointments } from '@/components/Tickets/TicketAppointments';
@@ -86,12 +89,23 @@ export default function TicketDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('appointments');
+  const [showAttachments, setShowAttachments] = useState(false);
+  const [isEditingFields, setIsEditingFields] = useState(false);
+  const [editedClient, setEditedClient] = useState<string>('');
+  const [editedRequester, setEditedRequester] = useState<string>('');
+  const [editedAssignee, setEditedAssignee] = useState<string>('');
 
   // Buscar detalhes do ticket
   const { data: ticket, isLoading, error } = useQuery({
     queryKey: ['ticket', id],
     queryFn: () => ticketService.getById(id!),
     enabled: !!id,
+    onSuccess: (data) => {
+      // Inicializar campos de edição com valores atuais
+      setEditedClient(data.client_id || '');
+      setEditedRequester(data.requester_name || '');
+      setEditedAssignee(data.assigned_to?.id || '');
+    },
   });
 
   if (isLoading) {
@@ -175,23 +189,66 @@ export default function TicketDetails() {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Cliente */}
                 <div className="flex items-center gap-2 text-sm">
                   <User className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <p className="text-gray-600 dark:text-gray-400">Solicitante</p>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {ticket.requester_name || 'Não informado'}
-                    </p>
+                  <div className="flex-1">
+                    <p className="text-gray-600 dark:text-gray-400">Cliente</p>
+                    {isEditingFields ? (
+                      <input
+                        type="text"
+                        value={editedClient}
+                        onChange={(e) => setEditedClient(e.target.value)}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        placeholder="ID do cliente"
+                      />
+                    ) : (
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {ticket.client?.name || ticket.client_id || 'Não informado'}
+                      </p>
+                    )}
                   </div>
                 </div>
 
+                {/* Solicitante */}
                 <div className="flex items-center gap-2 text-sm">
                   <User className="w-4 h-4 text-gray-400" />
-                  <div>
+                  <div className="flex-1">
+                    <p className="text-gray-600 dark:text-gray-400">Solicitante</p>
+                    {isEditingFields ? (
+                      <input
+                        type="text"
+                        value={editedRequester}
+                        onChange={(e) => setEditedRequester(e.target.value)}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        placeholder="Nome do solicitante"
+                      />
+                    ) : (
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {ticket.requester_name || 'Não informado'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Responsável */}
+                <div className="flex items-center gap-2 text-sm">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <div className="flex-1">
                     <p className="text-gray-600 dark:text-gray-400">Responsável</p>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {ticket.assigned_to?.name || 'Não atribuído'}
-                    </p>
+                    {isEditingFields ? (
+                      <input
+                        type="text"
+                        value={editedAssignee}
+                        onChange={(e) => setEditedAssignee(e.target.value)}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        placeholder="ID do técnico"
+                      />
+                    ) : (
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {ticket.assigned_to?.name || 'Não atribuído'}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -216,7 +273,86 @@ export default function TicketDetails() {
                     </div>
                   </div>
                 )}
+
+                {/* Anexos do Ticket */}
+                {ticket.attachments && ticket.attachments.length > 0 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Paperclip className="w-4 h-4 text-gray-400" />
+                    <div>
+                      <p className="text-gray-600 dark:text-gray-400">Anexos</p>
+                      <button
+                        onClick={() => setShowAttachments(!showAttachments)}
+                        className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        {ticket.attachments.length} arquivo(s)
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Lista de anexos (expansível) */}
+              {showAttachments && ticket.attachments && ticket.attachments.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Anexos do Ticket</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {ticket.attachments.map((attachment: any) => (
+                      <a
+                        key={attachment.id}
+                        href={attachment.url}
+                        download
+                        className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors group"
+                      >
+                        <Paperclip className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
+                        <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
+                          {attachment.filename || attachment.name}
+                        </span>
+                        <Download className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Botões de ação */}
+            <div className="flex-shrink-0 flex gap-2">
+              {isEditingFields ? (
+                <>
+                  <button
+                    onClick={() => {
+                      // TODO: Implementar salvamento das alterações
+                      console.log('Salvar alterações:', { editedClient, editedRequester, editedAssignee });
+                      setIsEditingFields(false);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  >
+                    <CheckSquare className="w-4 h-4" />
+                    Salvar
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditingFields(false);
+                      // Resetar valores
+                      setEditedClient(ticket.client_id || '');
+                      setEditedRequester(ticket.requester_name || '');
+                      setEditedAssignee(ticket.assigned_to?.id || '');
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setIsEditingFields(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Editar informações do ticket"
+                >
+                  <Edit className="w-4 h-4" />
+                  Editar
+                </button>
+              )}
             </div>
           </div>
         </div>

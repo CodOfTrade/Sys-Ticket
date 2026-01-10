@@ -331,4 +331,16 @@ export class TicketDetailsController {
   async removeChecklistFromTicket(@Param('checklistId') checklistId: string) {
     await this.checklistsService.removeFromTicket(checklistId);
   }
+
+  // ============ HISTÓRICO ============
+
+  @Get(':ticketId/history')
+  @ApiOperation({ summary: 'Buscar histórico de alterações do ticket' })
+  @ApiParam({ name: 'ticketId', description: 'ID do ticket' })
+  @ApiResponse({ status: 200, description: 'Histórico retornado com sucesso' })
+  async getTicketHistory(@Param('ticketId') ticketId: string) {
+    // TODO: Implementar serviço de histórico completo
+    // Por enquanto retorna array vazio para não quebrar o frontend
+    return { success: true, data: [], errors: [] };
+  }
 }
