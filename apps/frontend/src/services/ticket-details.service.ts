@@ -249,3 +249,13 @@ export const checklistsService = {
     await api.delete(`/v1/tickets/${ticketId}/checklists/${checklistId}`);
   },
 };
+
+// Histórico
+export const historyService = {
+  async getTicketHistory(ticketId: string): Promise<any[]> {
+    const response = await api.get<ApiResponse<any[]>>(
+      `/v1/tickets/${ticketId}/history`
+    );
+    return response.data.data || [];
+  },
+};

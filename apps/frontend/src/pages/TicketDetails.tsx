@@ -10,15 +10,17 @@ import {
   User,
   Calendar,
   Tag,
-  AlertCircle
+  AlertCircle,
+  History
 } from 'lucide-react';
 import { ticketService } from '@/services/ticket.service';
 import { TicketAppointments } from '@/components/Tickets/TicketAppointments';
 import { TicketCommunication } from '@/components/Tickets/TicketCommunication';
 import { TicketValuation } from '@/components/Tickets/TicketValuation';
 import { TicketChecklists } from '@/components/Tickets/TicketChecklists';
+import { TicketHistory } from '@/components/Tickets/TicketHistory';
 
-type TabType = 'appointments' | 'communication' | 'valuation' | 'checklists';
+type TabType = 'appointments' | 'communication' | 'valuation' | 'checklists' | 'history';
 
 const tabs = [
   {
@@ -40,6 +42,11 @@ const tabs = [
     id: 'checklists' as TabType,
     label: 'Checklists',
     icon: CheckSquare,
+  },
+  {
+    id: 'history' as TabType,
+    label: 'Histórico',
+    icon: History,
   },
 ];
 
@@ -161,7 +168,10 @@ export default function TicketDetails() {
               </div>
 
               {ticket.description && (
-                <p className="text-gray-600 dark:text-gray-400 mb-4">{ticket.description}</p>
+                <div
+                  className="text-gray-600 dark:text-gray-400 mb-4 prose prose-sm dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: ticket.description }}
+                />
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -241,6 +251,7 @@ export default function TicketDetails() {
         {activeTab === 'communication' && <TicketCommunication ticketId={ticket.id} />}
         {activeTab === 'valuation' && <TicketValuation ticketId={ticket.id} />}
         {activeTab === 'checklists' && <TicketChecklists ticketId={ticket.id} />}
+        {activeTab === 'history' && <TicketHistory ticketId={ticket.id} />}
       </div>
     </div>
   );

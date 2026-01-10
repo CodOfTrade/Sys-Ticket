@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Clock, Plus, Trash2, Edit2, Calendar, DollarSign } from 'lucide-react';
+import { Clock, Plus, Trash2, Edit2, Calendar, DollarSign, Paperclip } from 'lucide-react';
 import { appointmentsService } from '@/services/ticket-details.service';
 import { clientService } from '@/services/client.service';
 import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
@@ -191,7 +191,7 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
       manual_unit_price: appointment.unit_price || 0,
       description: appointment.description || '',
       send_as_response: false,
-      attachments: [],
+      attachments: appointment.attachments || [], // Carregar anexos existentes
     });
     setShowCreateModal(true);
   };
@@ -361,6 +361,15 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                         <span className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
                           Timer Automático
                         </span>
+                      </>
+                    )}
+                    {appointment.attachments && appointment.attachments.length > 0 && (
+                      <>
+                        <span className="text-gray-400">•</span>
+                        <div className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                          <Paperclip className="w-3 h-3" />
+                          <span>{appointment.attachments.length}</span>
+                        </div>
                       </>
                     )}
                   </div>
