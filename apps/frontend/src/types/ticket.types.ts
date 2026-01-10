@@ -64,6 +64,16 @@ export interface Ticket {
   resolved_at?: string;
   closed_at?: string;
   started_at?: string;
+  client?: {
+    id: string;
+    name: string;
+  };
+  attachments?: Array<{
+    id: string;
+    filename?: string;
+    name?: string;
+    url: string;
+  }>;
   paused_at?: string;
 }
 

@@ -93,6 +93,12 @@ export interface TicketAppointment {
   approved_by_id?: string;
   approved_at?: Date;
   attachment_ids?: string[];
+  attachments?: Array<{
+    id: string;
+    filename?: string;
+    name?: string;
+    url: string;
+  }>;
   metadata?: Record<string, any>;
   created_at: Date;
   updated_at: Date;
