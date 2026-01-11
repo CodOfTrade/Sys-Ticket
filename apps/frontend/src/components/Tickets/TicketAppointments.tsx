@@ -710,7 +710,12 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                       accept="image/*,.pdf,.doc,.docx,.txt"
                       onChange={(e) => {
                         const files = Array.from(e.target.files || []);
-                        setFormData({ ...formData, attachments: files });
+                        if (files.length > 0) {
+                          // Adicionar aos arquivos existentes em vez de substituir
+                          setFormData({ ...formData, attachments: [...(formData.attachments || []), ...files] });
+                        }
+                        // Limpar input para permitir selecionar o mesmo arquivo novamente
+                        e.target.value = '';
                       }}
                       className="hidden"
                       id="attachment-upload"

@@ -16,7 +16,8 @@ import {
   Download,
   Edit,
   Upload,
-  X
+  X,
+  Plus
 } from 'lucide-react';
 import { ticketService } from '@/services/ticket.service';
 import { ticketAttachmentsService } from '@/services/ticket-attachments.service';
@@ -457,43 +458,102 @@ export default function TicketDetails() {
                 )}
 
                 {/* Anexos do Ticket */}
-                {ticket.attachments && ticket.attachments.length > 0 && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Paperclip className="w-4 h-4 text-gray-400" />
-                    <div>
-                      <p className="text-gray-600 dark:text-gray-400">Anexos</p>
-                      <button
-                        onClick={() => setShowAttachments(!showAttachments)}
-                        className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        {ticket.attachments.length} arquivo(s)
-                      </button>
-                    </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Paperclip className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-gray-600 dark:text-gray-400">Anexos</p>
+                    <button
+                      onClick={() => setShowAttachments(!showAttachments)}
+                      className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      {ticket.attachments?.length || 0} arquivo(s)
+                    </button>
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Lista de anexos (expansível) */}
-              {showAttachments && ticket.attachments && ticket.attachments.length > 0 && (
+              {showAttachments && (
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Anexos do Ticket</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {ticket.attachments.map((attachment: any) => (
-                      <a
-                        key={attachment.id}
-                        href={ticketAttachmentsService.getDownloadUrl(ticket.id, attachment.id)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors group"
-                      >
-                        <Paperclip className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
-                        <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
-                          {attachment.filename || attachment.name}
-                        </span>
-                        <Download className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
-                      </a>
-                    ))}
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white">Anexos do Ticket</h4>
+                    <label
+                      htmlFor="ticket-file-upload-header"
+                      className="cursor-pointer flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Adicionar
+                    </label>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      id="ticket-file-upload-header"
+                    />
                   </div>
+
+                  {/* Arquivos selecionados para upload */}
+                  {selectedFiles.length > 0 && (
+                    <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">Arquivos selecionados:</p>
+                      <div className="space-y-1">
+                        {selectedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between text-sm">
+                            <span className="text-gray-700 dark:text-gray-300 truncate flex-1">{file.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFile(index)}
+                              className="text-red-600 dark:text-red-400 hover:text-red-700 ml-2"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        onClick={handleUploadFiles}
+                        disabled={isUploadingFiles}
+                        className="mt-2 w-full px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {isUploadingFiles ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Enviando...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3 h-3" />
+                            Enviar {selectedFiles.length} arquivo(s)
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Lista de anexos existentes */}
+                  {ticket.attachments && ticket.attachments.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {ticket.attachments.map((attachment: any) => (
+                        <a
+                          key={attachment.id}
+                          href={ticketAttachmentsService.getDownloadUrl(ticket.id, attachment.id)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors group"
+                        >
+                          <Paperclip className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
+                          <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
+                            {attachment.filename || attachment.name}
+                          </span>
+                          <Download className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Nenhum anexo ainda</p>
+                  )}
                 </div>
               )}
 
@@ -574,116 +634,11 @@ export default function TicketDetails() {
 
       {/* Conteúdo das tabs */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Conteúdo principal */}
-          <div className="lg:col-span-2">
-            {activeTab === 'appointments' && <TicketAppointments ticketId={ticket.id} clientId={ticket.client_id} />}
-            {activeTab === 'communication' && <TicketCommunication ticketId={ticket.id} />}
-            {activeTab === 'valuation' && <TicketValuation ticketId={ticket.id} />}
-            {activeTab === 'checklists' && <TicketChecklists ticketId={ticket.id} />}
-            {activeTab === 'history' && <TicketHistory ticketId={ticket.id} />}
-          </div>
-
-          {/* Sidebar - Anexos do Ticket */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 sticky top-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Paperclip className="w-5 h-5" />
-                Anexos do Ticket
-              </h3>
-
-              {/* Lista de anexos existentes */}
-              {ticket.attachments && ticket.attachments.length > 0 ? (
-                <div className="space-y-2 mb-4">
-                  {ticket.attachments.map((attachment: any) => (
-                    <a
-                      key={attachment.id}
-                      href={ticketAttachmentsService.getDownloadUrl(ticket.id, attachment.id)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors group"
-                    >
-                      <Paperclip className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
-                      <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
-                        {attachment.filename || attachment.name}
-                      </span>
-                      <Download className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                  Nenhum anexo ainda
-                </p>
-              )}
-
-              {/* Área de upload */}
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  id="ticket-file-upload"
-                />
-                <label
-                  htmlFor="ticket-file-upload"
-                  className="cursor-pointer flex flex-col items-center gap-2"
-                >
-                  <Upload className="w-8 h-8 text-gray-400" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                    Clique para adicionar arquivos
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-500 text-center">
-                    Imagens, PDF, DOC, XLS, TXT
-                  </span>
-                </label>
-              </div>
-
-              {/* Lista de arquivos selecionados */}
-              {selectedFiles.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {selectedFiles.map((file, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg"
-                    >
-                      <span className="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">
-                        {file.name}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFile(index)}
-                        className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 ml-2"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-
-                  <button
-                    onClick={handleUploadFiles}
-                    disabled={isUploadingFiles}
-                    className="w-full mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isUploadingFiles ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Enviando...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4" />
-                        Enviar {selectedFiles.length} arquivo(s)
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        {activeTab === 'appointments' && <TicketAppointments ticketId={ticket.id} clientId={ticket.client_id} />}
+        {activeTab === 'communication' && <TicketCommunication ticketId={ticket.id} />}
+        {activeTab === 'valuation' && <TicketValuation ticketId={ticket.id} />}
+        {activeTab === 'checklists' && <TicketChecklists ticketId={ticket.id} />}
+        {activeTab === 'history' && <TicketHistory ticketId={ticket.id} />}
       </div>
     </div>
   );
