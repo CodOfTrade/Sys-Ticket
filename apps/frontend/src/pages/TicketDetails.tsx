@@ -19,7 +19,9 @@ import {
   X,
   Plus,
   Eye,
-  Trash2
+  Trash2,
+  Check,
+  FileText
 } from 'lucide-react';
 import { ticketService } from '@/services/ticket.service';
 import { ticketAttachmentsService } from '@/services/ticket-attachments.service';
@@ -29,8 +31,9 @@ import { TicketValuation } from '@/components/Tickets/TicketValuation';
 import { TicketChecklists } from '@/components/Tickets/TicketChecklists';
 import { TicketHistory } from '@/components/Tickets/TicketHistory';
 import { Autocomplete, AutocompleteOption } from '@/components/Common/Autocomplete';
-import { clientService, Client } from '@/services/client.service';
+import { clientService, Client, ClientContract } from '@/services/client.service';
 import { userService, User as UserType } from '@/services/user.service';
+import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
 
 type TabType = 'appointments' | 'communication' | 'valuation' | 'checklists' | 'history';
 
@@ -101,6 +104,18 @@ export default function TicketDetails() {
   const [showAttachments, setShowAttachments] = useState(false);
   const [isEditingFields, setIsEditingFields] = useState(false);
 
+  // Estados para modais de edição
+  const [showTitleModal, setShowTitleModal] = useState(false);
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [editedDescription, setEditedDescription] = useState('');
+
+  // Estados para edição inline de campos específicos
+  const [isEditingClient, setIsEditingClient] = useState(false);
+  const [isEditingRequester, setIsEditingRequester] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+
   // Store IDs for editing
   const [editedClientId, setEditedClientId] = useState<string>('');
   const [editedRequesterId, setEditedRequesterId] = useState<string>('');
@@ -150,6 +165,109 @@ export default function TicketDetails() {
     },
   });
 
+  // Query para buscar contratos do cliente
+  const { data: clientContracts } = useQuery({
+    queryKey: ['contracts', 'client', ticket?.client_id],
+    queryFn: () => clientService.getClientContracts(ticket!.client_id!),
+    enabled: !!ticket?.client_id,
+  });
+
+  // Encontrar contrato ativo
+  const activeContract = clientContracts?.find(
+    (c: ClientContract) => c.ativo && c.status === 'Ativo'
+  );
+
+  // Mutation para atualizar título
+  const updateTitleMutation = useMutation({
+    mutationFn: (title: string) => ticketService.update(id!, { title }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+      setShowTitleModal(false);
+    },
+    onError: (error: any) => {
+      console.error('Erro ao atualizar título:', error);
+      alert('Erro ao atualizar título: ' + (error.response?.data?.message || error.message));
+    },
+  });
+
+  // Mutation para atualizar descrição
+  const updateDescriptionMutation = useMutation({
+    mutationFn: (description: string) => ticketService.update(id!, { description }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+      setShowDescriptionModal(false);
+    },
+    onError: (error: any) => {
+      console.error('Erro ao atualizar descrição:', error);
+      alert('Erro ao atualizar descrição: ' + (error.response?.data?.message || error.message));
+    },
+  });
+
+  // Mutation para atualizar cliente
+  const updateClientMutation = useMutation({
+    mutationFn: (data: { client_name: string }) => ticketService.update(id!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+      setIsEditingClient(false);
+    },
+    onError: (error: any) => {
+      console.error('Erro ao atualizar cliente:', error);
+      alert('Erro ao atualizar cliente: ' + (error.response?.data?.message || error.message));
+    },
+  });
+
+  // Mutation para atualizar solicitante
+  const updateRequesterMutation = useMutation({
+    mutationFn: (requester_name: string) => ticketService.update(id!, { requester_name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+      setIsEditingRequester(false);
+    },
+    onError: (error: any) => {
+      console.error('Erro ao atualizar solicitante:', error);
+      alert('Erro ao atualizar solicitante: ' + (error.response?.data?.message || error.message));
+    },
+  });
+
+  // Mutation para atualizar responsável
+  const updateAssigneeMutation = useMutation({
+    mutationFn: (assigned_to_id: string | null) => ticketService.update(id!, { assigned_to_id: assigned_to_id || undefined }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+      setIsEditingFields(false);
+    },
+    onError: (error: any) => {
+      console.error('Erro ao atualizar responsável:', error);
+      alert('Erro ao atualizar responsável: ' + (error.response?.data?.message || error.message));
+    },
+  });
+
+  // Mutation para atualizar status
+  const updateStatusMutation = useMutation({
+    mutationFn: (status: string) => ticketService.update(id!, { status: status as any }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+      setShowStatusDropdown(false);
+    },
+    onError: (error: any) => {
+      console.error('Erro ao atualizar status:', error);
+      alert('Erro ao atualizar status: ' + (error.response?.data?.message || error.message));
+    },
+  });
+
+  // Mutation para atualizar prioridade
+  const updatePriorityMutation = useMutation({
+    mutationFn: (priority: string) => ticketService.update(id!, { priority: priority as any }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+      setShowPriorityDropdown(false);
+    },
+    onError: (error: any) => {
+      console.error('Erro ao atualizar prioridade:', error);
+      alert('Erro ao atualizar prioridade: ' + (error.response?.data?.message || error.message));
+    },
+  });
+
   // Inicializar campos de edição quando ticket carregar
   useEffect(() => {
     if (ticket) {
@@ -166,6 +284,22 @@ export default function TicketDetails() {
       setAssigneeDisplayValue(ticket.assigned_to?.name || '');
     }
   }, [ticket]);
+
+  // Fechar dropdowns ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.relative')) {
+        setShowStatusDropdown(false);
+        setShowPriorityDropdown(false);
+      }
+    };
+
+    if (showStatusDropdown || showPriorityDropdown) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showStatusDropdown, showPriorityDropdown]);
 
   // Funções de busca para autocomplete
   const handleClientSearch = async (query: string) => {
@@ -319,85 +453,223 @@ export default function TicketDetails() {
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                <h1
+                  onClick={() => {
+                    setEditedTitle(ticket.title);
+                    setShowTitleModal(true);
+                  }}
+                  className="text-2xl font-bold text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  title="Clique para editar o título"
+                >
                   #{ticket.ticket_number} - {ticket.title}
                 </h1>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[ticket.status]}`}>
-                  {statusLabels[ticket.status]}
-                </span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${priorityColors[ticket.priority]}`}>
-                  {priorityLabels[ticket.priority]}
-                </span>
+                {/* Status Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      setShowStatusDropdown(!showStatusDropdown);
+                      setShowPriorityDropdown(false);
+                    }}
+                    className={`px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all ${statusColors[ticket.status]}`}
+                    title="Clique para alterar o status"
+                  >
+                    {statusLabels[ticket.status]}
+                  </button>
+                  {showStatusDropdown && (
+                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[150px]">
+                      {Object.entries(statusLabels).map(([key, label]) => (
+                        <button
+                          key={key}
+                          onClick={() => updateStatusMutation.mutate(key)}
+                          disabled={updateStatusMutation.isPending}
+                          className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg transition-colors ${
+                            ticket.status === key ? 'bg-gray-100 dark:bg-gray-700 font-medium' : ''
+                          }`}
+                        >
+                          <span className={`inline-block w-2 h-2 rounded-full mr-2 ${statusColors[key].replace('text-', 'bg-').split(' ')[0]}`}></span>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Priority Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      setShowPriorityDropdown(!showPriorityDropdown);
+                      setShowStatusDropdown(false);
+                    }}
+                    className={`px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all ${priorityColors[ticket.priority]}`}
+                    title="Clique para alterar a prioridade"
+                  >
+                    {priorityLabels[ticket.priority]}
+                  </button>
+                  {showPriorityDropdown && (
+                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[120px]">
+                      {Object.entries(priorityLabels).map(([key, label]) => (
+                        <button
+                          key={key}
+                          onClick={() => updatePriorityMutation.mutate(key)}
+                          disabled={updatePriorityMutation.isPending}
+                          className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg transition-colors ${
+                            ticket.priority === key ? 'bg-gray-100 dark:bg-gray-700 font-medium' : ''
+                          }`}
+                        >
+                          <span className={`inline-block w-2 h-2 rounded-full mr-2 ${priorityColors[key].replace('text-', 'bg-').split(' ')[0]}`}></span>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {ticket.description && (
-                <div
-                  className="text-gray-600 dark:text-gray-400 mb-4 prose prose-sm dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: ticket.description }}
-                />
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Cliente */}
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="w-4 h-4 text-gray-400" />
+              {/* Descrição com botão de editar */}
+              <div className="mb-4 group relative">
+                <div className="flex items-start gap-2">
                   <div className="flex-1">
-                    <p className="text-gray-600 dark:text-gray-400">Cliente</p>
-                    {isEditingFields ? (
-                      <Autocomplete
-                        value={clientDisplayValue}
-                        onChange={(option) => {
-                          if (option) {
-                            setEditedClientId(option.id);
-                            setClientDisplayValue(option.label);
-                            setClientOptions([]); // Limpar opções para parar busca
-                          } else {
-                            setEditedClientId('');
-                            setClientDisplayValue('');
-                          }
-                        }}
-                        onSearchChange={handleClientSearch}
-                        options={clientOptions}
-                        placeholder="Digite o nome do cliente..."
-                        isLoading={isLoadingClients}
-                        minChars={2}
-                        className="w-full"
+                    {ticket.description ? (
+                      <div
+                        className="text-gray-600 dark:text-gray-400 prose prose-sm dark:prose-invert max-w-none"
+                        dangerouslySetInnerHTML={{ __html: ticket.description }}
                       />
                     ) : (
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {ticket.client?.name || ticket.client_id || 'Não informado'}
+                      <p className="text-gray-400 dark:text-gray-500 italic">
+                        Sem descrição. Clique para adicionar.
                       </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setEditedDescription(ticket.description || '');
+                      setShowDescriptionModal(true);
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    title="Editar descrição"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Cliente com info de contrato */}
+                <div className="flex items-start gap-2 text-sm">
+                  <User className="w-4 h-4 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-gray-600 dark:text-gray-400">Cliente</p>
+                    {isEditingClient ? (
+                      <div className="flex items-center gap-1">
+                        <Autocomplete
+                          value={clientDisplayValue}
+                          onChange={(option) => {
+                            if (option) {
+                              setEditedClientId(option.id);
+                              setClientDisplayValue(option.label);
+                              setClientOptions([]);
+                              // Salvar automaticamente
+                              updateClientMutation.mutate({ client_name: option.label });
+                            }
+                          }}
+                          onSearchChange={handleClientSearch}
+                          options={clientOptions}
+                          placeholder="Digite o nome do cliente..."
+                          isLoading={isLoadingClients}
+                          minChars={2}
+                          className="flex-1"
+                        />
+                        <button
+                          onClick={() => {
+                            setIsEditingClient(false);
+                            setClientDisplayValue(ticket.client?.name || '');
+                          }}
+                          className="p-1 text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="group">
+                        <p
+                          onClick={() => setIsEditingClient(true)}
+                          className="font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                          title="Clique para editar"
+                        >
+                          {ticket.client?.name || ticket.client_id || 'Não informado'}
+                        </p>
+                        {/* Badge de contrato */}
+                        {activeContract ? (
+                          <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full">
+                            <FileText className="w-3 h-3" />
+                            Contrato Ativo
+                            {activeContract.valor_mensal && (
+                              <span className="font-medium">
+                                - R$ {Number(activeContract.valor_mensal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </span>
+                            )}
+                          </span>
+                        ) : ticket.client_id ? (
+                          <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded-full">
+                            <FileText className="w-3 h-3" />
+                            Sem Contrato
+                          </span>
+                        ) : null}
+                      </div>
                     )}
                   </div>
                 </div>
 
-                {/* Solicitante */}
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="w-4 h-4 text-gray-400" />
+                {/* Solicitante - Edição inline */}
+                <div className="flex items-start gap-2 text-sm">
+                  <User className="w-4 h-4 text-gray-400 mt-0.5" />
                   <div className="flex-1">
                     <p className="text-gray-600 dark:text-gray-400">Solicitante</p>
-                    {isEditingFields ? (
-                      <Autocomplete
-                        value={requesterDisplayValue}
-                        onChange={(option) => {
-                          if (option) {
-                            setEditedRequesterId(option.label);
-                            setRequesterDisplayValue(option.label);
-                            setUserOptions([]); // Limpar opções para parar busca
-                          } else {
-                            setEditedRequesterId('');
-                            setRequesterDisplayValue('');
-                          }
-                        }}
-                        onSearchChange={handleRequesterSearch}
-                        options={userOptions}
-                        placeholder="Digite o nome do solicitante..."
-                        isLoading={isLoadingUsers}
-                        minChars={2}
-                        className="w-full"
-                      />
+                    {isEditingRequester ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="text"
+                          value={requesterDisplayValue}
+                          onChange={(e) => setRequesterDisplayValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              updateRequesterMutation.mutate(requesterDisplayValue);
+                            } else if (e.key === 'Escape') {
+                              setIsEditingRequester(false);
+                              setRequesterDisplayValue(ticket.requester_name || '');
+                            }
+                          }}
+                          className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          autoFocus
+                          placeholder="Nome do solicitante"
+                        />
+                        <button
+                          onClick={() => updateRequesterMutation.mutate(requesterDisplayValue)}
+                          className="p-1 text-green-600 hover:text-green-700"
+                          title="Salvar"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsEditingRequester(false);
+                            setRequesterDisplayValue(ticket.requester_name || '');
+                          }}
+                          className="p-1 text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     ) : (
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <p
+                        onClick={() => {
+                          setRequesterDisplayValue(ticket.requester_name || '');
+                          setIsEditingRequester(true);
+                        }}
+                        className="font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                        title="Clique para editar"
+                      >
                         {ticket.requester_name || 'Não informado'}
                       </p>
                     )}
@@ -405,32 +677,48 @@ export default function TicketDetails() {
                 </div>
 
                 {/* Responsável */}
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="w-4 h-4 text-gray-400" />
+                <div className="flex items-start gap-2 text-sm">
+                  <User className="w-4 h-4 text-gray-400 mt-0.5" />
                   <div className="flex-1">
                     <p className="text-gray-600 dark:text-gray-400">Responsável</p>
                     {isEditingFields ? (
-                      <Autocomplete
-                        value={assigneeDisplayValue}
-                        onChange={(option) => {
-                          if (option) {
-                            setEditedAssigneeId(option.id);
-                            setAssigneeDisplayValue(option.label);
-                            setTechnicianOptions([]); // Limpar opções para parar busca
-                          } else {
-                            setEditedAssigneeId('');
-                            setAssigneeDisplayValue('');
-                          }
-                        }}
-                        onSearchChange={handleTechnicianSearch}
-                        options={technicianOptions}
-                        placeholder="Digite o nome do técnico..."
-                        isLoading={isLoadingTechnicians}
-                        minChars={2}
-                        className="w-full"
-                      />
+                      <div className="flex items-center gap-1">
+                        <Autocomplete
+                          value={assigneeDisplayValue}
+                          onChange={(option) => {
+                            if (option) {
+                              setEditedAssigneeId(option.id);
+                              setAssigneeDisplayValue(option.label);
+                              setTechnicianOptions([]);
+                              // Salvar automaticamente
+                              updateAssigneeMutation.mutate(option.id);
+                            } else {
+                              updateAssigneeMutation.mutate(null);
+                            }
+                          }}
+                          onSearchChange={handleTechnicianSearch}
+                          options={technicianOptions}
+                          placeholder="Digite o nome do técnico..."
+                          isLoading={isLoadingTechnicians}
+                          minChars={2}
+                          className="flex-1"
+                        />
+                        <button
+                          onClick={() => {
+                            setIsEditingFields(false);
+                            setAssigneeDisplayValue(ticket.assigned_to?.name || '');
+                          }}
+                          className="p-1 text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     ) : (
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <p
+                        onClick={() => setIsEditingFields(true)}
+                        className="font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                        title="Clique para editar"
+                      >
                         {ticket.assigned_to?.name || 'Não atribuído'}
                       </p>
                     )}
@@ -591,53 +879,6 @@ export default function TicketDetails() {
               )}
 
             </div>
-
-            {/* Botões de ação */}
-            <div className="flex-shrink-0 flex gap-2">
-              {isEditingFields ? (
-                <>
-                  <button
-                    onClick={() => {
-                      // TODO: Implementar salvamento das alterações
-                      console.log('Salvar alterações:', {
-                        client_id: editedClientId,
-                        requester_name: editedRequesterId,
-                        assigned_to_id: editedAssigneeId
-                      });
-                      setIsEditingFields(false);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                  >
-                    <CheckSquare className="w-4 h-4" />
-                    Salvar
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsEditingFields(false);
-                      // Resetar valores
-                      setEditedClientId(ticket.client_id || '');
-                      setClientDisplayValue(ticket.client?.name || '');
-                      setEditedRequesterId(ticket.requester_name || '');
-                      setRequesterDisplayValue(ticket.requester_name || '');
-                      setEditedAssigneeId(ticket.assigned_to?.id || '');
-                      setAssigneeDisplayValue(ticket.assigned_to?.name || '');
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setIsEditingFields(true)}
-                  className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  title="Editar informações do ticket"
-                >
-                  <Edit className="w-4 h-4" />
-                  Editar
-                </button>
-              )}
-            </div>
           </div>
         </div>
 
@@ -673,6 +914,106 @@ export default function TicketDetails() {
         {activeTab === 'checklists' && <TicketChecklists ticketId={ticket.id} />}
         {activeTab === 'history' && <TicketHistory ticketId={ticket.id} />}
       </div>
+
+      {/* Modal de Edição de Título */}
+      {showTitleModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Editar Título
+              </h3>
+            </div>
+            <div className="p-4">
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Digite o título do ticket"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && editedTitle.length >= 5) {
+                    updateTitleMutation.mutate(editedTitle);
+                  } else if (e.key === 'Escape') {
+                    setShowTitleModal(false);
+                  }
+                }}
+              />
+              {editedTitle.length > 0 && editedTitle.length < 5 && (
+                <p className="mt-1 text-sm text-red-500">
+                  O título deve ter pelo menos 5 caracteres
+                </p>
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+              <button
+                onClick={() => setShowTitleModal(false)}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => updateTitleMutation.mutate(editedTitle)}
+                disabled={editedTitle.length < 5 || updateTitleMutation.isPending}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {updateTitleMutation.isPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edição de Descrição */}
+      {showDescriptionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Editar Descrição
+              </h3>
+            </div>
+            <div className="p-4 flex-1 overflow-auto">
+              <RichTextEditor
+                value={editedDescription}
+                onChange={setEditedDescription}
+                placeholder="Digite a descrição do ticket..."
+                className="min-h-[300px]"
+              />
+            </div>
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+              <button
+                onClick={() => setShowDescriptionModal(false)}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => updateDescriptionMutation.mutate(editedDescription)}
+                disabled={updateDescriptionMutation.isPending}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {updateDescriptionMutation.isPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
