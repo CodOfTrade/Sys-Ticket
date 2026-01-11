@@ -173,7 +173,6 @@ export default function TicketDetails() {
   const queryClient = useQueryClient();
 
   // Estados para seguidores
-  const [showFollowersSection, setShowFollowersSection] = useState(true);
   const [followerInput, setFollowerInput] = useState('');
   const [showFollowerInput, setShowFollowerInput] = useState(false);
 
