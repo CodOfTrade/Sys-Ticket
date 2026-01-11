@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Clock, Plus, Trash2, Edit2, Calendar, DollarSign, Paperclip } from 'lucide-react';
+import { Clock, Plus, Trash2, Edit2, Calendar, DollarSign, Paperclip, Download, Eye } from 'lucide-react';
 import { appointmentsService } from '@/services/ticket-details.service';
 import { clientService } from '@/services/client.service';
 import { ticketAttachmentsService } from '@/services/ticket-attachments.service';
@@ -765,18 +765,39 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                                 {attachment.filename}
                               </span>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setExistingAttachments((prev) => prev.filter((a) => a.id !== attachment.id));
-                              }}
-                              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 ml-2 flex-shrink-0"
-                              title="Remover anexo"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <a
+                                href={ticketAttachmentsService.getViewUrl(ticketId, attachment.id)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                                title="Visualizar"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </a>
+                              <a
+                                href={ticketAttachmentsService.getDownloadUrl(ticketId, attachment.id)}
+                                download
+                                className="p-1 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
+                                title="Baixar"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Download className="w-4 h-4" />
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setExistingAttachments((prev) => prev.filter((a) => a.id !== attachment.id));
+                                }}
+                                className="p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                                title="Remover anexo"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>

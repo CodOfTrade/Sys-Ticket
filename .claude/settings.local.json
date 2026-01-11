@@ -82,7 +82,9 @@
       "Bash(git -C \"d:/Arquivos do Usuário/OneDrive/3 - Pessoal José/Programaçao/Sys-Ticket\" commit -m \"$\\(cat <<''EOF''\nUI: mover upload de anexos para cabeçalho do ticket\n\n- Remover sidebar lateral de anexos\n- Adicionar upload direto na seção expansível de anexos\n- Corrigir bug de anexos em apontamentos substituindo em vez de adicionar\n- Layout de tabs agora usa largura total\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(pnpm run build:*)",
       "Bash(cmd /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend\"\" && pnpm run build\")",
-      "Bash(powershell -Command \"Set-Location ''d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend''; pnpm run build\")"
+      "Bash(powershell -Command \"Set-Location ''d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend''; pnpm run build\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix: separar anexos existentes de novos arquivos no apontamento\n\n- Adicionar estados separados para existingAttachments e newFiles\n- Mostrar anexos existentes \\(do banco\\) com nome correto via filename\n- Mostrar novos arquivos \\(File objects\\) com nome via name\n- Combinar IDs de ambos tipos no submit\n- Estilização diferenciada: azul para existentes, verde para novos\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFeature: adicionar botões de visualizar e baixar anexos existentes\n\n- Adicionar ícones Eye e Download do lucide-react\n- Botão olho azul para visualizar anexo em nova aba\n- Botão download verde para baixar anexo\n- Usar URLs do ticketAttachmentsService\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
