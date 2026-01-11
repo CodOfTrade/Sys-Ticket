@@ -621,7 +621,7 @@ export class TicketsService {
 
       this.logger.log(`Seguidor adicionado ao ticket ${ticketId}: ${data.email || data.user_id}`);
 
-      return fullFollower;
+      return fullFollower!;
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof NotFoundException) {
         throw error;
