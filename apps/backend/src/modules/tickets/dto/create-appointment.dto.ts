@@ -222,6 +222,10 @@ export class UpdateAppointmentDto {
   @IsNumber()
   @IsOptional()
   unit_price?: number;
+
+  @ApiProperty({ description: 'IDs dos anexos', required: false })
+  @IsOptional()
+  attachment_ids?: string[];
 }
 
 export class CalculatePriceDto {
