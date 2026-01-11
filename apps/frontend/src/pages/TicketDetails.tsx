@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Clock,
@@ -14,9 +14,12 @@ import {
   History,
   Paperclip,
   Download,
-  Edit
+  Edit,
+  Upload,
+  X
 } from 'lucide-react';
 import { ticketService } from '@/services/ticket.service';
+import { ticketAttachmentsService } from '@/services/ticket-attachments.service';
 import { TicketAppointments } from '@/components/Tickets/TicketAppointments';
 import { TicketCommunication } from '@/components/Tickets/TicketCommunication';
 import { TicketValuation } from '@/components/Tickets/TicketValuation';
@@ -113,11 +116,35 @@ export default function TicketDetails() {
   const [isLoadingTechnicians, setIsLoadingTechnicians] = useState(false);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
 
+  // Upload de anexos
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+  const queryClient = useQueryClient();
+
   // Buscar detalhes do ticket
   const { data: ticket, isLoading, error } = useQuery({
     queryKey: ['ticket', id],
     queryFn: () => ticketService.getById(id!),
     enabled: !!id,
+  });
+
+  // Mutation para upload de anexos
+  const uploadMutation = useMutation({
+    mutationFn: async (files: File[]) => {
+      if (!id) throw new Error('ID do ticket não encontrado');
+      return ticketAttachmentsService.uploadFiles(id, files);
+    },
+    onSuccess: () => {
+      // Invalidar query do ticket para recarregar anexos
+      queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+      setSelectedFiles([]);
+      setIsUploadingFiles(false);
+    },
+    onError: (error: any) => {
+      console.error('Erro ao fazer upload:', error);
+      alert('Erro ao enviar arquivos: ' + (error.response?.data?.message || error.message));
+      setIsUploadingFiles(false);
+    },
   });
 
   // Inicializar campos de edição quando ticket carregar
@@ -208,6 +235,23 @@ export default function TicketDetails() {
     } finally {
       setIsLoadingUsers(false);
     }
+  };
+
+  // Handlers de upload de anexos
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setSelectedFiles(prev => [...prev, ...files]);
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUploadFiles = async () => {
+    if (selectedFiles.length === 0) return;
+
+    setIsUploadingFiles(true);
+    uploadMutation.mutate(selectedFiles);
   };
 
   if (isLoading) {
@@ -451,6 +495,76 @@ export default function TicketDetails() {
                   </div>
                 </div>
               )}
+
+              {/* Upload de novos anexos */}
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Adicionar Anexos</h4>
+
+                {/* Área de seleção de arquivos */}
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="ticket-file-upload"
+                  />
+                  <label
+                    htmlFor="ticket-file-upload"
+                    className="cursor-pointer flex flex-col items-center gap-2"
+                  >
+                    <Upload className="w-10 h-10 text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Clique para selecionar arquivos
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-500">
+                      Imagens, PDF, DOC, XLS, TXT (máx. 10MB por arquivo)
+                    </span>
+                  </label>
+                </div>
+
+                {/* Lista de arquivos selecionados */}
+                {selectedFiles.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {selectedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg"
+                      >
+                        <span className="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">
+                          {file.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(index)}
+                          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 ml-2"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+
+                    <button
+                      onClick={handleUploadFiles}
+                      disabled={isUploadingFiles}
+                      className="w-full mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {isUploadingFiles ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          Enviar {selectedFiles.length} arquivo(s)
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Botões de ação */}

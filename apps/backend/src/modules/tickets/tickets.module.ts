@@ -2,11 +2,13 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TicketsController } from './tickets.controller';
 import { TicketDetailsController } from './controllers/ticket-details.controller';
+import { TicketAttachmentsController } from './controllers/ticket-attachments.controller';
 import { TicketsService } from './tickets.service';
 import { TicketCommentsService } from './services/ticket-comments.service';
 import { TicketAppointmentsService } from './services/ticket-appointments.service';
 import { TicketValuationsService } from './services/ticket-valuations.service';
 import { ChecklistsService } from './services/checklists.service';
+import { TicketAttachmentsService } from './services/ticket-attachments.service';
 import { Ticket } from './entities/ticket.entity';
 import { TicketComment } from './entities/ticket-comment.entity';
 import { TicketAppointment } from './entities/ticket-appointment.entity';
@@ -39,14 +41,15 @@ import { EmailModule } from '../email/email.module';
     ServiceDesksModule,
     EmailModule,
   ],
-  controllers: [TicketsController, TicketDetailsController],
+  controllers: [TicketsController, TicketDetailsController, TicketAttachmentsController],
   providers: [
     TicketsService,
     TicketCommentsService,
     TicketAppointmentsService,
     TicketValuationsService,
     ChecklistsService,
+    TicketAttachmentsService,
   ],
-  exports: [TicketsService],
+  exports: [TicketsService, TicketAttachmentsService],
 })
 export class TicketsModule {}

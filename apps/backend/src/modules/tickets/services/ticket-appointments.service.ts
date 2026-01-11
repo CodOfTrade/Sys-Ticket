@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, In } from 'typeorm';
 import { TicketAppointment, ServiceCoverageType } from '../entities/ticket-appointment.entity';
 import { TicketComment, CommentType, CommentVisibility } from '../entities/ticket-comment.entity';
 import { Ticket } from '../entities/ticket.entity';
+import { TicketAttachment } from '../entities/ticket-attachment.entity';
 import {
   CreateAppointmentDto,
   StartTimerDto,
@@ -26,6 +27,8 @@ export class TicketAppointmentsService {
     private ticketsRepository: Repository<Ticket>,
     @InjectRepository(PricingConfig)
     private pricingRepository: Repository<PricingConfig>,
+    @InjectRepository(TicketAttachment)
+    private attachmentRepository: Repository<TicketAttachment>,
     private pricingConfigService: PricingConfigService,
   ) {}
 
@@ -314,11 +317,25 @@ export class TicketAppointmentsService {
    * Listar apontamentos de um ticket
    */
   async findAll(ticketId: string) {
-    return this.appointmentRepository.find({
+    const appointments = await this.appointmentRepository.find({
       where: { ticket_id: ticketId },
       relations: ['user', 'created_by'],
       order: { appointment_date: 'DESC', start_time: 'DESC' },
     });
+
+    // Carregar anexos para cada apontamento que possui attachment_ids
+    for (const appointment of appointments) {
+      if (appointment.attachment_ids && appointment.attachment_ids.length > 0) {
+        const attachments = await this.attachmentRepository.find({
+          where: { id: In(appointment.attachment_ids) },
+        });
+        (appointment as any).attachments = attachments;
+      } else {
+        (appointment as any).attachments = [];
+      }
+    }
+
+    return appointments;
   }
 
   /**
@@ -332,6 +349,16 @@ export class TicketAppointmentsService {
 
     if (!appointment) {
       throw new NotFoundException('Apontamento não encontrado');
+    }
+
+    // Carregar anexos se existirem
+    if (appointment.attachment_ids && appointment.attachment_ids.length > 0) {
+      const attachments = await this.attachmentRepository.find({
+        where: { id: In(appointment.attachment_ids) },
+      });
+      (appointment as any).attachments = attachments;
+    } else {
+      (appointment as any).attachments = [];
     }
 
     return appointment;

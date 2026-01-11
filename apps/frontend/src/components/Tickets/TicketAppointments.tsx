@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, Plus, Trash2, Edit2, Calendar, DollarSign, Paperclip } from 'lucide-react';
 import { appointmentsService } from '@/services/ticket-details.service';
 import { clientService } from '@/services/client.service';
+import { ticketAttachmentsService } from '@/services/ticket-attachments.service';
 import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
 import { AppointmentType, ServiceCoverageType, ServiceType, ServiceLevel, CreateAppointmentDto } from '@/types/ticket-details.types';
 
@@ -217,40 +218,60 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Montar DTO apenas com campos aceitos pelo backend
-    const dto: any = {
-      appointment_date: formData.appointment_date,
-      start_time: formData.start_time,
-      end_time: formData.end_time,
-      description: formData.description || undefined,
-    };
+    try {
+      let attachmentIds: string[] = [];
 
-    // SEMPRE enviar o preço calculado (seja manual ou automático)
-    if (calculatedPrice) {
-      dto.unit_price = formData.manual_price_override
-        ? formData.manual_unit_price
-        : calculatedPrice.unit_price;
-    }
+      // Upload de anexos se houver arquivos selecionados
+      if (formData.attachments && formData.attachments.length > 0) {
+        const uploadResult = await ticketAttachmentsService.uploadFiles(
+          ticketId,
+          formData.attachments
+        );
 
-    if (editingAppointment) {
-      // Modo edição
-      console.log('Atualizando apontamento:', editingAppointment, dto);
-      updateMutation.mutate({ id: editingAppointment, data: dto });
-    } else {
-      // Modo criação
-      const createDto: CreateAppointmentDto = {
-        ...dto,
-        ticket_id: formData.ticket_id,
-        type: formData.type,
-        coverage_type: formData.coverage_type,
-        service_type: formData.modality, // Modalidade vai para service_type
-        send_as_response: formData.send_as_response,
+        if (uploadResult.attachments) {
+          attachmentIds = uploadResult.attachments.map(att => att.id);
+        }
+      }
+
+      // Montar DTO apenas com campos aceitos pelo backend
+      const dto: any = {
+        appointment_date: formData.appointment_date,
+        start_time: formData.start_time,
+        end_time: formData.end_time,
+        description: formData.description || undefined,
+        attachment_ids: attachmentIds.length > 0 ? attachmentIds : undefined,
       };
-      console.log('Criando apontamento:', createDto);
-      createMutation.mutate(createDto);
+
+      // SEMPRE enviar o preço calculado (seja manual ou automático)
+      if (calculatedPrice) {
+        dto.unit_price = formData.manual_price_override
+          ? formData.manual_unit_price
+          : calculatedPrice.unit_price;
+      }
+
+      if (editingAppointment) {
+        // Modo edição
+        console.log('Atualizando apontamento:', editingAppointment, dto);
+        updateMutation.mutate({ id: editingAppointment, data: dto });
+      } else {
+        // Modo criação
+        const createDto: CreateAppointmentDto = {
+          ...dto,
+          ticket_id: formData.ticket_id,
+          type: formData.type,
+          coverage_type: formData.coverage_type,
+          service_type: formData.modality, // Modalidade vai para service_type
+          send_as_response: formData.send_as_response,
+        };
+        console.log('Criando apontamento:', createDto);
+        createMutation.mutate(createDto);
+      }
+    } catch (error) {
+      console.error('Erro ao processar formulário:', error);
+      alert('Erro ao enviar anexos. Tente novamente.');
     }
   };
 

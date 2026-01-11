@@ -55,7 +55,15 @@
       "Bash(cmd.exe /c 'cd /d \"\"d:\\\\\\\\Arquivos do Usuário\\\\\\\\OneDrive\\\\\\\\3 - Pessoal José\\\\\\\\Programaçao\\\\\\\\Sys-Ticket\"\" && git log --oneline -3')",
       "Bash(cmd.exe /c 'cd /d \"\"d:\\\\\\\\Arquivos do Usuário\\\\\\\\OneDrive\\\\\\\\3 - Pessoal José\\\\\\\\Programaçao\\\\\\\\Sys-Ticket\"\" && git status')",
       "Bash(cmd.exe /c 'cd /d \"\"d:\\\\\\\\Arquivos do Usuário\\\\\\\\OneDrive\\\\\\\\3 - Pessoal José\\\\\\\\Programaçao\\\\\\\\Sys-Ticket\"\" && git add . && git status')",
-      "Bash(cmd.exe /c 'dir \"\"C:\\\\Users\\\\José D Oliveira\\\\.ssh\"\" /b')"
+      "Bash(cmd.exe /c 'dir \"\"C:\\\\Users\\\\José D Oliveira\\\\.ssh\"\" /b')",
+      "Bash(cmd.exe /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\"\" && git add apps/backend/src/modules/tickets/services/ticket-appointments.service.ts && git status\")",
+      "Bash(cmd.exe /c 'cd /d \"\"d:\\\\\\\\Arquivos do Usuário\\\\\\\\OneDrive\\\\\\\\3 - Pessoal José\\\\\\\\Programaçao\\\\\\\\Sys-Ticket\"\" && git add . && git commit -m \"\"Feature: Carregar anexos dos apontamentos automaticamente - Injetar TicketAttachment repository no service - Modificar findAll\\(\\) para carregar attachments baseado em attachment_ids - Modificar findOne\\(\\) para carregar attachments - Adicionar array vazio quando não há anexos\"\" && git push')",
+      "Bash(cmd.exe /c 'cd /d \"\"d:\\\\\\\\\\\\\\\\Arquivos do Usuário\\\\\\\\\\\\\\\\OneDrive\\\\\\\\\\\\\\\\3 - Pessoal José\\\\\\\\\\\\\\\\Programaçao\\\\\\\\\\\\\\\\Sys-Ticket\"\" && git add . && git commit -m \"\"Feature: Sistema completo de upload de anexos - Backend: Controller e service de upload com validação de tipos - Backend: Salvamento de arquivos no disco com hash MD5 - Backend: Endpoints de upload, download e visualização - Frontend: Service de upload de anexos para tickets - Frontend: UI de upload em TicketDetails com drag-and-drop - Frontend: Integração de upload em apontamentos - Suporte a múltiplos arquivos \\(imagens, PDF, DOC, XLS, TXT\\) - Limite de 10MB por arquivo\"\" && git push')",
+      "Bash(cmd.exe /c 'cd /d \"\"d:\\\\\\\\Arquivos do Usuário\\\\\\\\OneDrive\\\\\\\\3 - Pessoal José\\\\\\\\Programaçao\\\\\\\\Sys-Ticket\"\" && git log --oneline -5')",
+      "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" log --oneline -5)",
+      "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" status)",
+      "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" add .)",
+      "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" commit -m \"Feature: Sistema completo de upload de anexos - Backend: Controller e service de upload com validação de tipos - Backend: Salvamento de arquivos no disco com hash MD5 - Backend: Endpoints de upload, download e visualização - Frontend: Service de upload de anexos para tickets - Frontend: UI de upload em TicketDetails - Frontend: Integração de upload em apontamentos - Suporte a múltiplos arquivos \\(imagens, PDF, DOC, XLS, TXT\\)\")"
     ]
   }
 }
