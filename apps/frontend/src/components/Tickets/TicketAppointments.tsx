@@ -257,8 +257,12 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
         start_time: formData.start_time,
         end_time: formData.end_time,
         description: formData.description || undefined,
-        attachment_ids: attachmentIds.length > 0 ? attachmentIds : undefined,
       };
+
+      // Só enviar attachment_ids se houver anexos
+      if (attachmentIds.length > 0) {
+        dto.attachment_ids = attachmentIds;
+      }
 
       // SEMPRE enviar o preço calculado (seja manual ou automático)
       if (calculatedPrice) {

@@ -569,7 +569,7 @@ export default function TicketDetails() {
                                 if (confirm('Deseja remover este anexo?')) {
                                   try {
                                     await ticketAttachmentsService.deleteAttachment(ticket.id, attachment.id);
-                                    queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
+                                    queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] });
                                   } catch (error) {
                                     console.error('Erro ao remover anexo:', error);
                                   }
