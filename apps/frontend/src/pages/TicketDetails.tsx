@@ -17,7 +17,9 @@ import {
   Edit,
   Upload,
   X,
-  Plus
+  Plus,
+  Eye,
+  Trash2
 } from 'lucide-react';
 import { ticketService } from '@/services/ticket.service';
 import { ticketAttachmentsService } from '@/services/ticket-attachments.service';
@@ -536,19 +538,50 @@ export default function TicketDetails() {
                   {ticket.attachments && ticket.attachments.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {ticket.attachments.map((attachment: any) => (
-                        <a
+                        <div
                           key={attachment.id}
-                          href={ticketAttachmentsService.getDownloadUrl(ticket.id, attachment.id)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors group"
+                          className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                         >
-                          <Paperclip className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
+                          <Paperclip className="w-4 h-4 text-gray-400 flex-shrink-0" />
                           <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
                             {attachment.filename || attachment.name}
                           </span>
-                          <Download className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
-                        </a>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <a
+                              href={ticketAttachmentsService.getViewUrl(ticket.id, attachment.id)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                              title="Visualizar"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </a>
+                            <a
+                              href={ticketAttachmentsService.getDownloadUrl(ticket.id, attachment.id)}
+                              download
+                              className="p-1 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
+                              title="Baixar"
+                            >
+                              <Download className="w-4 h-4" />
+                            </a>
+                            <button
+                              onClick={async () => {
+                                if (confirm('Deseja remover este anexo?')) {
+                                  try {
+                                    await ticketAttachmentsService.deleteAttachment(ticket.id, attachment.id);
+                                    queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
+                                  } catch (error) {
+                                    console.error('Erro ao remover anexo:', error);
+                                  }
+                                }
+                              }}
+                              className="p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                              title="Remover anexo"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   ) : (
