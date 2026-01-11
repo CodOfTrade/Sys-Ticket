@@ -1152,13 +1152,13 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
             </button>
             <button
               type="submit"
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || isUploadingFiles}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              {createMutation.isPending ? (
+              {createMutation.isPending || isUploadingFiles ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Criando...
+                  {isUploadingFiles ? 'Enviando anexos...' : 'Criando...'}
                 </>
               ) : (
                 'Criar Ticket'
