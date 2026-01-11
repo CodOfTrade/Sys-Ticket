@@ -12,15 +12,21 @@ import {
   UseGuards,
   HttpStatus,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { Public } from '../../auth/decorators/public.decorator';
 import { TicketAttachmentsService } from '../services/ticket-attachments.service';
+import * as path from 'path';
+import * as fs from 'fs';
 
 @Controller({ path: 'tickets/:ticketId/attachments', version: '1' })
 @UseGuards(JwtAuthGuard)
 export class TicketAttachmentsController {
+  private readonly logger = new Logger(TicketAttachmentsController.name);
+
   constructor(private readonly attachmentsService: TicketAttachmentsService) {}
 
   /**
@@ -127,46 +133,96 @@ export class TicketAttachmentsController {
   }
 
   /**
-   * Download de anexo
+   * Download de anexo (público para permitir download direto via browser)
    */
+  @Public()
   @Get(':attachmentId/download')
   async downloadAttachment(
     @Param('attachmentId') attachmentId: string,
     @Res() res: Response,
   ) {
-    const attachment = await this.attachmentsService.findOne(attachmentId);
+    try {
+      const attachment = await this.attachmentsService.findOne(attachmentId);
+      const absolutePath = path.resolve(attachment.file_path);
 
-    res.setHeader('Content-Type', attachment.mime_type);
-    res.setHeader('Content-Disposition', `attachment; filename="${attachment.filename}"`);
-    res.sendFile(attachment.file_path, (err) => {
-      if (err) {
-        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      this.logger.log(`Download request for attachment: ${attachmentId}`);
+      this.logger.log(`File path: ${absolutePath}`);
+
+      // Verificar se arquivo existe
+      if (!fs.existsSync(absolutePath)) {
+        this.logger.error(`File not found: ${absolutePath}`);
+        return res.status(HttpStatus.NOT_FOUND).json({
           success: false,
-          message: 'Erro ao baixar arquivo',
+          message: 'Arquivo não encontrado',
         });
       }
-    });
+
+      res.setHeader('Content-Type', attachment.mime_type);
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(attachment.filename)}"`);
+      res.sendFile(absolutePath, (err) => {
+        if (err) {
+          this.logger.error(`Error sending file: ${err.message}`);
+          if (!res.headersSent) {
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+              success: false,
+              message: 'Erro ao baixar arquivo',
+            });
+          }
+        }
+      });
+    } catch (error) {
+      this.logger.error(`Error in downloadAttachment: ${error.message}`);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: 'Erro ao processar download',
+      });
+    }
   }
 
   /**
-   * Visualizar anexo (sem forçar download)
+   * Visualizar anexo (sem forçar download, público para permitir acesso direto)
    */
+  @Public()
   @Get(':attachmentId/view')
   async viewAttachment(
     @Param('attachmentId') attachmentId: string,
     @Res() res: Response,
   ) {
-    const attachment = await this.attachmentsService.findOne(attachmentId);
+    try {
+      const attachment = await this.attachmentsService.findOne(attachmentId);
+      const absolutePath = path.resolve(attachment.file_path);
 
-    res.setHeader('Content-Type', attachment.mime_type);
-    res.sendFile(attachment.file_path, (err) => {
-      if (err) {
-        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      this.logger.log(`View request for attachment: ${attachmentId}`);
+      this.logger.log(`File path: ${absolutePath}`);
+
+      // Verificar se arquivo existe
+      if (!fs.existsSync(absolutePath)) {
+        this.logger.error(`File not found: ${absolutePath}`);
+        return res.status(HttpStatus.NOT_FOUND).json({
           success: false,
-          message: 'Erro ao visualizar arquivo',
+          message: 'Arquivo não encontrado',
         });
       }
-    });
+
+      res.setHeader('Content-Type', attachment.mime_type);
+      res.sendFile(absolutePath, (err) => {
+        if (err) {
+          this.logger.error(`Error sending file: ${err.message}`);
+          if (!res.headersSent) {
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+              success: false,
+              message: 'Erro ao visualizar arquivo',
+            });
+          }
+        }
+      });
+    } catch (error) {
+      this.logger.error(`Error in viewAttachment: ${error.message}`);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: 'Erro ao processar visualização',
+      });
+    }
   }
 
   /**

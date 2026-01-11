@@ -481,8 +481,9 @@ export default function TicketDetails() {
                     {ticket.attachments.map((attachment: any) => (
                       <a
                         key={attachment.id}
-                        href={attachment.url}
-                        download
+                        href={ticketAttachmentsService.getDownloadUrl(ticket.id, attachment.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors group"
                       >
                         <Paperclip className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
@@ -597,8 +598,9 @@ export default function TicketDetails() {
                   {ticket.attachments.map((attachment: any) => (
                     <a
                       key={attachment.id}
-                      href={attachment.url}
-                      download
+                      href={ticketAttachmentsService.getDownloadUrl(ticket.id, attachment.id)}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors group"
                     >
                       <Paperclip className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
