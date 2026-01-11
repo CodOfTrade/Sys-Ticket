@@ -33,10 +33,20 @@ const coverageTypeColors: Record<ServiceCoverageType, string> = {
   [ServiceCoverageType.INTERNAL]: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
 };
 
+// Tipo para anexos existentes do banco de dados
+interface ExistingAttachment {
+  id: string;
+  filename: string;
+  file_size?: number;
+}
+
 export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsProps) {
   const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<string | null>(null);
+  // Separar anexos existentes (do banco) de novos arquivos (File objects)
+  const [existingAttachments, setExistingAttachments] = useState<ExistingAttachment[]>([]);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
   const [formData, setFormData] = useState<any>({
     ticket_id: ticketId,
     appointment_date: new Date().toISOString().split('T')[0],
@@ -52,7 +62,6 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
     manual_price_override: false,
     manual_unit_price: 0,
     send_as_response: false,
-    attachments: [], // NOVO: Anexos/Evidências
   });
 
   // Estado para preço calculado
@@ -176,6 +185,10 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
 
   const handleEditAppointment = (appointment: any) => {
     setEditingAppointment(appointment.id);
+    // Carregar anexos existentes do banco de dados (objetos com id e filename)
+    setExistingAttachments(appointment.attachments || []);
+    // Limpar novos arquivos
+    setNewFiles([]);
     setFormData({
       ticket_id: ticketId,
       appointment_date: appointment.appointment_date,
@@ -192,13 +205,14 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
       manual_unit_price: appointment.unit_price || 0,
       description: appointment.description || '',
       send_as_response: false,
-      attachments: appointment.attachments || [], // Carregar anexos existentes
     });
     setShowCreateModal(true);
   };
 
   const resetForm = () => {
     setEditingAppointment(null);
+    setExistingAttachments([]);
+    setNewFiles([]);
     setFormData({
       ticket_id: ticketId,
       appointment_date: new Date().toISOString().split('T')[0],
@@ -214,7 +228,6 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
       manual_price_override: false,
       manual_unit_price: 0,
       send_as_response: false,
-      attachments: [],
     });
   };
 
@@ -222,17 +235,19 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
     e.preventDefault();
 
     try {
-      let attachmentIds: string[] = [];
+      // IDs de anexos existentes (já salvos no banco)
+      let attachmentIds: string[] = existingAttachments.map(att => att.id);
 
-      // Upload de anexos se houver arquivos selecionados
-      if (formData.attachments && formData.attachments.length > 0) {
+      // Upload de novos arquivos se houver
+      if (newFiles.length > 0) {
         const uploadResult = await ticketAttachmentsService.uploadFiles(
           ticketId,
-          formData.attachments
+          newFiles
         );
 
         if (uploadResult.attachments) {
-          attachmentIds = uploadResult.attachments.map(att => att.id);
+          const newIds = uploadResult.attachments.map(att => att.id);
+          attachmentIds = [...attachmentIds, ...newIds];
         }
       }
 
@@ -711,8 +726,8 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                       onChange={(e) => {
                         const files = Array.from(e.target.files || []);
                         if (files.length > 0) {
-                          // Adicionar aos arquivos existentes em vez de substituir
-                          setFormData({ ...formData, attachments: [...(formData.attachments || []), ...files] });
+                          // Adicionar aos novos arquivos em vez de substituir
+                          setNewFiles((prev) => [...prev, ...files]);
                         }
                         // Limpar input para permitir selecionar o mesmo arquivo novamente
                         e.target.value = '';
@@ -734,23 +749,64 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                         Imagens, PDF, DOC, TXT (máx. 10MB por arquivo)
                       </span>
                     </label>
-                    {formData.attachments && formData.attachments.length > 0 && (
+
+                    {/* Lista de anexos existentes (do banco de dados) */}
+                    {existingAttachments.length > 0 && (
                       <div className="mt-3 space-y-2">
-                        {formData.attachments.map((file: File, index: number) => (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Anexos existentes:</p>
+                        {existingAttachments.map((attachment) => (
                           <div
-                            key={index}
-                            className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg"
+                            key={attachment.id}
+                            className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/30 px-3 py-2 rounded-lg"
                           >
-                            <span className="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">
-                              {file.name}
-                            </span>
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <Paperclip className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                              <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                                {attachment.filename}
+                              </span>
+                            </div>
                             <button
                               type="button"
                               onClick={() => {
-                                const newAttachments = formData.attachments.filter((_: File, i: number) => i !== index);
-                                setFormData({ ...formData, attachments: newAttachments });
+                                setExistingAttachments((prev) => prev.filter((a) => a.id !== attachment.id));
                               }}
-                              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 ml-2"
+                              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 ml-2 flex-shrink-0"
+                              title="Remover anexo"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Lista de novos arquivos (File objects) */}
+                    {newFiles.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Novos arquivos:</p>
+                        {newFiles.map((file, index) => (
+                          <div
+                            key={`new-${index}`}
+                            className="flex items-center justify-between bg-green-50 dark:bg-green-900/30 px-3 py-2 rounded-lg"
+                          >
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <Paperclip className="w-4 h-4 text-green-500 flex-shrink-0" />
+                              <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                                {file.name}
+                              </span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
+                                ({(file.size / 1024).toFixed(1)} KB)
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewFiles((prev) => prev.filter((_, i) => i !== index));
+                              }}
+                              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 ml-2 flex-shrink-0"
+                              title="Remover arquivo"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
