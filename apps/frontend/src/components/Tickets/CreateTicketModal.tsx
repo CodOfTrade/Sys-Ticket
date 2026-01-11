@@ -1085,8 +1085,18 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                     className="hidden"
                     accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
                     onChange={(e) => {
+                      console.log('=== FILE INPUT onChange ===');
+                      console.log('e.target.files:', e.target.files);
                       const files = Array.from(e.target.files || []);
-                      setSelectedFiles(prev => [...prev, ...files]);
+                      console.log('Files array:', files);
+                      console.log('Files length:', files.length);
+                      if (files.length > 0) {
+                        setSelectedFiles(prev => {
+                          const newFiles = [...prev, ...files];
+                          console.log('New selectedFiles:', newFiles);
+                          return newFiles;
+                        });
+                      }
                       // Limpar input para permitir selecionar o mesmo arquivo novamente
                       e.target.value = '';
                     }}
@@ -1104,6 +1114,9 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                     </p>
                   </label>
                 </div>
+
+                {/* Debug: mostrar estado atual */}
+                <p className="text-xs text-gray-500 mt-2">Debug: {selectedFiles.length} arquivo(s) no estado</p>
 
                 {/* Lista de arquivos selecionados */}
                 {selectedFiles.length > 0 && (
