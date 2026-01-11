@@ -273,6 +273,7 @@ export class TicketsController {
   }
 
   @Post(':id/followers')
+  @Public()
   @ApiOperation({
     summary: 'Adicionar seguidor ao ticket',
     description: 'Adiciona um novo seguidor ao ticket (pode ser usuário do sistema ou email externo)',
@@ -296,6 +297,7 @@ export class TicketsController {
   }
 
   @Delete(':id/followers/:followerId')
+  @Public()
   @ApiOperation({
     summary: 'Remover seguidor do ticket',
     description: 'Remove um seguidor do ticket',
