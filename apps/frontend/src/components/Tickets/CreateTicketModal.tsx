@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Search, Upload, Link2, UserPlus, Mail, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Search, Upload, Link2, UserPlus, Mail, AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { ticketService } from '@/services/ticket.service';
+import { ticketAttachmentsService } from '@/services/ticket-attachments.service';
 import { TicketPriority, ServiceType, CreateTicketDto } from '@/types/ticket.types';
 import { useAuthStore } from '@/store/auth.store';
 import { serviceCatalogService } from '@/services/service-catalog.service';
@@ -75,6 +76,10 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
   // Estado para modal de atribuição de técnico
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [selectedTechnician, setSelectedTechnician] = useState<string>('');
+
+  // Estado para anexos
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
 
   // Buscar catálogos de serviço
   const { data: catalogs } = useQuery({
@@ -177,8 +182,23 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateTicketDto) => ticketService.create(data),
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       console.log('✓ Ticket criado com sucesso!', result);
+
+      // Upload de arquivos se houver
+      if (selectedFiles.length > 0 && result.id) {
+        try {
+          setIsUploadingFiles(true);
+          await ticketAttachmentsService.uploadFiles(result.id, selectedFiles);
+          console.log('✓ Arquivos enviados com sucesso!');
+        } catch (uploadError) {
+          console.error('Erro ao enviar arquivos:', uploadError);
+          alert('Ticket criado, mas houve erro ao enviar os anexos. Você pode adicionar os anexos depois.');
+        } finally {
+          setIsUploadingFiles(false);
+        }
+      }
+
       alert('Ticket criado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
       setShowAssignmentModal(false);
@@ -220,6 +240,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     setSelectedRequester(null);
     setFollowerInput('');
     setErrors({});
+    setSelectedFiles([]);
   };
 
   // Fechar dropdown de solicitantes ao clicar fora
@@ -1062,9 +1083,12 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                     multiple
                     id="file-upload"
                     className="hidden"
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
                     onChange={(e) => {
-                      // TODO: Implementar lógica de upload
-                      console.log('Arquivos selecionados:', e.target.files);
+                      const files = Array.from(e.target.files || []);
+                      setSelectedFiles(prev => [...prev, ...files]);
+                      // Limpar input para permitir selecionar o mesmo arquivo novamente
+                      e.target.value = '';
                     }}
                   />
                   <label
@@ -1076,10 +1100,42 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                       Clique para selecionar ou arraste arquivos aqui
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      Máx: 10MB por arquivo
+                      Imagens, PDF, DOC, XLS, TXT (máx. 10MB)
                     </p>
                   </label>
                 </div>
+
+                {/* Lista de arquivos selecionados */}
+                {selectedFiles.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {selectedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Upload size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                          <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                            {file.name}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
+                            ({(file.size / 1024).toFixed(1)} KB)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== index))}
+                          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 ml-2 flex-shrink-0"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      {selectedFiles.length} arquivo(s) selecionado(s) - serão enviados após criar o ticket
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
