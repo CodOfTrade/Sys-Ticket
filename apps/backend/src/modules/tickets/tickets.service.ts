@@ -266,17 +266,26 @@ export class TicketsService {
 
       // Buscar informações do cliente se houver client_id
       if (ticket.client_id) {
+        this.logger.log(`Ticket tem client_id: ${ticket.client_id}, buscando dados do cliente...`);
         try {
           const client = await this.clientsService.findOne(ticket.client_id);
+          this.logger.log(`Cliente encontrado: ${JSON.stringify(client)}`);
           if (client) {
+            const clientName = client.nome || client.nome_fantasia || client.razao_social;
+            this.logger.log(`Nome do cliente: ${clientName}`);
             (ticket as any).client = {
               id: client.id,
-              name: client.nome || client.nome_fantasia || client.razao_social,
+              name: clientName,
             };
+          } else {
+            this.logger.warn(`Cliente ${ticket.client_id} não encontrado (retornou null)`);
           }
         } catch (error) {
-          this.logger.warn(`Erro ao buscar cliente ${ticket.client_id}: ${error.message}`);
+          this.logger.error(`Erro ao buscar cliente ${ticket.client_id}: ${error.message}`);
+          this.logger.error(error.stack);
         }
+      } else {
+        this.logger.log(`Ticket não tem client_id`);
       }
 
       this.logger.log(`Ticket ${id} encontrado com sucesso`);
