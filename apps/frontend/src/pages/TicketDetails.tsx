@@ -175,6 +175,7 @@ export default function TicketDetails() {
   // Estados para seguidores
   const [followerInput, setFollowerInput] = useState('');
   const [showFollowerInput, setShowFollowerInput] = useState(false);
+  const [showFollowerDropdown, setShowFollowerDropdown] = useState(false);
 
   // Buscar detalhes do ticket
   const { data: ticket, isLoading, error } = useQuery({
@@ -206,6 +207,13 @@ export default function TicketDetails() {
   const { data: clientContracts } = useQuery({
     queryKey: ['contracts', 'client', ticket?.client_id],
     queryFn: () => clientService.getClientContracts(ticket!.client_id!),
+    enabled: !!ticket?.client_id,
+  });
+
+  // Query para buscar contatos/solicitantes do cliente
+  const { data: clientContacts } = useQuery({
+    queryKey: ['client-contacts', ticket?.client_id],
+    queryFn: () => clientService.getContacts(ticket!.client_id!),
     enabled: !!ticket?.client_id,
   });
 
@@ -834,27 +842,70 @@ export default function TicketDetails() {
 
                 {/* Input para adicionar seguidor */}
                 {showFollowerInput && (
-                  <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg relative">
                     <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
-                      Adicionar novo seguidor (email):
+                      Selecione um solicitante ou digite um email:
                     </p>
                     <div className="flex gap-2">
-                      <input
-                        type="email"
-                        value={followerInput}
-                        onChange={(e) => setFollowerInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && followerInput.includes('@')) {
-                            addFollowerMutation.mutate({ email: followerInput });
-                          } else if (e.key === 'Escape') {
-                            setShowFollowerInput(false);
-                            setFollowerInput('');
-                          }
-                        }}
-                        placeholder="Digite o email do seguidor..."
-                        className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        autoFocus
-                      />
+                      <div className="flex-1 relative">
+                        <input
+                          type="email"
+                          value={followerInput}
+                          onChange={(e) => {
+                            setFollowerInput(e.target.value);
+                            if (e.target.value.length > 0 || (clientContacts && clientContacts.length > 0)) {
+                              setShowFollowerDropdown(true);
+                            }
+                          }}
+                          onFocus={() => {
+                            if (clientContacts && clientContacts.length > 0) {
+                              setShowFollowerDropdown(true);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && followerInput.includes('@')) {
+                              e.preventDefault();
+                              addFollowerMutation.mutate({ email: followerInput });
+                            } else if (e.key === 'Escape') {
+                              setShowFollowerInput(false);
+                              setFollowerInput('');
+                              setShowFollowerDropdown(false);
+                            }
+                          }}
+                          placeholder="Selecione um solicitante ou digite um email..."
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          autoFocus
+                        />
+                        {/* Dropdown de Contatos/Solicitantes */}
+                        {showFollowerDropdown && clientContacts && clientContacts.length > 0 && (
+                          <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            {clientContacts
+                              .filter((contact: any) => contact.email && (
+                                !followerInput ||
+                                contact.name?.toLowerCase().includes(followerInput.toLowerCase()) ||
+                                contact.email?.toLowerCase().includes(followerInput.toLowerCase())
+                              ))
+                              .map((contact: any) => (
+                                <button
+                                  key={contact.id}
+                                  type="button"
+                                  onClick={() => {
+                                    addFollowerMutation.mutate({ email: contact.email, name: contact.name });
+                                    setShowFollowerDropdown(false);
+                                  }}
+                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                                >
+                                  <p className="font-medium text-gray-900 dark:text-white text-sm">
+                                    {contact.name}
+                                  </p>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                                    {contact.email}
+                                  </p>
+                                </button>
+                              ))}
+                          </div>
+                        )}
+                      </div>
                       <button
                         onClick={() => {
                           if (followerInput.includes('@')) {
@@ -874,6 +925,7 @@ export default function TicketDetails() {
                         onClick={() => {
                           setShowFollowerInput(false);
                           setFollowerInput('');
+                          setShowFollowerDropdown(false);
                         }}
                         className="px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm rounded-lg transition-colors"
                       >

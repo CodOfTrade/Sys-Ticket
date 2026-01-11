@@ -106,6 +106,7 @@ export interface UpdateTicketDto {
   status?: TicketStatus;
   priority?: TicketPriority;
   service_type?: ServiceType;
+  client_id?: string;
   client_name?: string;
   requester_name?: string;
   assigned_to_id?: string;

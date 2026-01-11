@@ -90,7 +90,11 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nFix: adicionar attachment_ids ao UpdateAppointmentDto\n\n- Campo estava faltando no DTO de update\n- Class-validator rejeitava o campo como inválido \\(400 Bad Request\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(npx tsc:*)",
       "Bash(cmd /c \"cd /d d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend && npx tsc --noEmit\")",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nFeature: Edição individual de campos do ticket \\(estilo Tiflux\\)\n\n- Título clicável com modal de edição\n- Descrição com RichTextEditor e voz para texto\n- Status e Prioridade com dropdown clicável\n- Cliente com edição inline e badge de contrato\n- Solicitante com edição inline\n- Responsável com edição inline\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFeature: Edição individual de campos do ticket \\(estilo Tiflux\\)\n\n- Título clicável com modal de edição\n- Descrição com RichTextEditor e voz para texto\n- Status e Prioridade com dropdown clicável\n- Cliente com edição inline e badge de contrato\n- Solicitante com edição inline\n- Responsável com edição inline\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npx vite build)",
+      "Bash(cmd /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend\"\" && npm run build 2>&1\")",
+      "Bash(cmd /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend\"\" && npm run build\")",
+      "Bash(powershell -Command:*)"
     ]
   }
 }
