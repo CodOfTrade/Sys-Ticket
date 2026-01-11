@@ -63,7 +63,9 @@
       "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" log --oneline -5)",
       "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" status)",
       "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" add .)",
-      "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" commit -m \"Feature: Sistema completo de upload de anexos - Backend: Controller e service de upload com validação de tipos - Backend: Salvamento de arquivos no disco com hash MD5 - Backend: Endpoints de upload, download e visualização - Frontend: Service de upload de anexos para tickets - Frontend: UI de upload em TicketDetails - Frontend: Integração de upload em apontamentos - Suporte a múltiplos arquivos \\(imagens, PDF, DOC, XLS, TXT\\)\")"
+      "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" commit -m \"Feature: Sistema completo de upload de anexos - Backend: Controller e service de upload com validação de tipos - Backend: Salvamento de arquivos no disco com hash MD5 - Backend: Endpoints de upload, download e visualização - Frontend: Service de upload de anexos para tickets - Frontend: UI de upload em TicketDetails - Frontend: Integração de upload em apontamentos - Suporte a múltiplos arquivos \\(imagens, PDF, DOC, XLS, TXT\\)\")",
+      "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" push)",
+      "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" commit -m \"Fix: corrigir import do api service\")"
     ]
   }
 }
