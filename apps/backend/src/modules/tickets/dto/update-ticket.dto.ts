@@ -21,6 +21,14 @@ import {
 
 export class UpdateTicketDto {
   @ApiPropertyOptional({
+    description: 'ID do cliente no SIGE Cloud',
+    example: 'uuid-do-cliente',
+  })
+  @IsString()
+  @IsOptional()
+  client_id?: string;
+
+  @ApiPropertyOptional({
     description: 'Nome do cliente',
     example: 'Empresa ABC Ltda',
   })

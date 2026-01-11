@@ -252,4 +252,69 @@ export class TicketsController {
   async remove(@Param('id') id: string) {
     await this.ticketsService.remove(id);
   }
+
+  // ========================================
+  // ENDPOINTS DE FOLLOWERS (SEGUIDORES)
+  // ========================================
+
+  @Get(':id/followers')
+  @Public()
+  @ApiOperation({
+    summary: 'Listar seguidores do ticket',
+    description: 'Retorna lista de seguidores de um ticket',
+  })
+  @ApiParam({ name: 'id', description: 'UUID do ticket' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de seguidores retornada com sucesso',
+  })
+  async getFollowers(@Param('id') id: string) {
+    return this.ticketsService.getFollowers(id);
+  }
+
+  @Post(':id/followers')
+  @ApiOperation({
+    summary: 'Adicionar seguidor ao ticket',
+    description: 'Adiciona um novo seguidor ao ticket (pode ser usuário do sistema ou email externo)',
+  })
+  @ApiParam({ name: 'id', description: 'UUID do ticket' })
+  @ApiResponse({
+    status: 201,
+    description: 'Seguidor adicionado com sucesso',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados inválidos ou seguidor já existe',
+  })
+  @HttpCode(HttpStatus.CREATED)
+  async addFollower(
+    @Param('id') id: string,
+    @Body() data: { user_id?: string; email?: string; name?: string },
+    @CurrentUser('id') userId?: string,
+  ) {
+    return this.ticketsService.addFollower(id, data, userId);
+  }
+
+  @Delete(':id/followers/:followerId')
+  @ApiOperation({
+    summary: 'Remover seguidor do ticket',
+    description: 'Remove um seguidor do ticket',
+  })
+  @ApiParam({ name: 'id', description: 'UUID do ticket' })
+  @ApiParam({ name: 'followerId', description: 'UUID do seguidor' })
+  @ApiResponse({
+    status: 204,
+    description: 'Seguidor removido com sucesso',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Seguidor não encontrado',
+  })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeFollower(
+    @Param('id') id: string,
+    @Param('followerId') followerId: string,
+  ) {
+    await this.ticketsService.removeFollower(id, followerId);
+  }
 }

@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Ticket, TicketStatus } from './entities/ticket.entity';
+import { TicketFollower } from './entities/ticket-follower.entity';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { QueryTicketDto } from './dto/query-ticket.dto';
@@ -26,6 +27,8 @@ export class TicketsService {
   constructor(
     @InjectRepository(Ticket)
     private ticketsRepository: Repository<Ticket>,
+    @InjectRepository(TicketFollower)
+    private ticketFollowersRepository: Repository<TicketFollower>,
     private eventEmitter: EventEmitter2,
     @Inject(CACHE_MANAGER) private cacheManager: SimpleCacheService,
     @Inject(forwardRef(() => ClientsService))
@@ -547,5 +550,109 @@ export class TicketsService {
   private async invalidateTicketCache(): Promise<void> {
     // Por simplicidade, vamos limpar apenas por padrão
     this.logger.debug('Cache de tickets invalidado');
+  }
+
+  // ========================================
+  // MÉTODOS DE FOLLOWERS (SEGUIDORES)
+  // ========================================
+
+  /**
+   * Busca os seguidores de um ticket
+   */
+  async getFollowers(ticketId: string): Promise<TicketFollower[]> {
+    try {
+      const followers = await this.ticketFollowersRepository.find({
+        where: { ticket_id: ticketId },
+        relations: ['user'],
+        order: { created_at: 'DESC' },
+      });
+      return followers;
+    } catch (error) {
+      this.logger.error(`Erro ao buscar seguidores do ticket ${ticketId}`, error);
+      throw new BadRequestException('Erro ao buscar seguidores');
+    }
+  }
+
+  /**
+   * Adiciona um seguidor ao ticket
+   */
+  async addFollower(
+    ticketId: string,
+    data: { user_id?: string; email?: string; name?: string },
+    addedById?: string,
+  ): Promise<TicketFollower> {
+    try {
+      // Verificar se ticket existe
+      await this.findOne(ticketId);
+
+      // Verificar se já é seguidor
+      const existingFollower = await this.ticketFollowersRepository.findOne({
+        where: data.user_id
+          ? { ticket_id: ticketId, user_id: data.user_id }
+          : { ticket_id: ticketId, email: data.email },
+      });
+
+      if (existingFollower) {
+        throw new BadRequestException('Este seguidor já está adicionado ao ticket');
+      }
+
+      const follower = this.ticketFollowersRepository.create({
+        ticket_id: ticketId,
+        user_id: data.user_id,
+        email: data.email,
+        name: data.name,
+        added_by_id: addedById,
+        notification_preferences: {
+          on_status_change: true,
+          on_new_comment: true,
+          on_assigned: true,
+          on_closed: true,
+          on_reopened: true,
+        },
+      });
+
+      const savedFollower = await this.ticketFollowersRepository.save(follower);
+
+      // Buscar com relação de user para retornar completo
+      const fullFollower = await this.ticketFollowersRepository.findOne({
+        where: { id: savedFollower.id },
+        relations: ['user'],
+      });
+
+      this.logger.log(`Seguidor adicionado ao ticket ${ticketId}: ${data.email || data.user_id}`);
+
+      return fullFollower;
+    } catch (error) {
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Erro ao adicionar seguidor ao ticket ${ticketId}`, error);
+      throw new BadRequestException('Erro ao adicionar seguidor');
+    }
+  }
+
+  /**
+   * Remove um seguidor do ticket
+   */
+  async removeFollower(ticketId: string, followerId: string): Promise<void> {
+    try {
+      const follower = await this.ticketFollowersRepository.findOne({
+        where: { id: followerId, ticket_id: ticketId },
+      });
+
+      if (!follower) {
+        throw new NotFoundException('Seguidor não encontrado');
+      }
+
+      await this.ticketFollowersRepository.remove(follower);
+
+      this.logger.log(`Seguidor ${followerId} removido do ticket ${ticketId}`);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Erro ao remover seguidor ${followerId} do ticket ${ticketId}`, error);
+      throw new BadRequestException('Erro ao remover seguidor');
+    }
   }
 }

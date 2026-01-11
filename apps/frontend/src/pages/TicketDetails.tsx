@@ -21,9 +21,19 @@ import {
   Eye,
   Trash2,
   Check,
-  FileText
+  FileText,
+  Flame,
+  AlertTriangle,
+  Circle,
+  Pause,
+  CheckCircle,
+  XCircle,
+  Timer,
+  Receipt,
+  UserPlus,
+  Users
 } from 'lucide-react';
-import { ticketService } from '@/services/ticket.service';
+import { ticketService, TicketFollower } from '@/services/ticket.service';
 import { ticketAttachmentsService } from '@/services/ticket-attachments.service';
 import { TicketAppointments } from '@/components/Tickets/TicketAppointments';
 import { TicketCommunication } from '@/components/Tickets/TicketCommunication';
@@ -91,6 +101,20 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
 };
 
+// Ícones para cada status
+const statusIcons: Record<string, any> = {
+  new: Circle,
+  in_progress: Timer,
+  waiting_client: Clock,
+  waiting_third_party: Clock,
+  paused: Pause,
+  waiting_approval: AlertCircle,
+  resolved: CheckCircle,
+  ready_to_invoice: Receipt,
+  closed: CheckSquare,
+  cancelled: XCircle,
+};
+
 const priorityLabels: Record<string, string> = {
   low: 'Baixa',
   medium: 'Média',
@@ -103,6 +127,14 @@ const priorityColors: Record<string, string> = {
   medium: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
   high: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
   urgent: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+};
+
+// Ícones para cada prioridade
+const priorityIcons: Record<string, any> = {
+  low: Circle,
+  medium: AlertCircle,
+  high: AlertTriangle,
+  urgent: Flame,
 };
 
 export default function TicketDetails() {
@@ -139,6 +171,11 @@ export default function TicketDetails() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
   const queryClient = useQueryClient();
+
+  // Estados para seguidores
+  const [showFollowersSection, setShowFollowersSection] = useState(true);
+  const [followerInput, setFollowerInput] = useState('');
+  const [showFollowerInput, setShowFollowerInput] = useState(false);
 
   // Buscar detalhes do ticket
   const { data: ticket, isLoading, error } = useQuery({
@@ -206,9 +243,10 @@ export default function TicketDetails() {
 
   // Mutation para atualizar cliente
   const updateClientMutation = useMutation({
-    mutationFn: (data: { client_name: string }) => ticketService.update(id!, data),
+    mutationFn: (data: { client_id: string; client_name: string }) => ticketService.update(id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+      queryClient.invalidateQueries({ queryKey: ['contracts', 'client'] });
       setIsEditingClient(false);
     },
     onError: (error: any) => {
@@ -266,6 +304,32 @@ export default function TicketDetails() {
     onError: (error: any) => {
       console.error('Erro ao atualizar prioridade:', error);
       alert('Erro ao atualizar prioridade: ' + (error.response?.data?.message || error.message));
+    },
+  });
+
+  // Mutation para adicionar seguidor
+  const addFollowerMutation = useMutation({
+    mutationFn: (data: { email: string; name?: string }) => ticketService.addFollower(id!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+      setFollowerInput('');
+      setShowFollowerInput(false);
+    },
+    onError: (error: any) => {
+      console.error('Erro ao adicionar seguidor:', error);
+      alert('Erro ao adicionar seguidor: ' + (error.response?.data?.message || error.message));
+    },
+  });
+
+  // Mutation para remover seguidor
+  const removeFollowerMutation = useMutation({
+    mutationFn: (followerId: string) => ticketService.removeFollower(id!, followerId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+    },
+    onError: (error: any) => {
+      console.error('Erro ao remover seguidor:', error);
+      alert('Erro ao remover seguidor: ' + (error.response?.data?.message || error.message));
     },
   });
 
@@ -444,26 +508,33 @@ export default function TicketDetails() {
                       setShowStatusDropdown(!showStatusDropdown);
                       setShowPriorityDropdown(false);
                     }}
-                    className={`px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all ${statusColors[ticket.status]}`}
+                    className={`px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all flex items-center gap-1.5 ${statusColors[ticket.status]}`}
                     title="Clique para alterar o status"
                   >
+                    {(() => {
+                      const StatusIcon = statusIcons[ticket.status];
+                      return StatusIcon ? <StatusIcon className="w-3.5 h-3.5" /> : null;
+                    })()}
                     {statusLabels[ticket.status]}
                   </button>
                   {showStatusDropdown && (
-                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[150px]">
-                      {Object.entries(statusLabels).map(([key, label]) => (
-                        <button
-                          key={key}
-                          onClick={() => updateStatusMutation.mutate(key)}
-                          disabled={updateStatusMutation.isPending}
-                          className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg transition-colors ${
-                            ticket.status === key ? 'bg-gray-100 dark:bg-gray-700 font-medium' : ''
-                          }`}
-                        >
-                          <span className={`inline-block w-2 h-2 rounded-full mr-2 ${statusColors[key].replace('text-', 'bg-').split(' ')[0]}`}></span>
-                          {label}
-                        </button>
-                      ))}
+                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[180px]">
+                      {Object.entries(statusLabels).map(([key, label]) => {
+                        const StatusIcon = statusIcons[key];
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => updateStatusMutation.mutate(key)}
+                            disabled={updateStatusMutation.isPending}
+                            className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg transition-colors flex items-center gap-2 ${
+                              ticket.status === key ? 'bg-gray-100 dark:bg-gray-700 font-medium' : ''
+                            }`}
+                          >
+                            {StatusIcon && <StatusIcon className="w-4 h-4" />}
+                            {label}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -475,26 +546,33 @@ export default function TicketDetails() {
                       setShowPriorityDropdown(!showPriorityDropdown);
                       setShowStatusDropdown(false);
                     }}
-                    className={`px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all ${priorityColors[ticket.priority]}`}
+                    className={`px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all flex items-center gap-1.5 ${priorityColors[ticket.priority]}`}
                     title="Clique para alterar a prioridade"
                   >
+                    {(() => {
+                      const PriorityIcon = priorityIcons[ticket.priority];
+                      return PriorityIcon ? <PriorityIcon className={`w-3.5 h-3.5 ${ticket.priority === 'urgent' ? 'animate-pulse text-red-600' : ''}`} /> : null;
+                    })()}
                     {priorityLabels[ticket.priority]}
                   </button>
                   {showPriorityDropdown && (
-                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[120px]">
-                      {Object.entries(priorityLabels).map(([key, label]) => (
-                        <button
-                          key={key}
-                          onClick={() => updatePriorityMutation.mutate(key)}
-                          disabled={updatePriorityMutation.isPending}
-                          className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg transition-colors ${
-                            ticket.priority === key ? 'bg-gray-100 dark:bg-gray-700 font-medium' : ''
-                          }`}
-                        >
-                          <span className={`inline-block w-2 h-2 rounded-full mr-2 ${priorityColors[key].replace('text-', 'bg-').split(' ')[0]}`}></span>
-                          {label}
-                        </button>
-                      ))}
+                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[140px]">
+                      {Object.entries(priorityLabels).map(([key, label]) => {
+                        const PriorityIcon = priorityIcons[key];
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => updatePriorityMutation.mutate(key)}
+                            disabled={updatePriorityMutation.isPending}
+                            className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg transition-colors flex items-center gap-2 ${
+                              ticket.priority === key ? 'bg-gray-100 dark:bg-gray-700 font-medium' : ''
+                            }`}
+                          >
+                            {PriorityIcon && <PriorityIcon className={`w-4 h-4 ${key === 'urgent' ? 'text-red-600' : ''}`} />}
+                            {label}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -542,8 +620,11 @@ export default function TicketDetails() {
                             if (option) {
                               setClientDisplayValue(option.label);
                               setClientOptions([]);
-                              // Salvar automaticamente
-                              updateClientMutation.mutate({ client_name: option.label });
+                              // Salvar automaticamente com client_id e client_name
+                              updateClientMutation.mutate({
+                                client_id: option.id,
+                                client_name: option.label
+                              });
                             }
                           }}
                           onSearchChange={handleClientSearch}
@@ -732,6 +813,105 @@ export default function TicketDetails() {
                     </button>
                   </div>
                 </div>
+              </div>
+
+              {/* Seção de Seguidores */}
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-gray-400" />
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                      Seguidores ({(ticket as any).followers?.length || 0})
+                    </h4>
+                  </div>
+                  <button
+                    onClick={() => setShowFollowerInput(!showFollowerInput)}
+                    className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Adicionar
+                  </button>
+                </div>
+
+                {/* Input para adicionar seguidor */}
+                {showFollowerInput && (
+                  <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                      Adicionar novo seguidor (email):
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        value={followerInput}
+                        onChange={(e) => setFollowerInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && followerInput.includes('@')) {
+                            addFollowerMutation.mutate({ email: followerInput });
+                          } else if (e.key === 'Escape') {
+                            setShowFollowerInput(false);
+                            setFollowerInput('');
+                          }
+                        }}
+                        placeholder="Digite o email do seguidor..."
+                        className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => {
+                          if (followerInput.includes('@')) {
+                            addFollowerMutation.mutate({ email: followerInput });
+                          }
+                        }}
+                        disabled={!followerInput.includes('@') || addFollowerMutation.isPending}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-1"
+                      >
+                        {addFollowerMutation.isPending ? (
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <Check className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowFollowerInput(false);
+                          setFollowerInput('');
+                        }}
+                        className="px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm rounded-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Lista de seguidores */}
+                {(ticket as any).followers && (ticket as any).followers.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {(ticket as any).followers.map((follower: TicketFollower) => (
+                      <div
+                        key={follower.id}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm group"
+                      >
+                        <User className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {follower.user?.name || follower.name || follower.email}
+                        </span>
+                        <button
+                          onClick={() => removeFollowerMutation.mutate(follower.id)}
+                          disabled={removeFollowerMutation.isPending}
+                          className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Remover seguidor"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Nenhum seguidor ainda. Adicione emails para notificar sobre atualizações do ticket.
+                  </p>
+                )}
               </div>
 
               {/* Lista de anexos (expansível) */}

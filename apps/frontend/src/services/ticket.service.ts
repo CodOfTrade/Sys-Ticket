@@ -72,4 +72,44 @@ export const ticketService = {
     const response = await api.get<ApiResponse<Ticket[]>>(`/v1/tickets/client/${clientId}`);
     return response.data.data;
   },
+
+  // ========================================
+  // MÉTODOS DE FOLLOWERS (SEGUIDORES)
+  // ========================================
+
+  async getFollowers(ticketId: string): Promise<TicketFollower[]> {
+    const response = await api.get<ApiResponse<TicketFollower[]>>(`/v1/tickets/${ticketId}/followers`);
+    return response.data.data;
+  },
+
+  async addFollower(ticketId: string, data: { user_id?: string; email?: string; name?: string }): Promise<TicketFollower> {
+    const response = await api.post<ApiResponse<TicketFollower>>(`/v1/tickets/${ticketId}/followers`, data);
+    return response.data.data;
+  },
+
+  async removeFollower(ticketId: string, followerId: string): Promise<void> {
+    await api.delete(`/v1/tickets/${ticketId}/followers/${followerId}`);
+  },
 };
+
+// Interface para Follower
+export interface TicketFollower {
+  id: string;
+  ticket_id: string;
+  user_id?: string;
+  email?: string;
+  name?: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  notification_preferences?: {
+    on_status_change?: boolean;
+    on_new_comment?: boolean;
+    on_assigned?: boolean;
+    on_closed?: boolean;
+    on_reopened?: boolean;
+  };
+  created_at: string;
+}
