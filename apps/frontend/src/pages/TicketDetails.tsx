@@ -66,20 +66,28 @@ const tabs = [
 ];
 
 const statusLabels: Record<string, string> = {
-  open: 'Aberto',
+  new: 'Novo',
   in_progress: 'Em Andamento',
-  pending: 'Pendente',
+  waiting_client: 'Aguardando Cliente',
+  waiting_third_party: 'Aguardando Terceiro',
+  paused: 'Pausado',
+  waiting_approval: 'Aguardando Aprovação',
   resolved: 'Resolvido',
+  ready_to_invoice: 'Pronto para Faturar',
   closed: 'Fechado',
   cancelled: 'Cancelado',
 };
 
 const statusColors: Record<string, string> = {
-  open: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+  new: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
   in_progress: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-  pending: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+  waiting_client: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+  waiting_third_party: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+  paused: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+  waiting_approval: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
   resolved: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  closed: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+  ready_to_invoice: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300',
+  closed: 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-300',
   cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
 };
 
@@ -116,11 +124,6 @@ export default function TicketDetails() {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
 
-  // Store IDs for editing
-  const [editedClientId, setEditedClientId] = useState<string>('');
-  const [editedRequesterId, setEditedRequesterId] = useState<string>('');
-  const [editedAssigneeId, setEditedAssigneeId] = useState<string>('');
-
   // Display values for autocomplete
   const [clientDisplayValue, setClientDisplayValue] = useState<string>('');
   const [requesterDisplayValue, setRequesterDisplayValue] = useState<string>('');
@@ -129,10 +132,8 @@ export default function TicketDetails() {
   // Autocomplete states
   const [clientOptions, setClientOptions] = useState<AutocompleteOption[]>([]);
   const [technicianOptions, setTechnicianOptions] = useState<AutocompleteOption[]>([]);
-  const [userOptions, setUserOptions] = useState<AutocompleteOption[]>([]);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
   const [isLoadingTechnicians, setIsLoadingTechnicians] = useState(false);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
 
   // Upload de anexos
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -272,15 +273,12 @@ export default function TicketDetails() {
   useEffect(() => {
     if (ticket) {
       // Cliente
-      setEditedClientId(ticket.client_id || '');
       setClientDisplayValue(ticket.client?.name || '');
 
-      // Solicitante (requester não tem ID separado, usa o nome)
-      setEditedRequesterId(ticket.requester_name || '');
+      // Solicitante
       setRequesterDisplayValue(ticket.requester_name || '');
 
       // Responsável
-      setEditedAssigneeId(ticket.assigned_to?.id || '');
       setAssigneeDisplayValue(ticket.assigned_to?.name || '');
     }
   }, [ticket]);
@@ -347,30 +345,6 @@ export default function TicketDetails() {
       setTechnicianOptions([]);
     } finally {
       setIsLoadingTechnicians(false);
-    }
-  };
-
-  const handleRequesterSearch = async (query: string) => {
-    setIsLoadingUsers(true);
-    try {
-      const users = await userService.getAll();
-      const filteredOptions: AutocompleteOption[] = users
-        .filter((user: UserType) =>
-          user.name.toLowerCase().includes(query.toLowerCase()) ||
-          user.email.toLowerCase().includes(query.toLowerCase())
-        )
-        .map((user: UserType) => ({
-          id: user.id,
-          label: user.name,
-          sublabel: user.email,
-          metadata: user,
-        }));
-      setUserOptions(filteredOptions);
-    } catch (error) {
-      console.error('Erro ao buscar usuários:', error);
-      setUserOptions([]);
-    } finally {
-      setIsLoadingUsers(false);
     }
   };
 
