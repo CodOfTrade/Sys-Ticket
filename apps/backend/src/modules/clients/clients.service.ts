@@ -75,6 +75,23 @@ export class ClientsService {
     }
   }
 
+  async findByUuid(uuid: string): Promise<SigeClientInterface | null> {
+    try {
+      const client = await this.clientRepository.findOne({
+        where: { id: uuid },
+      });
+
+      if (!client) {
+        return null;
+      }
+
+      return this.mapClientToInterface(client);
+    } catch (error) {
+      this.logger.error(`Erro ao buscar cliente por UUID ${uuid}`, error);
+      throw error;
+    }
+  }
+
   /**
    * Busca cliente por CPF/CNPJ no banco local
    */
