@@ -540,7 +540,6 @@ export default function TicketDetails() {
                           value={clientDisplayValue}
                           onChange={(option) => {
                             if (option) {
-                              setEditedClientId(option.id);
                               setClientDisplayValue(option.label);
                               setClientOptions([]);
                               // Salvar automaticamente
@@ -661,7 +660,6 @@ export default function TicketDetails() {
                           value={assigneeDisplayValue}
                           onChange={(option) => {
                             if (option) {
-                              setEditedAssigneeId(option.id);
                               setAssigneeDisplayValue(option.label);
                               setTechnicianOptions([]);
                               // Salvar automaticamente
