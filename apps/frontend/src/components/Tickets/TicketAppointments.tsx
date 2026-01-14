@@ -415,9 +415,10 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                   </div>
 
                   {appointment.description && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                      {appointment.description}
-                    </p>
+                    <div
+                      className="text-sm text-gray-600 dark:text-gray-400 mt-2 prose prose-sm dark:prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: appointment.description }}
+                    />
                   )}
 
                   <div className="flex items-center gap-4 mt-3 text-sm">
