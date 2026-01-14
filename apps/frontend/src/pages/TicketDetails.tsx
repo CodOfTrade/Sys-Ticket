@@ -220,10 +220,13 @@ export default function TicketDetails() {
     enabled: !!ticket?.client_id,
   });
 
-  // Encontrar contrato ativo
-  const activeContract = clientContracts?.find(
+  // Filtrar apenas contratos ativos
+  const activeContracts = clientContracts?.filter(
     (c: ClientContract) => c.ativo && c.status === 'Ativo'
-  );
+  ) || [];
+
+  // Encontrar primeiro contrato ativo
+  const activeContract = activeContracts.length > 0 ? activeContracts[0] : null;
 
   // Mutation para atualizar título
   const updateTitleMutation = useMutation({
@@ -672,41 +675,28 @@ export default function TicketDetails() {
                               className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
                             >
                               <FileText className="w-3 h-3" />
-                              Contrato Ativo
-                              {clientContracts && clientContracts.length > 1 && (
-                                <span className="ml-1 text-green-600 dark:text-green-500">
-                                  (+{clientContracts.length - 1})
-                                </span>
-                              )}
+                              {activeContracts.length === 1 ? 'Contrato Ativo' : `${activeContracts.length} Contratos Ativos`}
                             </button>
                             {/* Dropdown de contratos */}
-                            {showContractsDropdown && clientContracts && (
+                            {showContractsDropdown && activeContracts.length > 0 && (
                               <div className="absolute z-30 left-0 mt-1 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
                                 <div className="p-2 border-b border-gray-200 dark:border-gray-700">
                                   <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                                    Contratos do Cliente ({clientContracts.length})
+                                    Contratos Ativos ({activeContracts.length})
                                   </p>
                                 </div>
                                 <div className="max-h-60 overflow-y-auto">
-                                  {clientContracts.map((contract: ClientContract) => (
+                                  {activeContracts.map((contract: ClientContract) => (
                                     <div
                                       key={contract.id}
-                                      className={`px-3 py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
-                                        contract.ativo && contract.status === 'Ativo'
-                                          ? 'bg-green-50 dark:bg-green-900/20'
-                                          : 'bg-gray-50 dark:bg-gray-700/30'
-                                      }`}
+                                      className="px-3 py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0 bg-green-50 dark:bg-green-900/20"
                                     >
                                       <div className="flex items-center justify-between">
                                         <span className="font-medium text-sm text-gray-900 dark:text-white">
                                           #{contract.numero_contrato || contract.id.slice(0, 8)}
                                         </span>
-                                        <span className={`text-xs px-1.5 py-0.5 rounded ${
-                                          contract.ativo && contract.status === 'Ativo'
-                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400'
-                                            : 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300'
-                                        }`}>
-                                          {contract.status || (contract.ativo ? 'Ativo' : 'Inativo')}
+                                        <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
+                                          Ativo
                                         </span>
                                       </div>
                                       {contract.descricao && (
