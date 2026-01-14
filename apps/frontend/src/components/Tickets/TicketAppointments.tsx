@@ -560,10 +560,10 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                   </p>
                 </div>
 
-                {/* Tipo de contrato (dinâmico) */}
+                {/* Classificação do atendimento (dinâmico) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Tipo de contrato <span className="text-red-500">*</span>
+                    Classificação do atendimento <span className="text-red-500">*</span>
                   </label>
                   {formData.coverage_type === ServiceCoverageType.CONTRACT ? (
                     <select
