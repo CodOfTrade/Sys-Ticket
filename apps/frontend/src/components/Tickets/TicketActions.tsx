@@ -43,7 +43,7 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     queryFn: () => appointmentsService.getAppointments(ticket.id),
   });
 
-  const hasAppointments = appointmentsSummary?.total_appointments > 0;
+  const hasAppointments = appointments.length > 0;
 
   // Fechar menu ao clicar fora
   useEffect(() => {
@@ -517,10 +517,10 @@ export function TicketActions({ ticket }: TicketActionsProps) {
               </p>
               <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
                 <p className="text-sm text-green-700 dark:text-green-400">
-                  <strong>Apontamentos:</strong> {appointmentsSummary?.total_appointments || 0}
+                  <strong>Apontamentos:</strong> {appointments.length}
                 </p>
                 <p className="text-sm text-green-700 dark:text-green-400">
-                  <strong>Tempo total:</strong> {appointmentsSummary?.formatted_total_time || '0h'}
+                  <strong>Tempo total:</strong> {appointmentsSummary?.total_hours?.toFixed(1) || '0'}h
                 </p>
               </div>
             </div>
