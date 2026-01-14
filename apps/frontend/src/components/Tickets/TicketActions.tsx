@@ -13,7 +13,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { ticketService } from '@/services/ticket.service';
-import { appointmentsService } from '@/services/appointments.service';
+import { appointmentsService } from '@/services/ticket-details.service';
 import { Ticket } from '@/types/ticket.types';
 import jsPDF from 'jspdf';
 
@@ -75,11 +75,7 @@ export function TicketActions({ ticket }: TicketActionsProps) {
   const cancelTicketMutation = useMutation({
     mutationFn: () => ticketService.update(ticket.id, {
       status: 'cancelled' as any,
-      metadata: {
-        ...ticket.metadata,
-        cancel_reason: cancelReason,
-        cancelled_at: new Date().toISOString(),
-      },
+      // A justificativa é registrada no histórico do ticket via backend
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] });
@@ -170,12 +166,13 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     y += 6;
 
     // Endereço do cliente (se disponível)
-    if (ticket.location_address) {
+    const locationAddress = (ticket as any).location_address;
+    if (locationAddress) {
       doc.setFont('helvetica', 'bold');
-      doc.text('Endereços do cliente:', margin, y);
+      doc.text('Endereço do cliente:', margin, y);
       y += 5;
       doc.setFont('helvetica', 'normal');
-      doc.text(ticket.location_address, margin, y);
+      doc.text(locationAddress, margin, y);
       y += 8;
     }
 
