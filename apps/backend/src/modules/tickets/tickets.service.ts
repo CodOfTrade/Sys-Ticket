@@ -62,12 +62,27 @@ export class TicketsService {
   }
 
   /**
-   * Gera o próximo número de ticket sequencial
+   * Gera o próximo número de ticket sequencial (busca sempre do banco)
    */
-  private generateTicketNumber(): string {
-    this.ticketCounter++;
+  private async generateTicketNumber(): Promise<string> {
     const year = new Date().getFullYear();
-    const paddedNumber = String(this.ticketCounter).padStart(6, '0');
+
+    // Buscar o último ticket do ano atual para garantir número único
+    const lastTicket = await this.ticketsRepository
+      .createQueryBuilder('ticket')
+      .where('ticket.ticket_number LIKE :pattern', { pattern: `TKT-${year}-%` })
+      .orderBy('ticket.created_at', 'DESC')
+      .getOne();
+
+    let nextNumber = 1;
+    if (lastTicket) {
+      const match = lastTicket.ticket_number.match(/\d+$/);
+      if (match) {
+        nextNumber = parseInt(match[0], 10) + 1;
+      }
+    }
+
+    const paddedNumber = String(nextNumber).padStart(6, '0');
     return `TKT-${year}-${paddedNumber}`;
   }
 
@@ -76,7 +91,7 @@ export class TicketsService {
    */
   async create(createTicketDto: CreateTicketDto, createdById?: string): Promise<Ticket> {
     try {
-      const ticketNumber = this.generateTicketNumber();
+      const ticketNumber = await this.generateTicketNumber();
 
       // Extrair followers do DTO para tratar separadamente
       const { followers, ...ticketData } = createTicketDto;

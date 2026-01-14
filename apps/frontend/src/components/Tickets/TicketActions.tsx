@@ -317,175 +317,325 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     includeHistory: false,
   });
 
-  // Gerar relatório do ticket
+  // Gerar relatório do ticket (estilo Tiflux)
   const generateReport = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 20;
-    let y = 20;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    let y = 15;
+    const t = ticket as any;
 
-    // Header
-    doc.setFontSize(18);
-    doc.setTextColor(44, 62, 80);
-    doc.setFont('helvetica', 'bold');
-    doc.text('SysTicket - Relatório', margin, y);
-    y += 15;
+    // Cores
+    const primaryColor = { r: 0, g: 150, b: 180 }; // Azul/teal
+    const grayColor = { r: 100, g: 100, b: 100 };
+    const darkColor = { r: 50, g: 50, b: 50 };
+    const lightGray = { r: 240, g: 240, b: 240 };
 
-    // Título do ticket
-    doc.setFontSize(14);
-    doc.text(`Ticket #${ticket.ticket_number}`, margin, y);
-    y += 8;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text(ticket.title, margin, y);
-    y += 12;
-
-    // Linha
-    doc.setDrawColor(189, 195, 199);
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 10;
-
-    // Informações básicas
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Cliente:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(ticket.client_name || '-', margin + 25, y);
-    y += 6;
-
-    doc.setFont('helvetica', 'bold');
-    doc.text('Solicitante:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(ticket.requester_name || '-', margin + 30, y);
-    y += 6;
-
-    doc.setFont('helvetica', 'bold');
-    doc.text('Responsável:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(ticket.assigned_to?.name || '-', margin + 32, y);
-    y += 6;
-
-    doc.setFont('helvetica', 'bold');
-    doc.text('Criado em:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(new Date(ticket.created_at).toLocaleString('pt-BR'), margin + 28, y);
-    y += 6;
-
+    // Labels
     const statusLabels: Record<string, string> = {
-      new: 'Novo', in_progress: 'Em Andamento', waiting_client: 'Aguardando Cliente',
-      paused: 'Pausado', resolved: 'Resolvido', closed: 'Fechado', cancelled: 'Cancelado'
+      new: 'TICKET NOVO', in_progress: 'TICKET EM ANDAMENTO', waiting_client: 'AGUARDANDO CLIENTE',
+      paused: 'TICKET PAUSADO', resolved: 'TICKET RESOLVIDO', closed: 'TICKET FECHADO', cancelled: 'TICKET CANCELADO'
     };
-    doc.setFont('helvetica', 'bold');
-    doc.text('Status:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(statusLabels[ticket.status] || ticket.status, margin + 20, y);
-
     const priorityLabels: Record<string, string> = {
       low: 'Baixa', medium: 'Média', high: 'Alta', urgent: 'Urgente'
     };
-    doc.setFont('helvetica', 'bold');
-    doc.text('Prioridade:', margin + 60, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(priorityLabels[ticket.priority] || '-', margin + 85, y);
-    y += 12;
+    const typeLabels: Record<string, string> = {
+      remote: 'Remoto', on_site: 'Externo', internal: 'Interno'
+    };
 
-    // Descrição
-    if (reportOptions.includeDescription) {
+    // Função helper para desenhar box com header colorido
+    const drawSectionBox = (title: string, startY: number, height: number) => {
+      // Header do box
+      doc.setFillColor(primaryColor.r, primaryColor.g, primaryColor.b);
+      doc.rect(margin, startY, pageWidth - 2 * margin, 8, 'F');
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('Descrição', margin, y);
-      y += 6;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      const descText = ticket.description
-        ? ticket.description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ')
+      doc.setFontSize(9);
+      doc.setTextColor(255, 255, 255);
+      doc.text(title, pageWidth / 2, startY + 5.5, { align: 'center' });
+      // Box content area
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(margin, startY, pageWidth - 2 * margin, height);
+      return startY + 8;
+    };
+
+    // Função para formatar duração em HH:MM
+    const formatDuration = (hours: number) => {
+      const h = Math.floor(hours);
+      const m = Math.round((hours - h) * 60);
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    };
+
+    // ===== CABEÇALHO =====
+    // Nome do cliente grande
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
+    doc.text(t.client_name || t.client?.name || 'Cliente', margin, y + 8);
+
+    // Logo SysTicket (lado direito)
+    doc.setFontSize(18);
+    doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
+    doc.text('Sys', pageWidth - margin - 35, y + 5);
+    doc.setTextColor(230, 126, 34);
+    doc.text('Ticket', pageWidth - margin - 20, y + 5);
+    y += 18;
+
+    // Linha separadora
+    doc.setDrawColor(primaryColor.r, primaryColor.g, primaryColor.b);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 8;
+
+    // Número e título do ticket + Status
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
+    doc.text(`#${t.ticket_number} - ${t.title}`, margin, y);
+
+    doc.setFontSize(10);
+    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
+    doc.text(statusLabels[t.status] || t.status, pageWidth - margin, y, { align: 'right' });
+    y += 10;
+
+    // ===== BOX CLIENTE =====
+    const clientBoxY = y;
+    const contentY = drawSectionBox(t.client_name || t.client?.name || 'CLIENTE', clientBoxY, 28);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
+    doc.text('ENDEREÇOS DO CLIENTE', margin + 5, contentY + 5);
+    doc.text('SOLICITANTE', pageWidth / 2, contentY + 5, { align: 'center' });
+    doc.text('TELEFONE DO SOLICITANTE', pageWidth - margin - 5, contentY + 5, { align: 'right' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
+    const endereco = t.location_address || '-';
+    doc.text(endereco.substring(0, 45), margin + 5, contentY + 12);
+    doc.text(t.requester_name || '-', pageWidth / 2, contentY + 12, { align: 'center' });
+    doc.text(t.requester_phone || '( )', pageWidth - margin - 5, contentY + 12, { align: 'right' });
+    y = clientBoxY + 32;
+
+    // ===== INFORMAÇÕES DO TICKET =====
+    const infoBoxY = y;
+    const infoContentY = drawSectionBox('INFORMAÇÕES DO TICKET', infoBoxY, 22);
+
+    // Headers
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
+    const cols = [margin + 5, margin + 45, margin + 85, margin + 125, pageWidth - margin - 25];
+    doc.text('MESA', cols[0], infoContentY + 4);
+    doc.text('RESPONSÁVEL', cols[1], infoContentY + 4);
+    doc.text('ABERTO EM', cols[2], infoContentY + 4);
+    doc.text('FECHADO EM', cols[3], infoContentY + 4);
+    doc.text('PRIORIDADE', cols[4], infoContentY + 4);
+
+    // Values
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
+    doc.text(t.service_desk?.name || '-', cols[0], infoContentY + 10);
+    doc.text(t.assigned_to?.name || '-', cols[1], infoContentY + 10);
+    doc.text(new Date(t.created_at).toLocaleDateString('pt-BR'), cols[2], infoContentY + 10);
+    doc.text(t.closed_at ? new Date(t.closed_at).toLocaleDateString('pt-BR') : '-', cols[3], infoContentY + 10);
+    doc.text(priorityLabels[t.priority] || '-', cols[4], infoContentY + 10);
+    y = infoBoxY + 26;
+
+    // ===== DESCRIÇÃO DO TICKET =====
+    if (reportOptions.includeDescription) {
+      const descBoxY = y;
+      const descText = t.description
+        ? t.description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
         : 'Sem descrição';
-      const descLines = doc.splitTextToSize(descText, pageWidth - 2 * margin);
-      doc.text(descLines, margin, y);
-      y += descLines.length * 5 + 10;
+      const descLines = doc.splitTextToSize(descText, pageWidth - 2 * margin - 10);
+      const descHeight = Math.max(15, descLines.length * 4 + 10);
+
+      const descContentY = drawSectionBox('DESCRIÇÃO DO TICKET', descBoxY, descHeight);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
+      doc.text(descLines, margin + 5, descContentY + 6);
+      y = descBoxY + descHeight + 4;
     }
 
-    // Apontamentos
+    // ===== APONTAMENTOS =====
     if (reportOptions.includeAppointments && appointments.length > 0) {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('Apontamentos', margin, y);
-      y += 8;
-      doc.setFontSize(9);
+      y += 5;
 
-      appointments.forEach((apt: any, index: number) => {
-        if (y > 270) {
+      // Título grande
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
+      doc.text('APONTAMENTOS', pageWidth / 2, y, { align: 'center' });
+      y += 8;
+
+      // Header do ticket
+      doc.setFillColor(lightGray.r, lightGray.g, lightGray.b);
+      doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
+      doc.text(`#${t.ticket_number} - ${t.title}`, margin + 3, y + 4);
+      doc.text('SOLICITANTE:', pageWidth - margin - 30, y + 4);
+      y += 8;
+
+      // Headers da tabela
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
+      const aptCols = [margin + 3, margin + 45, margin + 65, margin + 85, margin + 105, margin + 130, pageWidth - margin - 15];
+      doc.text('Período', aptCols[0], y);
+      doc.text('Duração', aptCols[1], y);
+      doc.text('Desloc.', aptCols[2], y);
+      doc.text('Assistência', aptCols[3], y);
+      doc.text('Contrato', aptCols[4], y);
+      doc.text('Serviço', aptCols[5], y);
+      doc.text('Valor', aptCols[6], y);
+      y += 5;
+
+      // Linha
+      doc.setDrawColor(200, 200, 200);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 3;
+
+      // Apontamentos
+      let totalExterno = 0;
+      let totalRemoto = 0;
+      let totalInterno = 0;
+
+      appointments.forEach((apt: any) => {
+        if (y > pageHeight - 50) {
           doc.addPage();
           y = 20;
         }
 
-        doc.setFont('helvetica', 'bold');
-        doc.text(`${index + 1}. ${apt.technician?.name || 'Técnico'}`, margin, y);
+        const startDate = new Date(apt.start_time);
+        const endDate = new Date(apt.end_time);
+        const durationHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+        const durationStr = formatDuration(durationHours);
+
+        // Categorizar por tipo
+        const serviceType = apt.service_type || 'remote';
+        if (serviceType === 'on_site') totalExterno += durationHours;
+        else if (serviceType === 'remote') totalRemoto += durationHours;
+        else totalInterno += durationHours;
+
         doc.setFont('helvetica', 'normal');
-        doc.text(`- ${new Date(apt.start_time).toLocaleString('pt-BR')}`, margin + 60, y);
+        doc.setFontSize(7);
+        doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
+
+        const periodo = `${startDate.toLocaleDateString('pt-BR')} (${startDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})`;
+        doc.text(periodo, aptCols[0], y);
+        doc.text(durationStr, aptCols[1], y);
+        doc.text('-', aptCols[2], y);
+        doc.text(typeLabels[serviceType] || '-', aptCols[3], y);
+        doc.text(apt.is_warranty ? 'Garantia' : '-', aptCols[4], y);
+        doc.text(apt.coverage_type || 'Avulso', aptCols[5], y);
+
+        // Técnico e valor na mesma linha à direita
+        doc.text(apt.technician?.name || '-', aptCols[6] - 20, y);
+        doc.text(`R$${(apt.calculated_price || 0).toFixed(2)}`, aptCols[6], y);
         y += 5;
 
+        // Descrição do apontamento
         if (apt.description) {
-          const aptDesc = apt.description.replace(/<[^>]*>/g, '');
-          const aptLines = doc.splitTextToSize(aptDesc, pageWidth - 2 * margin - 10);
-          doc.text(aptLines, margin + 5, y);
-          y += aptLines.length * 4 + 3;
+          const aptDesc = apt.description.replace(/<[^>]*>/g, '').trim();
+          if (aptDesc) {
+            doc.setFontSize(7);
+            doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
+            const aptLines = doc.splitTextToSize(aptDesc.toUpperCase(), pageWidth - 2 * margin - 10);
+            doc.text(aptLines, margin + 3, y);
+            y += aptLines.length * 3.5 + 3;
+          }
         }
-        y += 3;
+        y += 2;
       });
+
+      // ===== HORAS DE ATENDIMENTO =====
+      y += 8;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
+      doc.text('HORAS DE ATENDIMENTO', pageWidth / 2, y, { align: 'center' });
+      y += 8;
+
+      // Header da tabela de horas
+      doc.setFillColor(lightGray.r, lightGray.g, lightGray.b);
+      doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
+      const hoursCols = [margin + 50, margin + 90, margin + 125, pageWidth - margin - 15];
+      doc.text('EXTERNO', hoursCols[0], y + 4);
+      doc.text('REMOTO', hoursCols[1], y + 4);
+      doc.text('INTERNO', hoursCols[2], y + 4);
+      doc.text('TOTAL', hoursCols[3], y + 4);
+      y += 10;
+
+      // Valores
+      const totalHours = totalExterno + totalRemoto + totalInterno;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
+      doc.text('Atendimento', margin + 5, y);
+      doc.text(formatDuration(totalExterno), hoursCols[0], y);
+      doc.text(formatDuration(totalRemoto), hoursCols[1], y);
+      doc.text(formatDuration(totalInterno), hoursCols[2], y);
+      doc.text(formatDuration(totalHours), hoursCols[3], y);
+      y += 6;
+
+      // Total
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTAL', margin + 5, y);
+      doc.text(formatDuration(totalHours), hoursCols[3], y);
+      y += 12;
+
+      // ===== TOTAL DA VALORIZAÇÃO =====
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
+      const totalCost = appointmentsSummary?.total_cost || 0;
+      doc.text('TOTAL DA VALORIZAÇÃO AVULSA DO TICKET', margin + 30, y);
+      doc.setTextColor(230, 126, 34);
+      doc.text(`R$${totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageWidth - margin - 30, y);
     }
 
-    // Valorização (resumo financeiro)
-    if (y > 240) {
-      doc.addPage();
-      y = 20;
-    }
-    y += 5;
+    // Rodapé página 1
+    doc.setFontSize(8);
+    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
+    doc.text('Página 1 de 2', pageWidth - margin, pageHeight - 10, { align: 'right' });
+
+    // ===== PÁGINA 2 - DECLARAÇÃO =====
+    doc.addPage();
+    y = 40;
+
+    // Declaração
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.setTextColor(230, 126, 34);
-    doc.text('Valorização', margin, y);
+    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
+    const declaracao = 'Declaro estar ciente do trabalho acima realizado e concordo com a realização do mesmo.';
+    doc.text(declaracao, pageWidth / 2, y, { align: 'center' });
+    y += 30;
+
+    // Linha para assinatura
+    doc.setDrawColor(grayColor.r, grayColor.g, grayColor.b);
+    doc.line(margin + 40, y, pageWidth - margin - 40, y);
     y += 8;
 
+    // Nome do cliente
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.setTextColor(44, 62, 80);
+    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
+    doc.text(t.client_name || t.client?.name || 'CLIENTE', pageWidth / 2, y, { align: 'center' });
 
-    // Total de horas
-    doc.setFont('helvetica', 'bold');
-    doc.text('Total de Horas:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${appointmentsSummary?.total_hours?.toFixed(2) || '0.00'}h`, margin + 40, y);
-    y += 6;
-
-    // Total de apontamentos
-    doc.setFont('helvetica', 'bold');
-    doc.text('Apontamentos:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${appointments.length}`, margin + 40, y);
-    y += 6;
-
-    // Custo total
-    doc.setFont('helvetica', 'bold');
-    doc.text('Custo Total:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    const totalCost = appointmentsSummary?.total_cost || 0;
-    doc.text(`R$ ${totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, margin + 40, y);
-    y += 12;
-
-    // Linha separadora
-    doc.setDrawColor(189, 195, 199);
-    doc.line(margin, y, pageWidth - margin, y);
-
-    // Rodapé
+    // Rodapé página 2
     doc.setFontSize(8);
-    doc.setTextColor(128, 128, 128);
-    doc.text(
-      `Relatório gerado em ${new Date().toLocaleString('pt-BR')} - SysTicket`,
-      margin,
-      doc.internal.pageSize.getHeight() - 10
-    );
+    doc.text('Página 2 de 2', pageWidth - margin, pageHeight - 10, { align: 'right' });
 
-    doc.save(`Relatorio_Ticket_${ticket.ticket_number}.pdf`);
+    doc.save(`#${t.ticket_number}-${t.title.replace(/[^a-zA-Z0-9]/g, ' ').substring(0, 30)}.pdf`);
     setShowReportModal(false);
   };
 
