@@ -456,14 +456,12 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     };
 
     // ===== CABEÇALHO COM LOGO =====
-    let logoLoaded = false;
     if (logos?.logo_report) {
       try {
         const logoBase64 = await loadImageAsBase64(`${baseUrl}${logos.logo_report}`);
         if (logoBase64) {
           // Logo centralizada no topo
           doc.addImage(logoBase64, 'PNG', pageWidth / 2 - 25, y - 5, 50, 17);
-          logoLoaded = true;
           y += 15;
         }
       } catch (e) {
