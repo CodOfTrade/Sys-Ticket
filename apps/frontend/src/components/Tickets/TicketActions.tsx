@@ -50,12 +50,6 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     queryFn: () => valuationsService.getValuations(ticket.id),
   });
 
-  // Buscar resumo das valorizações
-  const { data: valuationsSummary } = useQuery({
-    queryKey: ['valuations-summary', ticket.id],
-    queryFn: () => valuationsService.getValuationSummary(ticket.id),
-  });
-
   const hasAppointments = appointments.length > 0;
 
   // Fechar menu ao clicar fora
