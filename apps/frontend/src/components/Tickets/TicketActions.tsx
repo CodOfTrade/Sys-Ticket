@@ -353,12 +353,19 @@ export function TicketActions({ ticket }: TicketActionsProps) {
   const [reportOptions, setReportOptions] = useState({
     includeDescription: true,
     includeAppointments: true,
-    includeComments: false,
-    includeAttachments: false,
-    includeHistory: false,
+    includeValorization: true,
+    includeExtraCharges: false,
+    includeInternalCost: false,
+    includeSignature: true,
   });
 
-  // Gerar relatório do ticket (estilo Tiflux)
+  // Estados para valores extras
+  const [extraChargesValue, setExtraChargesValue] = useState('');
+  const [extraChargesDescription, setExtraChargesDescription] = useState('');
+  const [internalCostValue, setInternalCostValue] = useState('');
+  const [internalCostDescription, setInternalCostDescription] = useState('');
+
+  // Gerar relatório do ticket (modelo limpo e compacto)
   const generateReport = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -367,16 +374,15 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     let y = 15;
     const t = ticket as any;
 
-    // Cores
-    const primaryColor = { r: 0, g: 150, b: 180 }; // Azul/teal
-    const grayColor = { r: 100, g: 100, b: 100 };
-    const darkColor = { r: 50, g: 50, b: 50 };
-    const lightGray = { r: 240, g: 240, b: 240 };
+    // Cores (escala de cinza)
+    const black = { r: 30, g: 30, b: 30 };
+    const gray = { r: 100, g: 100, b: 100 };
+    const lightGray = { r: 220, g: 220, b: 220 };
 
     // Labels
     const statusLabels: Record<string, string> = {
-      new: 'TICKET NOVO', in_progress: 'TICKET EM ANDAMENTO', waiting_client: 'AGUARDANDO CLIENTE',
-      paused: 'TICKET PAUSADO', resolved: 'TICKET RESOLVIDO', closed: 'TICKET FECHADO', cancelled: 'TICKET CANCELADO'
+      new: 'Novo', in_progress: 'Em Andamento', waiting_client: 'Aguardando',
+      paused: 'Pausado', resolved: 'Resolvido', closed: 'Fechado', cancelled: 'Cancelado'
     };
     const priorityLabels: Record<string, string> = {
       low: 'Baixa', medium: 'Média', high: 'Alta', urgent: 'Urgente'
@@ -384,20 +390,8 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     const typeLabels: Record<string, string> = {
       remote: 'Remoto', on_site: 'Externo', internal: 'Interno'
     };
-
-    // Função helper para desenhar box com header colorido
-    const drawSectionBox = (title: string, startY: number, height: number) => {
-      // Header do box
-      doc.setFillColor(primaryColor.r, primaryColor.g, primaryColor.b);
-      doc.rect(margin, startY, pageWidth - 2 * margin, 8, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(255, 255, 255);
-      doc.text(title, pageWidth / 2, startY + 5.5, { align: 'center' });
-      // Box content area
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(margin, startY, pageWidth - 2 * margin, height);
-      return startY + 8;
+    const coverageLabels: Record<string, string> = {
+      contract: 'Contrato', billable: 'Avulso', warranty: 'Garantia', courtesy: 'Cortesia'
     };
 
     // Função para formatar duração em HH:MM
@@ -407,301 +401,292 @@ export function TicketActions({ ticket }: TicketActionsProps) {
       return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
     };
 
+    // Função para formatar moeda
+    const formatCurrency = (value: number) => {
+      return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
     // ===== CABEÇALHO =====
-    // Nome do cliente grande
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-    doc.text(t.client_name || t.client?.name || 'Cliente', margin, y + 8);
+    doc.setFontSize(16);
+    doc.setTextColor(black.r, black.g, black.b);
+    doc.text('RELATÓRIO DE ATENDIMENTO', pageWidth / 2, y, { align: 'center' });
+    y += 10;
 
-    // Logo SysTicket (lado direito)
-    doc.setFontSize(18);
-    doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-    doc.text('Sys', pageWidth - margin - 35, y + 5);
-    doc.setTextColor(230, 126, 34);
-    doc.text('Ticket', pageWidth - margin - 20, y + 5);
-    y += 18;
-
-    // Linha separadora
-    doc.setDrawColor(primaryColor.r, primaryColor.g, primaryColor.b);
+    // Linha
+    doc.setDrawColor(black.r, black.g, black.b);
     doc.setLineWidth(0.5);
     doc.line(margin, y, pageWidth - margin, y);
     y += 8;
 
-    // Número e título do ticket + Status
+    // ===== INFO DO TICKET =====
+    // Ticket number e título
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
-    doc.text(`#${t.ticket_number} - ${t.title}`, margin, y);
+    doc.setFontSize(11);
+    doc.text(`#${t.ticket_number}`, margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(` - ${t.title}`.substring(0, 60), margin + 30, y);
 
-    doc.setFontSize(10);
-    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-    doc.text(statusLabels[t.status] || t.status, pageWidth - margin, y, { align: 'right' });
-    y += 10;
+    doc.setFontSize(9);
+    doc.setTextColor(gray.r, gray.g, gray.b);
+    doc.text(`Status: ${statusLabels[t.status] || t.status}`, pageWidth - margin, y, { align: 'right' });
+    y += 8;
 
-    // ===== BOX CLIENTE =====
-    const clientBoxY = y;
-    const contentY = drawSectionBox(t.client_name || t.client?.name || 'CLIENTE', clientBoxY, 28);
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-    doc.text('ENDEREÇOS DO CLIENTE', margin + 5, contentY + 5);
-    doc.text('SOLICITANTE', pageWidth / 2, contentY + 5, { align: 'center' });
-    doc.text('TELEFONE DO SOLICITANTE', pageWidth - margin - 5, contentY + 5, { align: 'right' });
-
+    // Dados em 2 colunas compactas
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
-    const endereco = t.location_address || '-';
-    doc.text(endereco.substring(0, 45), margin + 5, contentY + 12);
-    doc.text(t.requester_name || '-', pageWidth / 2, contentY + 12, { align: 'center' });
-    doc.text(t.requester_phone || '( )', pageWidth - margin - 5, contentY + 12, { align: 'right' });
-    y = clientBoxY + 32;
+    doc.setTextColor(black.r, black.g, black.b);
 
-    // ===== INFORMAÇÕES DO TICKET =====
-    const infoBoxY = y;
-    const infoContentY = drawSectionBox('INFORMAÇÕES DO TICKET', infoBoxY, 22);
+    const col1 = margin;
+    const col2 = pageWidth / 2 + 10;
 
-    // Headers
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-    const cols = [margin + 5, margin + 45, margin + 85, margin + 125, pageWidth - margin - 25];
-    doc.text('MESA', cols[0], infoContentY + 4);
-    doc.text('RESPONSÁVEL', cols[1], infoContentY + 4);
-    doc.text('ABERTO EM', cols[2], infoContentY + 4);
-    doc.text('FECHADO EM', cols[3], infoContentY + 4);
-    doc.text('PRIORIDADE', cols[4], infoContentY + 4);
-
-    // Values
+    doc.text('Cliente:', col1, y);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
-    doc.text(t.service_desk?.name || '-', cols[0], infoContentY + 10);
-    doc.text(t.assigned_to?.name || '-', cols[1], infoContentY + 10);
-    doc.text(new Date(t.created_at).toLocaleDateString('pt-BR'), cols[2], infoContentY + 10);
-    doc.text(t.closed_at ? new Date(t.closed_at).toLocaleDateString('pt-BR') : '-', cols[3], infoContentY + 10);
-    doc.text(priorityLabels[t.priority] || '-', cols[4], infoContentY + 10);
-    y = infoBoxY + 26;
+    doc.text((t.client_name || t.client?.name || '-').substring(0, 35), col1 + 18, y);
 
-    // ===== DESCRIÇÃO DO TICKET =====
-    if (reportOptions.includeDescription) {
-      const descBoxY = y;
-      const descText = t.description
-        ? t.description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
-        : 'Sem descrição';
-      const descLines = doc.splitTextToSize(descText, pageWidth - 2 * margin - 10);
-      const descHeight = Math.max(15, descLines.length * 4 + 10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Solicitante:', col2, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text((t.requester_name || '-').substring(0, 25), col2 + 25, y);
+    y += 5;
 
-      const descContentY = drawSectionBox('DESCRIÇÃO DO TICKET', descBoxY, descHeight);
-      doc.setFont('helvetica', 'normal');
+    doc.setFont('helvetica', 'bold');
+    doc.text('Responsável:', col1, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text((t.assigned_to?.name || '-').substring(0, 30), col1 + 28, y);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Prioridade:', col2, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(priorityLabels[t.priority] || '-', col2 + 24, y);
+    y += 5;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Aberto:', col1, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(new Date(t.created_at).toLocaleDateString('pt-BR'), col1 + 18, y);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Fechado:', col2, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(t.closed_at ? new Date(t.closed_at).toLocaleDateString('pt-BR') : '-', col2 + 20, y);
+    y += 8;
+
+    // ===== DESCRIÇÃO =====
+    if (reportOptions.includeDescription && t.description) {
+      doc.setDrawColor(lightGray.r, lightGray.g, lightGray.b);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 5;
+
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
-      doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
-      doc.text(descLines, margin + 5, descContentY + 6);
-      y = descBoxY + descHeight + 4;
+      doc.text('Descrição:', margin, y);
+      y += 5;
+
+      const descText = t.description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+      const descLines = doc.splitTextToSize(descText, pageWidth - 2 * margin);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text(descLines.slice(0, 8), margin, y);
+      y += Math.min(descLines.length, 8) * 4 + 5;
     }
 
     // ===== APONTAMENTOS =====
     if (reportOptions.includeAppointments && appointments.length > 0) {
-      y += 5;
-
-      // Título grande
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-      doc.text('APONTAMENTOS', pageWidth / 2, y, { align: 'center' });
-      y += 8;
-
-      // Header do ticket
-      doc.setFillColor(lightGray.r, lightGray.g, lightGray.b);
-      doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
-      doc.text(`#${t.ticket_number} - ${t.title}`, margin + 3, y + 4);
-      doc.text('SOLICITANTE:', pageWidth - margin - 30, y + 4);
-      y += 8;
-
-      // Headers da tabela
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7);
-      doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-      const aptCols = [margin + 3, margin + 45, margin + 65, margin + 85, margin + 105, margin + 130, pageWidth - margin - 15];
-      doc.text('Período', aptCols[0], y);
-      doc.text('Duração', aptCols[1], y);
-      doc.text('Desloc.', aptCols[2], y);
-      doc.text('Assistência', aptCols[3], y);
-      doc.text('Contrato', aptCols[4], y);
-      doc.text('Serviço', aptCols[5], y);
-      doc.text('Valor', aptCols[6], y);
-      y += 5;
-
-      // Linha
-      doc.setDrawColor(200, 200, 200);
+      doc.setDrawColor(lightGray.r, lightGray.g, lightGray.b);
       doc.line(margin, y, pageWidth - margin, y);
-      y += 3;
+      y += 5;
 
-      // Apontamentos
-      let totalExterno = 0;
-      let totalRemoto = 0;
-      let totalInterno = 0;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(black.r, black.g, black.b);
+      doc.text('Apontamentos', margin, y);
+      y += 6;
 
-      // Labels de cobertura
-      const coverageLabels: Record<string, string> = {
-        contract: 'Contrato', billable: 'Avulso', warranty: 'Garantia', courtesy: 'Cortesia'
-      };
+      // Header da tabela
+      doc.setFillColor(lightGray.r, lightGray.g, lightGray.b);
+      doc.rect(margin, y - 1, pageWidth - 2 * margin, 5, 'F');
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
 
-      appointments.forEach((apt: any) => {
-        if (y > pageHeight - 50) {
+      const aptCols = [margin + 2, margin + 35, margin + 55, margin + 75, margin + 100, margin + 125, pageWidth - margin - 18];
+      doc.text('Data', aptCols[0], y + 3);
+      doc.text('Hora', aptCols[1], y + 3);
+      doc.text('Duração', aptCols[2], y + 3);
+      doc.text('Tipo', aptCols[3], y + 3);
+      doc.text('Técnico', aptCols[4], y + 3);
+      doc.text('Cobertura', aptCols[5], y + 3);
+      doc.text('Valor', aptCols[6], y + 3);
+      y += 7;
+
+      let totalHoras = 0;
+      let totalValor = 0;
+
+      appointments.forEach((apt: any, index: number) => {
+        if (y > pageHeight - 40) {
           doc.addPage();
           y = 20;
         }
 
-        // Combinar appointment_date com start_time/end_time
+        // Alternar fundo
+        if (index % 2 === 0) {
+          doc.setFillColor(250, 250, 250);
+          doc.rect(margin, y - 2, pageWidth - 2 * margin, 5, 'F');
+        }
+
         const aptDate = apt.appointment_date ? new Date(apt.appointment_date) : new Date();
         const dateStr = aptDate.toLocaleDateString('pt-BR');
-
-        // start_time e end_time são strings "HH:MM"
         const startTimeStr = apt.start_time || '00:00';
         const endTimeStr = apt.end_time || '00:00';
 
-        // Calcular duração usando duration_minutes se disponível
         let durationHours = 0;
         if (apt.duration_minutes) {
           durationHours = apt.duration_minutes / 60;
         } else {
-          // Calcular a partir dos horários
           const [startH, startM] = startTimeStr.split(':').map(Number);
           const [endH, endM] = endTimeStr.split(':').map(Number);
           const startMinutes = (startH || 0) * 60 + (startM || 0);
           const endMinutes = (endH || 0) * 60 + (endM || 0);
-          durationHours = (endMinutes - startMinutes) / 60;
+          durationHours = Math.max(0, (endMinutes - startMinutes) / 60);
         }
 
-        const durationStr = formatDuration(Math.max(0, durationHours));
-
-        // Categorizar por tipo
-        const serviceType = apt.service_type || 'remote';
-        if (serviceType === 'on_site') totalExterno += durationHours;
-        else if (serviceType === 'remote') totalRemoto += durationHours;
-        else totalInterno += durationHours;
+        totalHoras += durationHours;
+        const price = Number(apt.total_amount) || Number(apt.calculated_price) || 0;
+        totalValor += price;
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
-        doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
+        doc.setTextColor(black.r, black.g, black.b);
 
-        const periodo = `${dateStr} (${startTimeStr} - ${endTimeStr})`;
-        doc.text(periodo, aptCols[0], y);
-        doc.text(durationStr, aptCols[1], y);
-        doc.text('-', aptCols[2], y);
-        doc.text(typeLabels[serviceType] || '-', aptCols[3], y);
-        doc.text(apt.is_warranty ? 'Garantia' : '-', aptCols[4], y);
-        doc.text(coverageLabels[apt.coverage_type] || apt.coverage_type || 'Avulso', aptCols[5], y);
-
-        // Técnico e valor na mesma linha à direita
-        const techName = apt.user?.name || apt.technician?.name || '-';
-        const price = Number(apt.total_amount) || Number(apt.calculated_price) || 0;
-        doc.text(techName, aptCols[6] - 20, y);
-        doc.text(`R$${price.toFixed(2)}`, aptCols[6], y);
+        doc.text(dateStr, aptCols[0], y + 2);
+        doc.text(`${startTimeStr}-${endTimeStr}`, aptCols[1], y + 2);
+        doc.text(formatDuration(durationHours), aptCols[2], y + 2);
+        doc.text(typeLabels[apt.service_type] || '-', aptCols[3], y + 2);
+        doc.text((apt.user?.name || '-').substring(0, 12), aptCols[4], y + 2);
+        doc.text(coverageLabels[apt.coverage_type] || '-', aptCols[5], y + 2);
+        doc.text(formatCurrency(price), aptCols[6], y + 2);
         y += 5;
-
-        // Descrição do apontamento
-        if (apt.description) {
-          const aptDesc = apt.description.replace(/<[^>]*>/g, '').trim();
-          if (aptDesc) {
-            doc.setFontSize(7);
-            doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-            const aptLines = doc.splitTextToSize(aptDesc.toUpperCase(), pageWidth - 2 * margin - 10);
-            doc.text(aptLines, margin + 3, y);
-            y += aptLines.length * 3.5 + 3;
-          }
-        }
-        y += 2;
       });
 
-      // ===== HORAS DE ATENDIMENTO =====
-      y += 8;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-      doc.text('HORAS DE ATENDIMENTO', pageWidth / 2, y, { align: 'center' });
-      y += 8;
+      // Linha final
+      doc.setDrawColor(black.r, black.g, black.b);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 4;
 
-      // Header da tabela de horas
-      doc.setFillColor(lightGray.r, lightGray.g, lightGray.b);
-      doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
+      // Total de apontamentos
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
-      doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-      const hoursCols = [margin + 50, margin + 90, margin + 125, pageWidth - margin - 15];
-      doc.text('EXTERNO', hoursCols[0], y + 4);
-      doc.text('REMOTO', hoursCols[1], y + 4);
-      doc.text('INTERNO', hoursCols[2], y + 4);
-      doc.text('TOTAL', hoursCols[3], y + 4);
-      y += 10;
-
-      // Valores
-      const totalHours = totalExterno + totalRemoto + totalInterno;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
-      doc.text('Atendimento', margin + 5, y);
-      doc.text(formatDuration(totalExterno), hoursCols[0], y);
-      doc.text(formatDuration(totalRemoto), hoursCols[1], y);
-      doc.text(formatDuration(totalInterno), hoursCols[2], y);
-      doc.text(formatDuration(totalHours), hoursCols[3], y);
-      y += 6;
-
-      // Total
-      doc.setFont('helvetica', 'bold');
-      doc.text('TOTAL', margin + 5, y);
-      doc.text(formatDuration(totalHours), hoursCols[3], y);
-      y += 12;
-
-      // ===== TOTAL DA VALORIZAÇÃO =====
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-      const totalCost = appointmentsSummary?.total_cost || 0;
-      doc.text('TOTAL DA VALORIZAÇÃO AVULSA DO TICKET', margin + 30, y);
-      doc.setTextColor(230, 126, 34);
-      doc.text(`R$${totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageWidth - margin - 30, y);
+      doc.text(`Total: ${appointments.length} apontamento(s)`, margin, y);
+      doc.text(`${formatDuration(totalHoras)}`, aptCols[2], y);
+      doc.text(formatCurrency(totalValor), aptCols[6], y);
+      y += 8;
     }
 
-    // Rodapé página 1
-    doc.setFontSize(8);
-    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-    doc.text('Página 1 de 2', pageWidth - margin, pageHeight - 10, { align: 'right' });
+    // ===== VALORIZAÇÃO =====
+    if (reportOptions.includeValorization) {
+      doc.setDrawColor(lightGray.r, lightGray.g, lightGray.b);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 5;
 
-    // ===== PÁGINA 2 - DECLARAÇÃO =====
-    doc.addPage();
-    y = 40;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.text('Valorização', margin, y);
+      y += 6;
 
-    // Declaração
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-    const declaracao = 'Declaro estar ciente do trabalho acima realizado e concordo com a realização do mesmo.';
-    doc.text(declaracao, pageWidth / 2, y, { align: 'center' });
-    y += 30;
+      const totalHoras = appointmentsSummary?.total_hours || 0;
+      const totalCusto = appointmentsSummary?.total_cost || 0;
 
-    // Linha para assinatura
-    doc.setDrawColor(grayColor.r, grayColor.g, grayColor.b);
-    doc.line(margin + 40, y, pageWidth - margin - 40, y);
-    y += 8;
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Horas trabalhadas: ${formatDuration(totalHoras)}`, margin, y);
+      y += 5;
+      doc.text(`Valor dos apontamentos: ${formatCurrency(totalCusto)}`, margin, y);
+      y += 5;
 
-    // Nome do cliente
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-    doc.text(t.client_name || t.client?.name || 'CLIENTE', pageWidth / 2, y, { align: 'center' });
+      // Valorização Extra (a cobrar do cliente)
+      let valorExtra = 0;
+      if (reportOptions.includeExtraCharges && extraChargesValue) {
+        valorExtra = parseFloat(extraChargesValue.replace(',', '.')) || 0;
+        doc.setTextColor(black.r, black.g, black.b);
+        doc.text(`Valorização extra: ${formatCurrency(valorExtra)}`, margin, y);
+        if (extraChargesDescription) {
+          doc.setFontSize(7);
+          doc.setTextColor(gray.r, gray.g, gray.b);
+          doc.text(`   (${extraChargesDescription})`, margin + 55, y);
+          doc.setFontSize(9);
+        }
+        y += 5;
+      }
 
-    // Rodapé página 2
-    doc.setFontSize(8);
-    doc.text('Página 2 de 2', pageWidth - margin, pageHeight - 10, { align: 'right' });
+      // Total a cobrar
+      const totalCobrar = totalCusto + valorExtra;
+      y += 3;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(black.r, black.g, black.b);
+      doc.text(`TOTAL A COBRAR: ${formatCurrency(totalCobrar)}`, margin, y);
+      y += 8;
 
-    doc.save(`#${t.ticket_number}-${t.title.replace(/[^a-zA-Z0-9]/g, ' ').substring(0, 30)}.pdf`);
+      // Custo Interno (não aparece pro cliente, só no relatório)
+      if (reportOptions.includeInternalCost && internalCostValue) {
+        const custoInterno = parseFloat(internalCostValue.replace(',', '.')) || 0;
+        doc.setFillColor(240, 240, 240);
+        doc.rect(margin, y - 2, pageWidth - 2 * margin, 12, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(gray.r, gray.g, gray.b);
+        doc.text('CUSTO INTERNO (uso interno)', margin + 3, y + 3);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`${formatCurrency(custoInterno)}`, margin + 60, y + 3);
+        if (internalCostDescription) {
+          doc.text(`- ${internalCostDescription}`, margin + 95, y + 3);
+        }
+        y += 14;
+      }
+    }
+
+    // ===== ASSINATURA =====
+    if (reportOptions.includeSignature) {
+      // Verificar se precisa de nova página
+      if (y > pageHeight - 60) {
+        doc.addPage();
+        y = 40;
+      } else {
+        y += 15;
+      }
+
+      doc.setDrawColor(lightGray.r, lightGray.g, lightGray.b);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 15;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(gray.r, gray.g, gray.b);
+      const declaracao = 'Declaro estar ciente dos serviços realizados e valores descritos acima.';
+      doc.text(declaracao, pageWidth / 2, y, { align: 'center' });
+      y += 20;
+
+      // Linha assinatura
+      doc.setDrawColor(black.r, black.g, black.b);
+      doc.line(margin + 35, y, pageWidth - margin - 35, y);
+      y += 5;
+
+      doc.setTextColor(black.r, black.g, black.b);
+      doc.text(t.client_name || t.client?.name || 'Cliente', pageWidth / 2, y, { align: 'center' });
+      y += 4;
+      doc.setFontSize(7);
+      doc.setTextColor(gray.r, gray.g, gray.b);
+      doc.text(`Data: ____/____/________`, pageWidth / 2, y, { align: 'center' });
+    }
+
+    // ===== RODAPÉ =====
+    doc.setFontSize(7);
+    doc.setTextColor(gray.r, gray.g, gray.b);
+    doc.text(`Gerado em ${new Date().toLocaleString('pt-BR')} - SysTicket`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+
+    doc.save(`Relatorio_${t.ticket_number}.pdf`);
     setShowReportModal(false);
   };
 
@@ -907,8 +892,8 @@ export function TicketActions({ ticket }: TicketActionsProps) {
       {/* Modal Relatório */}
       {showReportModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-800">
               <div className="flex items-center gap-3">
                 <FileText className="w-6 h-6 text-purple-600" />
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -923,10 +908,12 @@ export function TicketActions({ ticket }: TicketActionsProps) {
               </button>
             </div>
             <div className="p-4">
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Selecione o que deseja incluir no relatório:
+              <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+                Selecione as opções do relatório:
               </p>
-              <div className="space-y-3">
+
+              {/* Opções básicas */}
+              <div className="space-y-3 mb-4">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -948,24 +935,103 @@ export function TicketActions({ ticket }: TicketActionsProps) {
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={reportOptions.includeComments}
-                    onChange={(e) => setReportOptions({ ...reportOptions, includeComments: e.target.checked })}
+                    checked={reportOptions.includeValorization}
+                    onChange={(e) => setReportOptions({ ...reportOptions, includeValorization: e.target.checked })}
                     className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                   />
-                  <span className="text-gray-700 dark:text-gray-300">Comentários</span>
+                  <span className="text-gray-700 dark:text-gray-300">Valorização</span>
                 </label>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={reportOptions.includeHistory}
-                    onChange={(e) => setReportOptions({ ...reportOptions, includeHistory: e.target.checked })}
+                    checked={reportOptions.includeSignature}
+                    onChange={(e) => setReportOptions({ ...reportOptions, includeSignature: e.target.checked })}
                     className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                   />
-                  <span className="text-gray-700 dark:text-gray-300">Histórico de alterações</span>
+                  <span className="text-gray-700 dark:text-gray-300">Assinatura do cliente</span>
                 </label>
               </div>
+
+              {/* Valorização Extra */}
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3">
+                <label className="flex items-center gap-3 cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    checked={reportOptions.includeExtraCharges}
+                    onChange={(e) => setReportOptions({ ...reportOptions, includeExtraCharges: e.target.checked })}
+                    className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                  />
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">Valorização Extra (cobrar do cliente)</span>
+                </label>
+                {reportOptions.includeExtraCharges && (
+                  <div className="ml-7 space-y-2">
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="text-xs text-gray-500 dark:text-gray-400">Valor (R$)</label>
+                        <input
+                          type="text"
+                          value={extraChargesValue}
+                          onChange={(e) => setExtraChargesValue(e.target.value)}
+                          placeholder="0,00"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div className="flex-[2]">
+                        <label className="text-xs text-gray-500 dark:text-gray-400">Descrição</label>
+                        <input
+                          type="text"
+                          value={extraChargesDescription}
+                          onChange={(e) => setExtraChargesDescription(e.target.value)}
+                          placeholder="Ex: Peças, deslocamento..."
+                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Custo Interno */}
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-900">
+                <label className="flex items-center gap-3 cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    checked={reportOptions.includeInternalCost}
+                    onChange={(e) => setReportOptions({ ...reportOptions, includeInternalCost: e.target.checked })}
+                    className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                  />
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">Custo Interno (uso interno)</span>
+                </label>
+                <p className="ml-7 text-xs text-gray-500 dark:text-gray-400 mb-2">Aparece no relatório mas não é cobrado do cliente</p>
+                {reportOptions.includeInternalCost && (
+                  <div className="ml-7 space-y-2">
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="text-xs text-gray-500 dark:text-gray-400">Valor (R$)</label>
+                        <input
+                          type="text"
+                          value={internalCostValue}
+                          onChange={(e) => setInternalCostValue(e.target.value)}
+                          placeholder="0,00"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div className="flex-[2]">
+                        <label className="text-xs text-gray-500 dark:text-gray-400">Descrição</label>
+                        <input
+                          type="text"
+                          value={internalCostDescription}
+                          onChange={(e) => setInternalCostDescription(e.target.value)}
+                          placeholder="Ex: Custo de combustível..."
+                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2 sticky bottom-0 bg-white dark:bg-gray-800">
               <button
                 onClick={() => setShowReportModal(false)}
                 className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
