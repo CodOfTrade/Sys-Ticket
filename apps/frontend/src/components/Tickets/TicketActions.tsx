@@ -13,8 +13,9 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { ticketService } from '@/services/ticket.service';
-import { appointmentsService } from '@/services/ticket-details.service';
+import { appointmentsService, valuationsService } from '@/services/ticket-details.service';
 import { Ticket } from '@/types/ticket.types';
+import { ValuationCategory } from '@/types/ticket-details.types';
 import jsPDF from 'jspdf';
 
 interface TicketActionsProps {
@@ -41,6 +42,18 @@ export function TicketActions({ ticket }: TicketActionsProps) {
   const { data: appointments = [] } = useQuery({
     queryKey: ['appointments', ticket.id],
     queryFn: () => appointmentsService.getAppointments(ticket.id),
+  });
+
+  // Buscar valorizações extras (produtos/serviços lançados)
+  const { data: valuations = [] } = useQuery({
+    queryKey: ['valuations', ticket.id],
+    queryFn: () => valuationsService.getValuations(ticket.id),
+  });
+
+  // Buscar resumo das valorizações
+  const { data: valuationsSummary } = useQuery({
+    queryKey: ['valuations-summary', ticket.id],
+    queryFn: () => valuationsService.getValuationSummary(ticket.id),
   });
 
   const hasAppointments = appointments.length > 0;
@@ -353,17 +366,11 @@ export function TicketActions({ ticket }: TicketActionsProps) {
   const [reportOptions, setReportOptions] = useState({
     includeDescription: true,
     includeAppointments: true,
+    includeAppointmentDescription: true,
     includeValorization: true,
-    includeExtraCharges: false,
     includeInternalCost: false,
     includeSignature: true,
   });
-
-  // Estados para valores extras
-  const [extraChargesValue, setExtraChargesValue] = useState('');
-  const [extraChargesDescription, setExtraChargesDescription] = useState('');
-  const [internalCostValue, setInternalCostValue] = useState('');
-  const [internalCostDescription, setInternalCostDescription] = useState('');
 
   // Gerar relatório do ticket (modelo limpo e compacto)
   const generateReport = () => {
@@ -406,6 +413,14 @@ export function TicketActions({ ticket }: TicketActionsProps) {
       return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
+    // Função para verificar quebra de página
+    const checkPageBreak = (neededSpace: number) => {
+      if (y > pageHeight - neededSpace) {
+        doc.addPage();
+        y = 20;
+      }
+    };
+
     // ===== CABEÇALHO =====
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
@@ -420,7 +435,6 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     y += 8;
 
     // ===== INFO DO TICKET =====
-    // Ticket number e título
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.text(`#${t.ticket_number}`, margin, y);
@@ -473,7 +487,7 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     doc.text(t.closed_at ? new Date(t.closed_at).toLocaleDateString('pt-BR') : '-', col2 + 20, y);
     y += 8;
 
-    // ===== DESCRIÇÃO =====
+    // ===== DESCRIÇÃO DO TICKET =====
     if (reportOptions.includeDescription && t.description) {
       doc.setDrawColor(lightGray.r, lightGray.g, lightGray.b);
       doc.line(margin, y, pageWidth - margin, y);
@@ -494,6 +508,7 @@ export function TicketActions({ ticket }: TicketActionsProps) {
 
     // ===== APONTAMENTOS =====
     if (reportOptions.includeAppointments && appointments.length > 0) {
+      checkPageBreak(50);
       doc.setDrawColor(lightGray.r, lightGray.g, lightGray.b);
       doc.line(margin, y, pageWidth - margin, y);
       y += 5;
@@ -502,38 +517,13 @@ export function TicketActions({ ticket }: TicketActionsProps) {
       doc.setFontSize(10);
       doc.setTextColor(black.r, black.g, black.b);
       doc.text('Apontamentos', margin, y);
-      y += 6;
-
-      // Header da tabela
-      doc.setFillColor(lightGray.r, lightGray.g, lightGray.b);
-      doc.rect(margin, y - 1, pageWidth - 2 * margin, 5, 'F');
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
-
-      const aptCols = [margin + 2, margin + 35, margin + 55, margin + 75, margin + 100, margin + 125, pageWidth - margin - 18];
-      doc.text('Data', aptCols[0], y + 3);
-      doc.text('Hora', aptCols[1], y + 3);
-      doc.text('Duração', aptCols[2], y + 3);
-      doc.text('Tipo', aptCols[3], y + 3);
-      doc.text('Técnico', aptCols[4], y + 3);
-      doc.text('Cobertura', aptCols[5], y + 3);
-      doc.text('Valor', aptCols[6], y + 3);
-      y += 7;
+      y += 8;
 
       let totalHoras = 0;
       let totalValor = 0;
 
       appointments.forEach((apt: any, index: number) => {
-        if (y > pageHeight - 40) {
-          doc.addPage();
-          y = 20;
-        }
-
-        // Alternar fundo
-        if (index % 2 === 0) {
-          doc.setFillColor(250, 250, 250);
-          doc.rect(margin, y - 2, pageWidth - 2 * margin, 5, 'F');
-        }
+        checkPageBreak(reportOptions.includeAppointmentDescription ? 35 : 20);
 
         const aptDate = apt.appointment_date ? new Date(apt.appointment_date) : new Date();
         const dateStr = aptDate.toLocaleDateString('pt-BR');
@@ -555,107 +545,154 @@ export function TicketActions({ ticket }: TicketActionsProps) {
         const price = Number(apt.total_amount) || Number(apt.calculated_price) || 0;
         totalValor += price;
 
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.setTextColor(black.r, black.g, black.b);
+        // Fundo alternado
+        if (index % 2 === 0) {
+          doc.setFillColor(248, 248, 248);
+          const bgHeight = reportOptions.includeAppointmentDescription && apt.description ? 18 : 12;
+          doc.rect(margin, y - 3, pageWidth - 2 * margin, bgHeight, 'F');
+        }
 
-        doc.text(dateStr, aptCols[0], y + 2);
-        doc.text(`${startTimeStr}-${endTimeStr}`, aptCols[1], y + 2);
-        doc.text(formatDuration(durationHours), aptCols[2], y + 2);
-        doc.text(typeLabels[apt.service_type] || '-', aptCols[3], y + 2);
-        doc.text((apt.user?.name || '-').substring(0, 12), aptCols[4], y + 2);
-        doc.text(coverageLabels[apt.coverage_type] || '-', aptCols[5], y + 2);
-        doc.text(formatCurrency(price), aptCols[6], y + 2);
+        // Linha 1: Data, Hora, Técnico, Tipo
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(black.r, black.g, black.b);
+        doc.text(`${dateStr}  ${startTimeStr}-${endTimeStr}`, margin + 2, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`${formatDuration(durationHours)}`, margin + 55, y);
+        doc.text(typeLabels[apt.service_type] || '-', margin + 75, y);
+        doc.text((apt.user?.name || '-').substring(0, 15), margin + 100, y);
+        doc.text(coverageLabels[apt.coverage_type] || '-', margin + 135, y);
+        doc.setFont('helvetica', 'bold');
+        doc.text(formatCurrency(price), pageWidth - margin - 2, y, { align: 'right' });
         y += 5;
+
+        // Descrição do apontamento
+        if (reportOptions.includeAppointmentDescription && apt.description) {
+          const aptDesc = apt.description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+          if (aptDesc) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(gray.r, gray.g, gray.b);
+            const aptLines = doc.splitTextToSize(aptDesc, pageWidth - 2 * margin - 10);
+            doc.text(aptLines.slice(0, 2), margin + 5, y);
+            y += Math.min(aptLines.length, 2) * 3.5;
+          }
+        }
+        y += 4;
       });
 
-      // Linha final
+      // Linha final e total
       doc.setDrawColor(black.r, black.g, black.b);
       doc.line(margin, y, pageWidth - margin, y);
       y += 4;
 
-      // Total de apontamentos
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
+      doc.setFontSize(9);
+      doc.setTextColor(black.r, black.g, black.b);
       doc.text(`Total: ${appointments.length} apontamento(s)`, margin, y);
-      doc.text(`${formatDuration(totalHoras)}`, aptCols[2], y);
-      doc.text(formatCurrency(totalValor), aptCols[6], y);
-      y += 8;
+      doc.text(formatDuration(totalHoras), margin + 75, y);
+      doc.text(formatCurrency(totalValor), pageWidth - margin - 2, y, { align: 'right' });
+      y += 10;
     }
 
     // ===== VALORIZAÇÃO =====
     if (reportOptions.includeValorization) {
+      checkPageBreak(60);
       doc.setDrawColor(lightGray.r, lightGray.g, lightGray.b);
       doc.line(margin, y, pageWidth - margin, y);
       y += 5;
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
+      doc.setTextColor(black.r, black.g, black.b);
       doc.text('Valorização', margin, y);
+      y += 8;
+
+      const totalHorasApt = appointmentsSummary?.total_hours || 0;
+      const totalCustoApt = appointmentsSummary?.total_cost || 0;
+
+      // Resumo apontamentos
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Apontamentos:', margin, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${formatDuration(totalHorasApt)} - ${formatCurrency(totalCustoApt)}`, margin + 35, y);
       y += 6;
 
-      const totalHoras = appointmentsSummary?.total_hours || 0;
-      const totalCusto = appointmentsSummary?.total_cost || 0;
+      // Valorizações extras (produtos/serviços lançados)
+      const clientCharges = valuations.filter((v: any) => v.category === ValuationCategory.CLIENT_CHARGE);
+      const internalCosts = valuations.filter((v: any) => v.category === ValuationCategory.INTERNAL_COST);
 
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Horas trabalhadas: ${formatDuration(totalHoras)}`, margin, y);
-      y += 5;
-      doc.text(`Valor dos apontamentos: ${formatCurrency(totalCusto)}`, margin, y);
-      y += 5;
-
-      // Valorização Extra (a cobrar do cliente)
-      let valorExtra = 0;
-      if (reportOptions.includeExtraCharges && extraChargesValue) {
-        valorExtra = parseFloat(extraChargesValue.replace(',', '.')) || 0;
-        doc.setTextColor(black.r, black.g, black.b);
-        doc.text(`Valorização extra: ${formatCurrency(valorExtra)}`, margin, y);
-        if (extraChargesDescription) {
-          doc.setFontSize(7);
-          doc.setTextColor(gray.r, gray.g, gray.b);
-          doc.text(`   (${extraChargesDescription})`, margin + 55, y);
-          doc.setFontSize(9);
-        }
+      let totalClientCharges = 0;
+      if (clientCharges.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Produtos/Serviços:', margin, y);
         y += 5;
+
+        clientCharges.forEach((val: any) => {
+          checkPageBreak(10);
+          const finalAmount = Number(val.final_amount) || 0;
+          totalClientCharges += finalAmount;
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          doc.setTextColor(black.r, black.g, black.b);
+          doc.text(`• ${val.description}`.substring(0, 50), margin + 5, y);
+          doc.text(`${val.quantity} ${val.unit} x ${formatCurrency(val.unit_price)}`, margin + 100, y);
+          doc.text(formatCurrency(finalAmount), pageWidth - margin - 2, y, { align: 'right' });
+          y += 4;
+        });
+        y += 3;
       }
 
-      // Total a cobrar
-      const totalCobrar = totalCusto + valorExtra;
-      y += 3;
+      // Total a cobrar do cliente
+      const totalCobrar = totalCustoApt + totalClientCharges;
+      doc.setDrawColor(black.r, black.g, black.b);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 5;
+
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(black.r, black.g, black.b);
-      doc.text(`TOTAL A COBRAR: ${formatCurrency(totalCobrar)}`, margin, y);
-      y += 8;
+      doc.text('TOTAL A COBRAR:', margin, y);
+      doc.text(formatCurrency(totalCobrar), pageWidth - margin - 2, y, { align: 'right' });
+      y += 10;
 
-      // Custo Interno (não aparece pro cliente, só no relatório)
-      if (reportOptions.includeInternalCost && internalCostValue) {
-        const custoInterno = parseFloat(internalCostValue.replace(',', '.')) || 0;
-        doc.setFillColor(240, 240, 240);
-        doc.rect(margin, y - 2, pageWidth - 2 * margin, 12, 'F');
+      // Custos internos (se habilitado)
+      if (reportOptions.includeInternalCost && internalCosts.length > 0) {
+        checkPageBreak(30);
+        doc.setFillColor(245, 245, 245);
+        const internalHeight = 8 + internalCosts.length * 5;
+        doc.rect(margin, y - 2, pageWidth - 2 * margin, internalHeight, 'F');
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(gray.r, gray.g, gray.b);
-        doc.text('CUSTO INTERNO (uso interno)', margin + 3, y + 3);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`${formatCurrency(custoInterno)}`, margin + 60, y + 3);
-        if (internalCostDescription) {
-          doc.text(`- ${internalCostDescription}`, margin + 95, y + 3);
-        }
-        y += 14;
+        doc.text('CUSTOS INTERNOS (uso interno)', margin + 3, y + 3);
+        y += 8;
+
+        let totalInternalCosts = 0;
+        internalCosts.forEach((val: any) => {
+          const finalAmount = Number(val.final_amount) || 0;
+          totalInternalCosts += finalAmount;
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7);
+          doc.text(`• ${val.description}`.substring(0, 40), margin + 5, y);
+          doc.text(formatCurrency(finalAmount), pageWidth - margin - 5, y, { align: 'right' });
+          y += 4;
+        });
+
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Total interno: ${formatCurrency(totalInternalCosts)}`, pageWidth - margin - 5, y, { align: 'right' });
+        y += 8;
       }
     }
 
     // ===== ASSINATURA =====
     if (reportOptions.includeSignature) {
-      // Verificar se precisa de nova página
-      if (y > pageHeight - 60) {
-        doc.addPage();
-        y = 40;
-      } else {
-        y += 15;
-      }
+      checkPageBreak(60);
+      y += 10;
 
       doc.setDrawColor(lightGray.r, lightGray.g, lightGray.b);
       doc.line(margin, y, pageWidth - margin, y);
@@ -678,7 +715,7 @@ export function TicketActions({ ticket }: TicketActionsProps) {
       y += 4;
       doc.setFontSize(7);
       doc.setTextColor(gray.r, gray.g, gray.b);
-      doc.text(`Data: ____/____/________`, pageWidth / 2, y, { align: 'center' });
+      doc.text('Data: ____/____/________', pageWidth / 2, y, { align: 'center' });
     }
 
     // ===== RODAPÉ =====
@@ -932,6 +969,17 @@ export function TicketActions({ ticket }: TicketActionsProps) {
                   />
                   <span className="text-gray-700 dark:text-gray-300">Apontamentos ({appointments.length})</span>
                 </label>
+                {reportOptions.includeAppointments && (
+                  <label className="flex items-center gap-3 cursor-pointer ml-6">
+                    <input
+                      type="checkbox"
+                      checked={reportOptions.includeAppointmentDescription}
+                      onChange={(e) => setReportOptions({ ...reportOptions, includeAppointmentDescription: e.target.checked })}
+                      className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                    />
+                    <span className="text-gray-600 dark:text-gray-400 text-sm">Incluir descrição dos apontamentos</span>
+                  </label>
+                )}
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -939,7 +987,14 @@ export function TicketActions({ ticket }: TicketActionsProps) {
                     onChange={(e) => setReportOptions({ ...reportOptions, includeValorization: e.target.checked })}
                     className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                   />
-                  <span className="text-gray-700 dark:text-gray-300">Valorização</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    Valorização
+                    {valuations.length > 0 && (
+                      <span className="ml-2 text-xs text-gray-500">
+                        ({valuations.filter((v: any) => v.category === ValuationCategory.CLIENT_CHARGE).length} produtos/serviços)
+                      </span>
+                    )}
+                  </span>
                 </label>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
@@ -952,84 +1007,25 @@ export function TicketActions({ ticket }: TicketActionsProps) {
                 </label>
               </div>
 
-              {/* Valorização Extra */}
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3">
-                <label className="flex items-center gap-3 cursor-pointer mb-2">
-                  <input
-                    type="checkbox"
-                    checked={reportOptions.includeExtraCharges}
-                    onChange={(e) => setReportOptions({ ...reportOptions, includeExtraCharges: e.target.checked })}
-                    className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                  />
-                  <span className="text-gray-700 dark:text-gray-300 font-medium">Valorização Extra (cobrar do cliente)</span>
-                </label>
-                {reportOptions.includeExtraCharges && (
-                  <div className="ml-7 space-y-2">
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <label className="text-xs text-gray-500 dark:text-gray-400">Valor (R$)</label>
-                        <input
-                          type="text"
-                          value={extraChargesValue}
-                          onChange={(e) => setExtraChargesValue(e.target.value)}
-                          placeholder="0,00"
-                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                      </div>
-                      <div className="flex-[2]">
-                        <label className="text-xs text-gray-500 dark:text-gray-400">Descrição</label>
-                        <input
-                          type="text"
-                          value={extraChargesDescription}
-                          onChange={(e) => setExtraChargesDescription(e.target.value)}
-                          placeholder="Ex: Peças, deslocamento..."
-                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
               {/* Custo Interno */}
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-900">
-                <label className="flex items-center gap-3 cursor-pointer mb-2">
-                  <input
-                    type="checkbox"
-                    checked={reportOptions.includeInternalCost}
-                    onChange={(e) => setReportOptions({ ...reportOptions, includeInternalCost: e.target.checked })}
-                    className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
-                  />
-                  <span className="text-gray-700 dark:text-gray-300 font-medium">Custo Interno (uso interno)</span>
-                </label>
-                <p className="ml-7 text-xs text-gray-500 dark:text-gray-400 mb-2">Aparece no relatório mas não é cobrado do cliente</p>
-                {reportOptions.includeInternalCost && (
-                  <div className="ml-7 space-y-2">
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <label className="text-xs text-gray-500 dark:text-gray-400">Valor (R$)</label>
-                        <input
-                          type="text"
-                          value={internalCostValue}
-                          onChange={(e) => setInternalCostValue(e.target.value)}
-                          placeholder="0,00"
-                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                      </div>
-                      <div className="flex-[2]">
-                        <label className="text-xs text-gray-500 dark:text-gray-400">Descrição</label>
-                        <input
-                          type="text"
-                          value={internalCostDescription}
-                          onChange={(e) => setInternalCostDescription(e.target.value)}
-                          placeholder="Ex: Custo de combustível..."
-                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {valuations.filter((v: any) => v.category === ValuationCategory.INTERNAL_COST).length > 0 && (
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-900">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={reportOptions.includeInternalCost}
+                      onChange={(e) => setReportOptions({ ...reportOptions, includeInternalCost: e.target.checked })}
+                      className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                    />
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">
+                      Incluir Custos Internos ({valuations.filter((v: any) => v.category === ValuationCategory.INTERNAL_COST).length})
+                    </span>
+                  </label>
+                  <p className="ml-7 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Custos lançados na aba Valorização como "Custo Interno"
+                  </p>
+                </div>
+              )}
             </div>
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2 sticky bottom-0 bg-white dark:bg-gray-800">
               <button
