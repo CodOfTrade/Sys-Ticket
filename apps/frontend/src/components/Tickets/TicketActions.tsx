@@ -571,16 +571,39 @@ export function TicketActions({ ticket }: TicketActionsProps) {
       let totalRemoto = 0;
       let totalInterno = 0;
 
+      // Labels de cobertura
+      const coverageLabels: Record<string, string> = {
+        contract: 'Contrato', billable: 'Avulso', warranty: 'Garantia', courtesy: 'Cortesia'
+      };
+
       appointments.forEach((apt: any) => {
         if (y > pageHeight - 50) {
           doc.addPage();
           y = 20;
         }
 
-        const startDate = new Date(apt.start_time);
-        const endDate = new Date(apt.end_time);
-        const durationHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
-        const durationStr = formatDuration(durationHours);
+        // Combinar appointment_date com start_time/end_time
+        const aptDate = apt.appointment_date ? new Date(apt.appointment_date) : new Date();
+        const dateStr = aptDate.toLocaleDateString('pt-BR');
+
+        // start_time e end_time são strings "HH:MM"
+        const startTimeStr = apt.start_time || '00:00';
+        const endTimeStr = apt.end_time || '00:00';
+
+        // Calcular duração usando duration_minutes se disponível
+        let durationHours = 0;
+        if (apt.duration_minutes) {
+          durationHours = apt.duration_minutes / 60;
+        } else {
+          // Calcular a partir dos horários
+          const [startH, startM] = startTimeStr.split(':').map(Number);
+          const [endH, endM] = endTimeStr.split(':').map(Number);
+          const startMinutes = (startH || 0) * 60 + (startM || 0);
+          const endMinutes = (endH || 0) * 60 + (endM || 0);
+          durationHours = (endMinutes - startMinutes) / 60;
+        }
+
+        const durationStr = formatDuration(Math.max(0, durationHours));
 
         // Categorizar por tipo
         const serviceType = apt.service_type || 'remote';
@@ -592,17 +615,19 @@ export function TicketActions({ ticket }: TicketActionsProps) {
         doc.setFontSize(7);
         doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
 
-        const periodo = `${startDate.toLocaleDateString('pt-BR')} (${startDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})`;
+        const periodo = `${dateStr} (${startTimeStr} - ${endTimeStr})`;
         doc.text(periodo, aptCols[0], y);
         doc.text(durationStr, aptCols[1], y);
         doc.text('-', aptCols[2], y);
         doc.text(typeLabels[serviceType] || '-', aptCols[3], y);
         doc.text(apt.is_warranty ? 'Garantia' : '-', aptCols[4], y);
-        doc.text(apt.coverage_type || 'Avulso', aptCols[5], y);
+        doc.text(coverageLabels[apt.coverage_type] || apt.coverage_type || 'Avulso', aptCols[5], y);
 
         // Técnico e valor na mesma linha à direita
-        doc.text(apt.technician?.name || '-', aptCols[6] - 20, y);
-        doc.text(`R$${(apt.calculated_price || 0).toFixed(2)}`, aptCols[6], y);
+        const techName = apt.user?.name || apt.technician?.name || '-';
+        const price = apt.total_amount || apt.calculated_price || 0;
+        doc.text(techName, aptCols[6] - 20, y);
+        doc.text(`R$${price.toFixed(2)}`, aptCols[6], y);
         y += 5;
 
         // Descrição do apontamento
