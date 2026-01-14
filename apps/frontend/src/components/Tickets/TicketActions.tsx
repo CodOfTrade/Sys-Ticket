@@ -141,20 +141,14 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     },
   });
 
-  // Gerar PDF de apontamento offline (estilo compacto Tiflux)
+  // Gerar PDF de apontamento offline (preto e branco)
   const generateOfflineAppointmentPDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 15;
-    let y = 12;
+    let y = 15;
     const t = ticket as any;
-
-    // Cores
-    const primaryColor = { r: 0, g: 150, b: 180 };
-    const grayColor = { r: 100, g: 100, b: 100 };
-    const darkColor = { r: 50, g: 50, b: 50 };
-    const orangeColor = { r: 230, g: 126, b: 34 };
 
     // Labels
     const statusLabels: Record<string, string> = {
@@ -166,198 +160,180 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     };
 
     // ===== CABEÇALHO =====
-    // Nome do cliente grande
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-    doc.text(t.client_name || t.client?.name || 'Cliente', margin, y + 5);
-
-    // Logo SysTicket (direita)
     doc.setFontSize(14);
-    doc.text('Sys', pageWidth - margin - 28, y + 3);
-    doc.setTextColor(orangeColor.r, orangeColor.g, orangeColor.b);
-    doc.text('Ticket', pageWidth - margin - 15, y + 3);
-    y += 12;
+    doc.setTextColor(0, 0, 0);
+    doc.text(t.client_name || t.client?.name || 'Cliente', margin, y);
+    doc.text('SysTicket', pageWidth - margin, y, { align: 'right' });
+    y += 8;
 
     // Linha separadora
-    doc.setDrawColor(primaryColor.r, primaryColor.g, primaryColor.b);
+    doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.5);
     doc.line(margin, y, pageWidth - margin, y);
-    y += 6;
+    y += 8;
 
-    // Número e título do ticket + Status
+    // Número e título do ticket
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
-    const titleText = `#${t.ticket_number} - ${t.title}`;
-    doc.text(titleText.substring(0, 60), margin, y);
+    doc.text(`#${t.ticket_number} - ${t.title}`.substring(0, 70), margin, y);
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
     doc.text(statusLabels[t.status] || t.status, pageWidth - margin, y, { align: 'right' });
-    y += 8;
-
-    // ===== BOX CLIENTE (compacto) =====
-    doc.setFillColor(primaryColor.r, primaryColor.g, primaryColor.b);
-    doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    doc.text('INFORMAÇÕES DO CLIENTE', pageWidth / 2, y + 4, { align: 'center' });
-    doc.setDrawColor(200, 200, 200);
-    doc.rect(margin, y, pageWidth - 2 * margin, 18);
-    y += 8;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
-
-    // Linha 1: Cliente | Solicitante | Telefone
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-    doc.text('Cliente:', margin + 2, y + 3);
-    doc.text('Solicitante:', margin + 70, y + 3);
-    doc.text('Telefone:', pageWidth - margin - 40, y + 3);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
-    doc.text((t.client_name || '-').substring(0, 25), margin + 18, y + 3);
-    doc.text((t.requester_name || '-').substring(0, 25), margin + 92, y + 3);
-    doc.text(t.requester_phone || '( )', pageWidth - margin - 3, y + 3, { align: 'right' });
-    y += 14;
-
-    // ===== BOX TICKET (compacto) =====
-    doc.setFillColor(primaryColor.r, primaryColor.g, primaryColor.b);
-    doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    doc.text('INFORMAÇÕES DO TICKET', pageWidth / 2, y + 4, { align: 'center' });
-    doc.setDrawColor(200, 200, 200);
-    doc.rect(margin, y, pageWidth - 2 * margin, 14);
-    y += 8;
-
-    // Mesa | Responsável | Aberto | Prioridade
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-    doc.text('Mesa:', margin + 2, y + 2);
-    doc.text('Responsável:', margin + 50, y + 2);
-    doc.text('Aberto em:', margin + 105, y + 2);
-    doc.text('Prioridade:', pageWidth - margin - 25, y + 2);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
-    doc.text((t.service_desk?.name || '-').substring(0, 18), margin + 14, y + 2);
-    doc.text((t.assigned_to?.name || '-').substring(0, 18), margin + 72, y + 2);
-    doc.text(new Date(t.created_at).toLocaleDateString('pt-BR'), margin + 125, y + 2);
-    doc.text(priorityLabels[t.priority] || '-', pageWidth - margin - 3, y + 2, { align: 'right' });
     y += 10;
 
-    // ===== DESCRIÇÃO (compacta) =====
-    doc.setFillColor(primaryColor.r, primaryColor.g, primaryColor.b);
+    // ===== INFORMAÇÕES DO CLIENTE =====
+    doc.setFillColor(0, 0, 0);
     doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(255, 255, 255);
-    doc.text('DESCRIÇÃO DO TICKET', pageWidth / 2, y + 4, { align: 'center' });
+    doc.text('INFORMAÇÕES DO CLIENTE', pageWidth / 2, y + 4.5, { align: 'center' });
+    y += 6;
 
+    // Box do cliente
+    doc.setDrawColor(0, 0, 0);
+    doc.setTextColor(0, 0, 0);
+    doc.rect(margin, y, pageWidth - 2 * margin, 12);
+    y += 4;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('Cliente:', margin + 3, y + 4);
+    doc.text('Solicitante:', margin + 75, y + 4);
+    doc.text('Telefone:', pageWidth - margin - 45, y + 4);
+
+    doc.setFont('helvetica', 'normal');
+    doc.text((t.client_name || '-').substring(0, 28), margin + 20, y + 4);
+    doc.text((t.requester_name || '-').substring(0, 20), margin + 98, y + 4);
+    doc.text(t.requester_phone || '( )', pageWidth - margin - 3, y + 4, { align: 'right' });
+    y += 12;
+
+    // ===== INFORMAÇÕES DO TICKET =====
+    doc.setFillColor(0, 0, 0);
+    doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    doc.text('INFORMAÇÕES DO TICKET', pageWidth / 2, y + 4.5, { align: 'center' });
+    y += 6;
+
+    // Box do ticket
+    doc.setDrawColor(0, 0, 0);
+    doc.setTextColor(0, 0, 0);
+    doc.rect(margin, y, pageWidth - 2 * margin, 12);
+    y += 4;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('Mesa:', margin + 3, y + 4);
+    doc.text('Responsável:', margin + 55, y + 4);
+    doc.text('Aberto:', margin + 115, y + 4);
+    doc.text('Prioridade:', pageWidth - margin - 30, y + 4);
+
+    doc.setFont('helvetica', 'normal');
+    doc.text((t.service_desk?.name || '-').substring(0, 15), margin + 15, y + 4);
+    doc.text((t.assigned_to?.name || '-').substring(0, 15), margin + 78, y + 4);
+    doc.text(new Date(t.created_at).toLocaleDateString('pt-BR'), margin + 130, y + 4);
+    doc.text(priorityLabels[t.priority] || '-', pageWidth - margin - 3, y + 4, { align: 'right' });
+    y += 12;
+
+    // ===== DESCRIÇÃO DO TICKET =====
+    doc.setFillColor(0, 0, 0);
+    doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    doc.text('DESCRIÇÃO DO TICKET', pageWidth / 2, y + 4.5, { align: 'center' });
+    y += 6;
+
+    // Box da descrição
     const descText = t.description
       ? t.description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
       : 'Sem descrição';
     const descLines = doc.splitTextToSize(descText, pageWidth - 2 * margin - 6);
-    const descHeight = Math.min(Math.max(10, descLines.length * 3.5 + 4), 25);
+    const descHeight = Math.min(Math.max(12, descLines.length * 4 + 4), 30);
 
-    doc.setDrawColor(200, 200, 200);
-    doc.rect(margin, y, pageWidth - 2 * margin, descHeight + 6);
-    y += 8;
+    doc.setDrawColor(0, 0, 0);
+    doc.setTextColor(0, 0, 0);
+    doc.rect(margin, y, pageWidth - 2 * margin, descHeight);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
-    doc.text(descLines.slice(0, 5), margin + 3, y + 2); // Max 5 linhas
-    y += descHeight + 2;
+    doc.text(descLines.slice(0, 6), margin + 3, y + 5);
+    y += descHeight + 4;
 
-    // ===== APONTAMENTO OFFLINE =====
-    doc.setFillColor(orangeColor.r, orangeColor.g, orangeColor.b);
+    // ===== APONTAMENTO =====
+    doc.setFillColor(80, 80, 80);
     doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(255, 255, 255);
-    doc.text('APONTAMENTO', pageWidth / 2, y + 4, { align: 'center' });
-    y += 8;
-
-    // Campos para preencher manualmente
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-
-    // Data | Hora Início | Hora Fim | Duração
-    doc.text('Data:', margin + 2, y);
-    doc.text('____/____/________', margin + 14, y);
-    doc.text('Início:', margin + 55, y);
-    doc.text('____:____', margin + 70, y);
-    doc.text('Fim:', margin + 95, y);
-    doc.text('____:____', margin + 105, y);
-    doc.text('Duração:', margin + 135, y);
-    doc.text('____:____', margin + 152, y);
-    y += 8;
-
-    // Tipo | Técnico
-    doc.text('Tipo:', margin + 2, y);
-    doc.text('( ) Remoto  ( ) Externo  ( ) Interno', margin + 14, y);
-    doc.text('Técnico:', margin + 100, y);
-    doc.text('_______________________', margin + 118, y);
+    doc.text('APONTAMENTO', pageWidth / 2, y + 4.5, { align: 'center' });
     y += 10;
 
-    // Área de descrição do serviço
+    // Campos para preencher
+    doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(darkColor.r, darkColor.g, darkColor.b);
-    doc.text('Descrição do Serviço Realizado:', margin + 2, y);
-    y += 5;
+    doc.setFontSize(9);
 
-    // Linhas para escrever (6 linhas)
-    doc.setDrawColor(180, 180, 180);
-    for (let i = 0; i < 6; i++) {
+    // Data | Hora Início | Hora Fim | Duração
+    doc.text('Data: ____/____/________', margin + 3, y);
+    doc.text('Início: ____:____', margin + 65, y);
+    doc.text('Fim: ____:____', margin + 110, y);
+    doc.text('Duração: ____:____', margin + 145, y);
+    y += 10;
+
+    // Tipo | Técnico
+    doc.text('Tipo:  ( ) Remoto   ( ) Externo   ( ) Interno', margin + 3, y);
+    y += 10;
+
+    doc.text('Técnico: ___________________________________________', margin + 3, y);
+    y += 12;
+
+    // Área de descrição do serviço
+    doc.text('Descrição do Serviço Realizado:', margin + 3, y);
+    y += 8;
+
+    // Linhas para escrever (8 linhas)
+    doc.setDrawColor(150, 150, 150);
+    for (let i = 0; i < 8; i++) {
       doc.line(margin, y, pageWidth - margin, y);
-      y += 7;
+      y += 8;
     }
 
-    y += 3;
+    y += 6;
 
     // ===== VALORIZAÇÃO =====
-    doc.setFillColor(primaryColor.r, primaryColor.g, primaryColor.b);
+    doc.setFillColor(80, 80, 80);
     doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(255, 255, 255);
-    doc.text('VALORIZAÇÃO', pageWidth / 2, y + 4, { align: 'center' });
-    y += 8;
+    doc.text('VALORIZAÇÃO', pageWidth / 2, y + 4.5, { align: 'center' });
+    y += 10;
 
     // Campos de valorização em linha
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-    doc.text('Horas:', margin + 2, y);
-    doc.text('________', margin + 16, y);
-    doc.text('Valor/Hora:', margin + 45, y);
-    doc.text('R$ ________', margin + 68, y);
-    doc.text('Total:', margin + 110, y);
-    doc.text('R$ ________________', margin + 125, y);
-    y += 15;
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Horas: ________', margin + 3, y);
+    doc.text('Valor/Hora: R$ ________', margin + 55, y);
+    doc.text('Total: R$ ________________', margin + 120, y);
+    y += 20;
 
     // ===== DECLARAÇÃO E ASSINATURA =====
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
-    doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
+    doc.setTextColor(0, 0, 0);
     const declaracao = 'Declaro estar ciente do trabalho acima realizado e concordo com a realização do mesmo.';
     doc.text(declaracao, pageWidth / 2, y, { align: 'center' });
-    y += 18;
+    y += 20;
 
     // Linha para assinatura
-    doc.setDrawColor(grayColor.r, grayColor.g, grayColor.b);
-    doc.line(margin + 35, y, pageWidth - margin - 35, y);
-    y += 5;
+    doc.setDrawColor(0, 0, 0);
+    doc.line(margin + 40, y, pageWidth - margin - 40, y);
+    y += 6;
 
     // Nome do cliente
     doc.setFont('helvetica', 'normal');
@@ -366,8 +342,8 @@ export function TicketActions({ ticket }: TicketActionsProps) {
 
     // Rodapé
     doc.setFontSize(7);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`Gerado em ${new Date().toLocaleString('pt-BR')} - SysTicket`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Gerado em ${new Date().toLocaleString('pt-BR')} - SysTicket`, pageWidth / 2, pageHeight - 10, { align: 'center' });
 
     // Salvar PDF
     doc.save(`Apontamento_offline_${t.ticket_number}.pdf`);
