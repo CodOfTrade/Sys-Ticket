@@ -143,12 +143,20 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
     queryFn: () => appointmentsService.getAppointmentsSummary(ticketId),
   });
 
-  // Buscar contratos do cliente
+  // Buscar contratos do cliente (sempre, para verificar se tem contrato ativo)
   const { data: clientContracts = [] } = useQuery({
     queryKey: ['client-contracts', clientId],
     queryFn: () => clientService.getClientContracts(clientId),
-    enabled: !!clientId && formData.coverage_type === ServiceCoverageType.CONTRACT,
+    enabled: !!clientId,
   });
+
+  // Filtrar apenas contratos ativos
+  const activeContracts = clientContracts.filter(
+    (contract: any) => contract.ativo && contract.status === 'Ativo'
+  );
+
+  // Verificar se cliente tem contrato ativo
+  const hasActiveContract = activeContracts.length > 0;
 
   // Mutation para criar apontamento
   const createMutation = useMutation({
@@ -540,10 +548,15 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                     required
                   >
                     <option value={ServiceCoverageType.BILLABLE}>Avulso</option>
-                    <option value={ServiceCoverageType.CONTRACT}>Contrato</option>
+                    {hasActiveContract && (
+                      <option value={ServiceCoverageType.CONTRACT}>Contrato</option>
+                    )}
                   </select>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Selecione "Contrato" se o cliente possui contrato ativo
+                    {hasActiveContract
+                      ? 'Selecione "Contrato" se o cliente possui contrato ativo'
+                      : 'Cliente sem contrato ativo - apenas atendimento avulso disponível'
+                    }
                   </p>
                 </div>
 
@@ -565,14 +578,14 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                       required
                     >
                       <option value="">Selecione um contrato</option>
-                      {clientContracts.length > 0 ? (
-                        clientContracts.map((contract) => (
+                      {activeContracts.length > 0 ? (
+                        activeContracts.map((contract: any) => (
                           <option key={contract.id} value={contract.id}>
                             {contract.descricao || contract.numero_contrato || `Contrato #${contract.id}`}
                           </option>
                         ))
                       ) : (
-                        <option value="" disabled>Nenhum contrato encontrado</option>
+                        <option value="" disabled>Nenhum contrato ativo encontrado</option>
                       )}
                     </select>
                   ) : (
@@ -592,7 +605,7 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                   )}
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {formData.coverage_type === ServiceCoverageType.CONTRACT
-                      ? 'Contratos disponíveis para este cliente'
+                      ? 'Contratos ativos disponíveis para este cliente'
                       : 'Tipos de atendimento avulso cadastrados'}
                   </p>
                 </div>
