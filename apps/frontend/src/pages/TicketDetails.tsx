@@ -177,6 +177,9 @@ export default function TicketDetails() {
   const [showFollowerInput, setShowFollowerInput] = useState(false);
   const [showFollowerDropdown, setShowFollowerDropdown] = useState(false);
 
+  // Estado para dropdown de contratos
+  const [showContractsDropdown, setShowContractsDropdown] = useState(false);
+
   // Buscar detalhes do ticket
   const { data: ticket, isLoading, error } = useQuery({
     queryKey: ['ticket', id],
@@ -361,14 +364,15 @@ export default function TicketDetails() {
       if (!target.closest('.relative')) {
         setShowStatusDropdown(false);
         setShowPriorityDropdown(false);
+        setShowContractsDropdown(false);
       }
     };
 
-    if (showStatusDropdown || showPriorityDropdown) {
+    if (showStatusDropdown || showPriorityDropdown || showContractsDropdown) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
     }
-  }, [showStatusDropdown, showPriorityDropdown]);
+  }, [showStatusDropdown, showPriorityDropdown, showContractsDropdown]);
 
   // Funções de busca para autocomplete
   const handleClientSearch = async (query: string) => {
@@ -662,15 +666,72 @@ export default function TicketDetails() {
                         </p>
                         {/* Badge de contrato */}
                         {activeContract ? (
-                          <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full">
-                            <FileText className="w-3 h-3" />
-                            Contrato Ativo
-                            {activeContract.valor_mensal && (
-                              <span className="font-medium">
-                                - R$ {Number(activeContract.valor_mensal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                              </span>
+                          <div className="relative">
+                            <button
+                              onClick={() => setShowContractsDropdown(!showContractsDropdown)}
+                              className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
+                            >
+                              <FileText className="w-3 h-3" />
+                              Contrato Ativo
+                              {clientContracts && clientContracts.length > 1 && (
+                                <span className="ml-1 text-green-600 dark:text-green-500">
+                                  (+{clientContracts.length - 1})
+                                </span>
+                              )}
+                            </button>
+                            {/* Dropdown de contratos */}
+                            {showContractsDropdown && clientContracts && (
+                              <div className="absolute z-30 left-0 mt-1 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+                                <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                                    Contratos do Cliente ({clientContracts.length})
+                                  </p>
+                                </div>
+                                <div className="max-h-60 overflow-y-auto">
+                                  {clientContracts.map((contract: ClientContract) => (
+                                    <div
+                                      key={contract.id}
+                                      className={`px-3 py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
+                                        contract.ativo && contract.status === 'Ativo'
+                                          ? 'bg-green-50 dark:bg-green-900/20'
+                                          : 'bg-gray-50 dark:bg-gray-700/30'
+                                      }`}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <span className="font-medium text-sm text-gray-900 dark:text-white">
+                                          #{contract.numero || contract.id.slice(0, 8)}
+                                        </span>
+                                        <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                          contract.ativo && contract.status === 'Ativo'
+                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400'
+                                            : 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300'
+                                        }`}>
+                                          {contract.status || (contract.ativo ? 'Ativo' : 'Inativo')}
+                                        </span>
+                                      </div>
+                                      {contract.descricao && (
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate">
+                                          {contract.descricao}
+                                        </p>
+                                      )}
+                                      {contract.data_inicio && (
+                                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                          Início: {new Date(contract.data_inicio).toLocaleDateString('pt-BR')}
+                                          {contract.data_fim && ` - Fim: ${new Date(contract.data_fim).toLocaleDateString('pt-BR')}`}
+                                        </p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                                <button
+                                  onClick={() => setShowContractsDropdown(false)}
+                                  className="w-full p-2 text-xs text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-b-lg"
+                                >
+                                  Fechar
+                                </button>
+                              </div>
                             )}
-                          </span>
+                          </div>
                         ) : ticket.client_id ? (
                           <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded-full">
                             <FileText className="w-3 h-3" />
