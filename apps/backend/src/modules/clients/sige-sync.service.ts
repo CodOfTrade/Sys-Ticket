@@ -67,15 +67,22 @@ export class SigeSyncService {
 
   /**
    * Sincroniza clientes do SIGE Cloud a cada 6 horas
+   * - Atualiza informações de clientes existentes
+   * - Marca como inativo clientes bloqueados no SIGE
+   * - Marca como inativo clientes que foram excluídos do SIGE
    */
   @Cron(CronExpression.EVERY_6_HOURS)
   async syncClients(): Promise<void> {
     this.logger.log('Iniciando sincronização de clientes...');
 
     try {
+      // Guardar IDs dos clientes que vieram na sincronização
+      const sigeIdsFromSync = new Set<string>();
+
       let page = 1;
       let hasMore = true;
       let totalSynced = 0;
+      let totalInactivated = 0;
 
       while (hasMore) {
         const rawResponse = await this.sigeCloudService.get<any>('/request/Pessoas/GetAll', {
@@ -93,6 +100,10 @@ export class SigeSyncService {
         for (const client of clients) {
           // Sincronizar apenas se for Cliente
           if (client.Cliente === true) {
+            const sigeId = String(client.ID || client.Codigo || client.id);
+            if (sigeId && sigeId !== 'undefined') {
+              sigeIdsFromSync.add(sigeId);
+            }
             await this.upsertClient(client);
             totalSynced++;
           }
@@ -104,7 +115,27 @@ export class SigeSyncService {
         page++;
       }
 
-      this.logger.log(`Sincronização de clientes concluída: ${totalSynced} clientes`);
+      // Marcar como inativos os clientes que não vieram na sincronização (foram excluídos do SIGE)
+      if (sigeIdsFromSync.size > 0) {
+        const allLocalClients = await this.clientRepository.find({
+          where: { ativo: true },
+          select: ['id', 'sigeId', 'nome'],
+        });
+
+        for (const localClient of allLocalClients) {
+          if (!sigeIdsFromSync.has(localClient.sigeId)) {
+            // Cliente não veio na sincronização - provavelmente foi excluído do SIGE
+            await this.clientRepository.update(localClient.id, {
+              ativo: false,
+              lastSyncedAt: new Date(),
+            });
+            this.logger.log(`Cliente "${localClient.nome}" (${localClient.sigeId}) marcado como inativo - não encontrado no SIGE`);
+            totalInactivated++;
+          }
+        }
+      }
+
+      this.logger.log(`Sincronização de clientes concluída: ${totalSynced} sincronizados, ${totalInactivated} inativados`);
     } catch (error) {
       this.logger.error('Erro ao sincronizar clientes', error);
       throw error;
