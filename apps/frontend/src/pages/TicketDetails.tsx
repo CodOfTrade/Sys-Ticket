@@ -699,7 +699,7 @@ export default function TicketDetails() {
                                     >
                                       <div className="flex items-center justify-between">
                                         <span className="font-medium text-sm text-gray-900 dark:text-white">
-                                          #{contract.numero || contract.id.slice(0, 8)}
+                                          #{contract.numero_contrato || contract.id.slice(0, 8)}
                                         </span>
                                         <span className={`text-xs px-1.5 py-0.5 rounded ${
                                           contract.ativo && contract.status === 'Ativo'
