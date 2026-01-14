@@ -23,7 +23,7 @@ export class SettingsController {
 
   /**
    * GET /v1/settings
-   * Buscar todas as configurações
+   * Buscar todas as configuracoes
    */
   @Get()
   async findAll() {
@@ -36,7 +36,7 @@ export class SettingsController {
 
   /**
    * GET /v1/settings/logos
-   * Buscar todas as logos (público para login page)
+   * Buscar todas as logos (publico para login page)
    */
   @Public()
   @Get('logos')
@@ -45,19 +45,6 @@ export class SettingsController {
     return {
       success: true,
       data: logos,
-    };
-  }
-
-  /**
-   * GET /v1/settings/:key
-   * Buscar configuração por chave
-   */
-  @Get(':key')
-  async findByKey(@Param('key') key: SettingKey) {
-    const setting = await this.settingsService.findByKey(key);
-    return {
-      success: true,
-      data: setting,
     };
   }
 
@@ -90,7 +77,7 @@ export class SettingsController {
     const key = keyMap[type];
     if (!key) {
       throw new BadRequestException(
-        'Tipo de logo inválido. Use: report, system ou login',
+        'Tipo de logo invalido. Use: report, system ou login',
       );
     }
 
@@ -118,7 +105,7 @@ export class SettingsController {
     const key = keyMap[type];
     if (!key) {
       throw new BadRequestException(
-        'Tipo de logo inválido. Use: report, system ou login',
+        'Tipo de logo invalido. Use: report, system ou login',
       );
     }
 
@@ -126,6 +113,20 @@ export class SettingsController {
     return {
       success: true,
       message: 'Logo removida com sucesso',
+    };
+  }
+
+  /**
+   * GET /v1/settings/:key
+   * Buscar configuracao por chave
+   * IMPORTANTE: Esta rota deve ficar por ultimo para nao interceptar as outras
+   */
+  @Get(':key')
+  async findByKey(@Param('key') key: SettingKey) {
+    const setting = await this.settingsService.findByKey(key);
+    return {
+      success: true,
+      data: setting,
     };
   }
 }
