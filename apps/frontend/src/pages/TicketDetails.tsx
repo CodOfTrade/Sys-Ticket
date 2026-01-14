@@ -40,6 +40,7 @@ import { TicketCommunication } from '@/components/Tickets/TicketCommunication';
 import { TicketValuation } from '@/components/Tickets/TicketValuation';
 import { TicketChecklists } from '@/components/Tickets/TicketChecklists';
 import { TicketHistory } from '@/components/Tickets/TicketHistory';
+import { TicketActions } from '@/components/Tickets/TicketActions';
 import { Autocomplete, AutocompleteOption } from '@/components/Common/Autocomplete';
 import { clientService, Client, ClientContract } from '@/services/client.service';
 import { userService, User as UserType } from '@/services/user.service';
@@ -502,6 +503,15 @@ export default function TicketDetails() {
           </button>
 
           {/* Informações do ticket */}
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+            </div>
+            {/* Botão de Ações */}
+            <div className="flex-shrink-0 ml-4">
+              <TicketActions ticket={ticket} />
+            </div>
+          </div>
+
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
