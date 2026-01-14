@@ -401,6 +401,47 @@ export function TicketActions({ ticket }: TicketActionsProps) {
       });
     }
 
+    // Valorização (resumo financeiro)
+    if (y > 240) {
+      doc.addPage();
+      y = 20;
+    }
+    y += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(230, 126, 34);
+    doc.text('Valorização', margin, y);
+    y += 8;
+
+    doc.setFontSize(10);
+    doc.setTextColor(44, 62, 80);
+
+    // Total de horas
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total de Horas:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${appointmentsSummary?.total_hours?.toFixed(2) || '0.00'}h`, margin + 40, y);
+    y += 6;
+
+    // Total de apontamentos
+    doc.setFont('helvetica', 'bold');
+    doc.text('Apontamentos:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${appointments.length}`, margin + 40, y);
+    y += 6;
+
+    // Custo total
+    doc.setFont('helvetica', 'bold');
+    doc.text('Custo Total:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    const totalCost = appointmentsSummary?.total_cost || 0;
+    doc.text(`R$ ${totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, margin + 40, y);
+    y += 12;
+
+    // Linha separadora
+    doc.setDrawColor(189, 195, 199);
+    doc.line(margin, y, pageWidth - margin, y);
+
     // Rodapé
     doc.setFontSize(8);
     doc.setTextColor(128, 128, 128);
