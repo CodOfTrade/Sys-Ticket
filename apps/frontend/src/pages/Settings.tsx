@@ -1,17 +1,19 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, DollarSign, FolderTree, Users, Bell, Sliders } from 'lucide-react';
+import { Settings as SettingsIcon, DollarSign, FolderTree, Users, Bell, Sliders, Palette } from 'lucide-react';
 import { PricingSettings } from '@/components/Settings/PricingSettings';
+import { LogoSettings } from '@/components/Settings/LogoSettings';
 
-type SettingsTab = 'pricing' | 'catalogs' | 'users' | 'notifications' | 'general';
+type SettingsTab = 'pricing' | 'branding' | 'catalogs' | 'users' | 'notifications' | 'general';
 
 export function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('pricing');
 
   const tabs = [
-    { id: 'pricing' as SettingsTab, label: 'Precificação', icon: DollarSign },
-    { id: 'catalogs' as SettingsTab, label: 'Catálogos de Serviço', icon: FolderTree },
-    { id: 'users' as SettingsTab, label: 'Usuários e Permissões', icon: Users },
-    { id: 'notifications' as SettingsTab, label: 'Notificações', icon: Bell },
+    { id: 'pricing' as SettingsTab, label: 'Precificacao', icon: DollarSign },
+    { id: 'branding' as SettingsTab, label: 'Identidade Visual', icon: Palette },
+    { id: 'catalogs' as SettingsTab, label: 'Catalogos de Servico', icon: FolderTree },
+    { id: 'users' as SettingsTab, label: 'Usuarios e Permissoes', icon: Users },
+    { id: 'notifications' as SettingsTab, label: 'Notificacoes', icon: Bell },
     { id: 'general' as SettingsTab, label: 'Geral', icon: Sliders },
   ];
 
@@ -61,24 +63,25 @@ export function Settings() {
           {/* Tab Content */}
           <div className="p-6">
             {activeTab === 'pricing' && <PricingSettings />}
+            {activeTab === 'branding' && <LogoSettings />}
             {activeTab === 'catalogs' && (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                Catálogos de Serviço - Em desenvolvimento
+                Catalogos de Servico - Em desenvolvimento
               </div>
             )}
             {activeTab === 'users' && (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                Usuários e Permissões - Em desenvolvimento
+                Usuarios e Permissoes - Em desenvolvimento
               </div>
             )}
             {activeTab === 'notifications' && (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                Notificações - Em desenvolvimento
+                Notificacoes - Em desenvolvimento
               </div>
             )}
             {activeTab === 'general' && (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                Configurações Gerais - Em desenvolvimento
+                Configuracoes Gerais - Em desenvolvimento
               </div>
             )}
           </div>

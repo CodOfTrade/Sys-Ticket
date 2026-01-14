@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Ticket, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@store/auth.store';
 import { authService } from '@services/auth.service';
+import { settingsService, LogosData } from '@services/settings.service';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -12,6 +13,13 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [logos, setLogos] = useState<LogosData | null>(null);
+  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
+
+  // Buscar logos (rota publica)
+  useEffect(() => {
+    settingsService.getLogos().then(setLogos).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,16 +40,24 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo e Título */}
+        {/* Logo e Titulo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg">
-            <Ticket className="text-white" size={32} />
-          </div>
+          {logos?.logo_login ? (
+            <img
+              src={`${baseUrl}${logos.logo_login}`}
+              alt="Logo"
+              className="h-16 mx-auto mb-4 object-contain"
+            />
+          ) : (
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg">
+              <Ticket className="text-white" size={32} />
+            </div>
+          )}
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Sys-Ticket
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Sistema de Gestão de Tickets
+            Sistema de Gestao de Tickets
           </p>
         </div>
 

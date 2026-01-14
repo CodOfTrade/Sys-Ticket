@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   Ticket,
@@ -9,6 +10,7 @@ import {
   DollarSign,
   Building2,
 } from 'lucide-react';
+import { settingsService } from '@/services/settings.service';
 
 interface MenuItem {
   title: string;
@@ -66,6 +68,14 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen }: SidebarProps) {
   const location = useLocation();
+  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
+
+  // Buscar logos
+  const { data: logos } = useQuery({
+    queryKey: ['settings', 'logos'],
+    queryFn: () => settingsService.getLogos(),
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
 
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
@@ -85,12 +95,22 @@ export function Sidebar({ isOpen }: SidebarProps) {
       {/* Logo */}
       <div className="h-16 flex items-center px-6 border-b border-gray-200 dark:border-gray-700">
         <Link to="/dashboard" className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Ticket className="text-white" size={20} />
-          </div>
-          <span className="text-xl font-bold text-gray-900 dark:text-white">
-            Sys-Ticket
-          </span>
+          {logos?.logo_system ? (
+            <img
+              src={`${baseUrl}${logos.logo_system}`}
+              alt="Logo"
+              className="h-8 object-contain"
+            />
+          ) : (
+            <>
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Ticket className="text-white" size={20} />
+              </div>
+              <span className="text-xl font-bold text-gray-900 dark:text-white">
+                Sys-Ticket
+              </span>
+            </>
+          )}
         </Link>
       </div>
 

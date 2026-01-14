@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { ticketService } from '@/services/ticket.service';
 import { appointmentsService, valuationsService } from '@/services/ticket-details.service';
+import { settingsService } from '@/services/settings.service';
 import { Ticket } from '@/types/ticket.types';
 import { ValuationCategory } from '@/types/ticket-details.types';
 import jsPDF from 'jspdf';
@@ -50,7 +51,30 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     queryFn: () => valuationsService.getValuations(ticket.id),
   });
 
+  // Buscar logos para os PDFs
+  const { data: logos } = useQuery({
+    queryKey: ['settings', 'logos'],
+    queryFn: () => settingsService.getLogos(),
+  });
+
   const hasAppointments = appointments.length > 0;
+  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
+
+  // Helper para carregar imagem como base64
+  const loadImageAsBase64 = async (url: string): Promise<string | null> => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  };
 
   // Fechar menu ao clicar fora
   useEffect(() => {
@@ -149,7 +173,7 @@ export function TicketActions({ ticket }: TicketActionsProps) {
   });
 
   // Gerar PDF de apontamento offline (preto e branco)
-  const generateOfflineAppointmentPDF = () => {
+  const generateOfflineAppointmentPDF = async () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -166,13 +190,29 @@ export function TicketActions({ ticket }: TicketActionsProps) {
       low: 'Baixa', medium: 'Média', high: 'Alta', urgent: 'Urgente'
     };
 
-    // ===== CABEÇALHO =====
+    // ===== CABEÇALHO COM LOGO =====
+    // Tentar carregar logo
+    let logoLoaded = false;
+    if (logos?.logo_report) {
+      try {
+        const logoBase64 = await loadImageAsBase64(`${baseUrl}${logos.logo_report}`);
+        if (logoBase64) {
+          doc.addImage(logoBase64, 'PNG', margin, y - 5, 45, 15);
+          logoLoaded = true;
+        }
+      } catch (e) {
+        console.log('Erro ao carregar logo:', e);
+      }
+    }
+
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(0, 0, 0);
-    doc.text(t.client_name || t.client?.name || 'Cliente', margin, y);
+    if (!logoLoaded) {
+      doc.text(t.client_name || t.client?.name || 'Cliente', margin, y);
+    }
     doc.text('SysTicket', pageWidth - margin, y, { align: 'right' });
-    y += 8;
+    y += logoLoaded ? 15 : 8;
 
     // Linha separadora
     doc.setDrawColor(0, 0, 0);
@@ -367,7 +407,7 @@ export function TicketActions({ ticket }: TicketActionsProps) {
   });
 
   // Gerar relatório do ticket (modelo limpo e compacto)
-  const generateReport = () => {
+  const generateReport = async () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -415,11 +455,26 @@ export function TicketActions({ ticket }: TicketActionsProps) {
       }
     };
 
-    // ===== CABEÇALHO =====
+    // ===== CABEÇALHO COM LOGO =====
+    let logoLoaded = false;
+    if (logos?.logo_report) {
+      try {
+        const logoBase64 = await loadImageAsBase64(`${baseUrl}${logos.logo_report}`);
+        if (logoBase64) {
+          // Logo centralizada no topo
+          doc.addImage(logoBase64, 'PNG', pageWidth / 2 - 25, y - 5, 50, 17);
+          logoLoaded = true;
+          y += 15;
+        }
+      } catch (e) {
+        console.log('Erro ao carregar logo:', e);
+      }
+    }
+
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(black.r, black.g, black.b);
-    doc.text('RELATÓRIO DE ATENDIMENTO', pageWidth / 2, y, { align: 'center' });
+    doc.text('RELATORIO DE ATENDIMENTO', pageWidth / 2, y, { align: 'center' });
     y += 10;
 
     // Linha
