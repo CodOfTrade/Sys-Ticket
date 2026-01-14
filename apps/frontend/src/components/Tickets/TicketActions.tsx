@@ -90,13 +90,44 @@ export function TicketActions({ ticket }: TicketActionsProps) {
   // Mutation para duplicar ticket
   const duplicateTicketMutation = useMutation({
     mutationFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { id, ticket_number, created_at, updated_at, closed_at, ...ticketData } = ticket as any;
-      return ticketService.create({
-        ...ticketData,
+      // Mapear apenas os campos aceitos pelo CreateTicketDto
+      const duplicateData: any = {
+        client_id: ticket.client_id,
+        client_name: ticket.client_name || ticket.client?.name || '',
+        requester_name: ticket.requester_name || '',
+        requester_email: ticket.requester_email,
+        requester_phone: ticket.requester_phone,
         title: `[CÓPIA] ${ticket.title}`,
-        status: 'new',
+        description: ticket.description || '',
+        priority: ticket.priority,
+        type: ticket.type,
+        category: ticket.category,
+        tags: ticket.tags,
+        service_desk_id: ticket.service_desk_id,
+        service_catalog_id: ticket.service_catalog_id,
+        contact_id: ticket.contact_id,
+        assigned_to_id: ticket.assigned_to_id,
+        contract_id: ticket.contract_id,
+        contract_coverage: ticket.contract_coverage,
+        latitude: ticket.latitude,
+        longitude: ticket.longitude,
+        location_address: (ticket as any).location_address,
+        custom_fields: ticket.custom_fields,
+        metadata: {
+          ...(ticket.metadata || {}),
+          duplicated_from: ticket.id,
+          duplicated_at: new Date().toISOString(),
+        },
+      };
+
+      // Remover campos undefined/null
+      Object.keys(duplicateData).forEach(key => {
+        if (duplicateData[key] === undefined || duplicateData[key] === null) {
+          delete duplicateData[key];
+        }
       });
+
+      return ticketService.create(duplicateData);
     },
     onSuccess: (newTicket) => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
