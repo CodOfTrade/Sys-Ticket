@@ -183,11 +183,11 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     y += 10;
 
     // ===== INFORMAÇÕES DO CLIENTE =====
-    doc.setFillColor(0, 0, 0);
+    doc.setFillColor(200, 200, 200);
     doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(0, 0, 0);
     doc.text('INFORMAÇÕES DO CLIENTE', pageWidth / 2, y + 4.5, { align: 'center' });
     y += 6;
 
@@ -210,11 +210,11 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     y += 12;
 
     // ===== INFORMAÇÕES DO TICKET =====
-    doc.setFillColor(0, 0, 0);
+    doc.setFillColor(200, 200, 200);
     doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(0, 0, 0);
     doc.text('INFORMAÇÕES DO TICKET', pageWidth / 2, y + 4.5, { align: 'center' });
     y += 6;
 
@@ -239,11 +239,11 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     y += 12;
 
     // ===== DESCRIÇÃO DO TICKET =====
-    doc.setFillColor(0, 0, 0);
+    doc.setFillColor(200, 200, 200);
     doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(0, 0, 0);
     doc.text('DESCRIÇÃO DO TICKET', pageWidth / 2, y + 4.5, { align: 'center' });
     y += 6;
 
@@ -264,11 +264,11 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     y += descHeight + 4;
 
     // ===== APONTAMENTO =====
-    doc.setFillColor(80, 80, 80);
+    doc.setFillColor(180, 180, 180);
     doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(0, 0, 0);
     doc.text('APONTAMENTO', pageWidth / 2, y + 4.5, { align: 'center' });
     y += 10;
 
@@ -305,11 +305,11 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     y += 6;
 
     // ===== VALORIZAÇÃO =====
-    doc.setFillColor(80, 80, 80);
+    doc.setFillColor(180, 180, 180);
     doc.rect(margin, y, pageWidth - 2 * margin, 6, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(0, 0, 0);
     doc.text('VALORIZAÇÃO', pageWidth / 2, y + 4.5, { align: 'center' });
     y += 10;
 
@@ -601,7 +601,7 @@ export function TicketActions({ ticket }: TicketActionsProps) {
 
         // Técnico e valor na mesma linha à direita
         const techName = apt.user?.name || apt.technician?.name || '-';
-        const price = apt.total_amount || apt.calculated_price || 0;
+        const price = Number(apt.total_amount) || Number(apt.calculated_price) || 0;
         doc.text(techName, aptCols[6] - 20, y);
         doc.text(`R$${price.toFixed(2)}`, aptCols[6], y);
         y += 5;
