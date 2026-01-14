@@ -91,7 +91,7 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
         }
       }}
     >
-      <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
+      <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl h-[600px] overflow-hidden flex flex-col shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-start">
