@@ -90,32 +90,35 @@ export function TicketActions({ ticket }: TicketActionsProps) {
   // Mutation para duplicar ticket
   const duplicateTicketMutation = useMutation({
     mutationFn: async () => {
+      // Usar any para acessar todos os campos do ticket
+      const t = ticket as any;
+
       // Mapear apenas os campos aceitos pelo CreateTicketDto
       const duplicateData: any = {
-        client_id: ticket.client_id,
-        client_name: ticket.client_name || ticket.client?.name || '',
-        requester_name: ticket.requester_name || '',
-        requester_email: ticket.requester_email,
-        requester_phone: ticket.requester_phone,
-        title: `[CÓPIA] ${ticket.title}`,
-        description: ticket.description || '',
-        priority: ticket.priority,
-        type: ticket.type,
-        category: ticket.category,
-        tags: ticket.tags,
-        service_desk_id: ticket.service_desk_id,
-        service_catalog_id: ticket.service_catalog_id,
-        contact_id: ticket.contact_id,
-        assigned_to_id: ticket.assigned_to_id,
-        contract_id: ticket.contract_id,
-        contract_coverage: ticket.contract_coverage,
-        latitude: ticket.latitude,
-        longitude: ticket.longitude,
-        location_address: (ticket as any).location_address,
-        custom_fields: ticket.custom_fields,
+        client_id: t.client_id,
+        client_name: t.client_name || t.client?.name || '',
+        requester_name: t.requester_name || '',
+        requester_email: t.requester_email,
+        requester_phone: t.requester_phone,
+        title: `[CÓPIA] ${t.title}`,
+        description: t.description || '',
+        priority: t.priority,
+        type: t.type,
+        category: t.category,
+        tags: t.tags,
+        service_desk_id: t.service_desk_id,
+        service_catalog_id: t.service_catalog_id,
+        contact_id: t.contact_id,
+        assigned_to_id: t.assigned_to_id,
+        contract_id: t.contract_id,
+        contract_coverage: t.contract_coverage,
+        latitude: t.latitude,
+        longitude: t.longitude,
+        location_address: t.location_address,
+        custom_fields: t.custom_fields,
         metadata: {
-          ...(ticket.metadata || {}),
-          duplicated_from: ticket.id,
+          ...(t.metadata || {}),
+          duplicated_from: t.id,
           duplicated_at: new Date().toISOString(),
         },
       };
