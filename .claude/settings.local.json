@@ -94,7 +94,10 @@
       "Bash(npx vite build)",
       "Bash(cmd /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend\"\" && npm run build 2>&1\")",
       "Bash(cmd /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend\"\" && npm run build\")",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(./deploy.ps1)",
+      "Bash(ssh root@172.31.255.26:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix: remover título Sys-Ticket da tela de login\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
