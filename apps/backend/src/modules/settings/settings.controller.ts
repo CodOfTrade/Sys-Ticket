@@ -17,7 +17,7 @@ import { SettingKey } from './entities/system-setting.entity';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 
-@Controller('v1/settings')
+@Controller('settings')
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
