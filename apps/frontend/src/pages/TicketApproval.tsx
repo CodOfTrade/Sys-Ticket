@@ -9,19 +9,14 @@ import {
   Search,
   Filter,
   Eye,
-  Calendar,
   Building2,
   MessageSquare,
-  AlertTriangle,
 } from 'lucide-react';
 import { ticketService } from '@/services/ticket.service';
 import { commentsService } from '@/services/ticket-details.service';
 import { TicketStatus, TicketPriority, Ticket } from '@/types/ticket.types';
 import { CommentType, CommentVisibility } from '@/types/ticket-details.types';
-import { StatusBadge } from '@/components/Tickets/StatusBadge';
 import { PriorityBadge } from '@/components/Tickets/PriorityBadge';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 export default function TicketApproval() {
   const queryClient = useQueryClient();
@@ -303,10 +298,10 @@ export default function TicketApproval() {
           <p className="text-sm text-gray-600 dark:text-gray-400">Mais de 24h</p>
           <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">
             {filteredTickets.filter((t) => {
-              const created = new Date(t.created_at);
+              const updated = new Date(t.updated_at);
               const now = new Date();
-              const diffHours = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
-              return diffHours > 24;
+              const diffHours = (now.getTime() - updated.getTime()) / (1000 * 60 * 60);
+              return diffHours >= 24;
             }).length}
           </p>
         </div>
@@ -339,103 +334,94 @@ export default function TicketApproval() {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {filteredTickets.map((ticket) => {
-            const created = new Date(ticket.created_at);
-            const now = new Date();
-            const diffHours = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60));
-            const isOld = diffHours > 24;
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            {filteredTickets.map((ticket) => {
+              // Usar updated_at para calcular tempo de espera (quando foi enviado para avaliação)
+              const sentForEvaluation = new Date(ticket.updated_at);
+              const now = new Date();
+              const diffMs = now.getTime() - sentForEvaluation.getTime();
+              const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+              const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+              const isOld = diffHours >= 24;
 
-            return (
-              <div
-                key={ticket.id}
-                className={`bg-white dark:bg-gray-800 rounded-xl border p-6 transition-all hover:shadow-md ${
-                  isOld
-                    ? 'border-orange-300 dark:border-orange-700'
-                    : 'border-gray-200 dark:border-gray-700'
-                }`}
-              >
-                <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-                  {/* Informações do Ticket */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-gray-900 dark:text-white">
-                            #{ticket.ticket_number}
-                          </span>
-                          <StatusBadge status={ticket.status} />
-                          <PriorityBadge priority={ticket.priority} />
-                          {isOld && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
-                              <AlertTriangle size={12} />
-                              Aguardando há {diffHours}h
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mt-2 truncate">
-                          {ticket.title}
-                        </h3>
-                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+              // Formatar tempo de espera
+              const waitTime = diffHours >= 24
+                ? `${Math.floor(diffHours / 24)}d ${diffHours % 24}h`
+                : diffHours > 0
+                  ? `${diffHours}h ${diffMinutes}min`
+                  : `${diffMinutes}min`;
+
+              return (
+                <div
+                  key={ticket.id}
+                  className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                    isOld ? 'bg-orange-50/50 dark:bg-orange-900/10' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Info Principal */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          #{ticket.ticket_number}
+                        </span>
+                        <PriorityBadge priority={ticket.priority} />
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                          isOld
+                            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+                            : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                        }`}>
+                          <Clock size={12} />
+                          {waitTime}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-900 dark:text-white mt-1 truncate">
+                        {ticket.title}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-1">
+                          <Building2 size={12} />
+                          {ticket.client_name}
+                        </span>
+                        {ticket.assigned_to && (
                           <span className="flex items-center gap-1">
-                            <Building2 size={14} />
-                            {ticket.client_name}
+                            <User size={12} />
+                            {ticket.assigned_to.name}
                           </span>
-                          {ticket.assigned_to && (
-                            <span className="flex items-center gap-1">
-                              <User size={14} />
-                              {ticket.assigned_to.name}
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Calendar size={14} />
-                            {format(new Date(ticket.created_at), "dd/MM/yyyy HH:mm", {
-                              locale: ptBR,
-                            })}
-                          </span>
-                        </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Preview da descrição */}
-                    {ticket.description && (
-                      <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                          {ticket.description.replace(/<[^>]*>/g, '').substring(0, 200)}
-                          {ticket.description.length > 200 && '...'}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Ações */}
-                  <div className="flex lg:flex-col gap-2 lg:w-40">
-                    <Link
-                      to={`/tickets/${ticket.id}`}
-                      className="flex-1 lg:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <Eye size={18} />
-                      <span>Ver Detalhes</span>
-                    </Link>
-                    <button
-                      onClick={() => openApproveModal(ticket)}
-                      className="flex-1 lg:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                    >
-                      <CheckCircle size={18} />
-                      <span>Aprovar</span>
-                    </button>
-                    <button
-                      onClick={() => openRejectModal(ticket)}
-                      className="flex-1 lg:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                    >
-                      <XCircle size={18} />
-                      <span>Rejeitar</span>
-                    </button>
+                    {/* Ações */}
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to={`/tickets/${ticket.id}`}
+                        className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                        title="Ver Detalhes"
+                      >
+                        <Eye size={18} />
+                      </Link>
+                      <button
+                        onClick={() => openApproveModal(ticket)}
+                        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors flex items-center gap-1"
+                      >
+                        <CheckCircle size={16} />
+                        Aprovar
+                      </button>
+                      <button
+                        onClick={() => openRejectModal(ticket)}
+                        className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors flex items-center gap-1"
+                      >
+                        <XCircle size={16} />
+                        Rejeitar
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
 
