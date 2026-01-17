@@ -9,6 +9,7 @@ import { TicketAppointmentsService } from './services/ticket-appointments.servic
 import { TicketValuationsService } from './services/ticket-valuations.service';
 import { ChecklistsService } from './services/checklists.service';
 import { TicketAttachmentsService } from './services/ticket-attachments.service';
+import { TicketsGateway } from './gateways/tickets.gateway';
 import { Ticket } from './entities/ticket.entity';
 import { TicketComment } from './entities/ticket-comment.entity';
 import { TicketAppointment } from './entities/ticket-appointment.entity';
@@ -49,7 +50,8 @@ import { EmailModule } from '../email/email.module';
     TicketValuationsService,
     ChecklistsService,
     TicketAttachmentsService,
+    TicketsGateway,
   ],
-  exports: [TicketsService, TicketAttachmentsService],
+  exports: [TicketsService, TicketAttachmentsService, TicketsGateway],
 })
 export class TicketsModule {}

@@ -7,11 +7,15 @@ import { TicketStatus, TicketPriority } from '@/types/ticket.types';
 import { StatusBadge } from '@/components/Tickets/StatusBadge';
 import { PriorityBadge } from '@/components/Tickets/PriorityBadge';
 import { CreateTicketModal } from '@/components/Tickets/CreateTicketModal';
+import { useTicketsSocket } from '@/hooks/useTicketsSocket';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function Tickets() {
   const queryClient = useQueryClient();
+
+  // WebSocket para atualizações em tempo real
+  useTicketsSocket();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [priorityFilter, setPriorityFilter] = useState<string>('');

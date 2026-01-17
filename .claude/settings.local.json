@@ -98,7 +98,8 @@
       "Bash(./deploy.ps1)",
       "Bash(ssh root@172.31.255.26:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nFix: remover título Sys-Ticket da tela de login\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nFeature: aplicar gradiente azulado no fundo do sistema \\(tema claro\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFeature: aplicar gradiente azulado no fundo do sistema \\(tema claro\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(find:*)"
     ]
   }
 }
