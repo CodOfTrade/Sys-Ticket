@@ -311,10 +311,10 @@ export class UpdateChecklistTemplateDto {
  * DTO para adicionar checklist a um ticket
  */
 export class AddChecklistToTicketDto {
-  @ApiProperty({ description: 'ID do ticket' })
+  @ApiPropertyOptional({ description: 'ID do ticket (preenchido automaticamente pela URL)' })
   @IsUUID()
-  @IsNotEmpty()
-  ticket_id: string;
+  @IsOptional()
+  ticket_id?: string;
 
   @ApiProperty({ description: 'ID do template de checklist' })
   @IsUUID()
