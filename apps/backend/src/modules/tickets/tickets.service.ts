@@ -563,7 +563,8 @@ export class TicketsService {
    * Invalida o cache de tickets
    */
   private async invalidateTicketCache(): Promise<void> {
-    // Por simplicidade, vamos limpar apenas por padrão
+    // Limpar todo o cache de tickets
+    await this.cacheManager.clear();
     this.logger.debug('Cache de tickets invalidado');
   }
 
