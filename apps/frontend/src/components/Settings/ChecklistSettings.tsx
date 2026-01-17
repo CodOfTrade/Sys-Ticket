@@ -17,7 +17,6 @@ import { api } from '@/services/api';
 import { ChecklistModal } from './ChecklistModal';
 import {
   Checklist,
-  ChecklistFieldType,
   FIELD_TYPE_LABELS,
 } from './checklist.types';
 
