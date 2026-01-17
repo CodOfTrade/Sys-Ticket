@@ -127,7 +127,7 @@ export function Autocomplete({
           </button>
         )}
 
-        {isLoading && (
+        {isLoading && showSuggestions && (
           <div className="absolute right-10 top-1/2 -translate-y-1/2">
             <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
           </div>

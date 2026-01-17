@@ -258,9 +258,12 @@ export default function TicketDetails() {
   // Mutation para atualizar cliente
   const updateClientMutation = useMutation({
     mutationFn: (data: { client_id: string; client_name: string }) => ticketService.update(id!, data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['ticket', id] });
-      queryClient.invalidateQueries({ queryKey: ['contracts', 'client'] });
+      // Invalidar contratos do novo cliente
+      queryClient.invalidateQueries({ queryKey: ['contracts', 'client', variables.client_id] });
+      // Invalidar contatos do novo cliente
+      queryClient.invalidateQueries({ queryKey: ['client-contacts', variables.client_id] });
       setIsEditingClient(false);
     },
     onError: (error: any) => {
@@ -350,8 +353,8 @@ export default function TicketDetails() {
   // Inicializar campos de edição quando ticket carregar
   useEffect(() => {
     if (ticket) {
-      // Cliente
-      setClientDisplayValue(ticket.client?.name || '');
+      // Cliente - usar client_name primeiro, depois fallback para client.name
+      setClientDisplayValue(ticket.client_name || ticket.client?.name || '');
 
       // Solicitante
       setRequesterDisplayValue(ticket.requester_name || '');
@@ -668,7 +671,7 @@ export default function TicketDetails() {
                         <button
                           onClick={() => {
                             setIsEditingClient(false);
-                            setClientDisplayValue(ticket.client?.name || '');
+                            setClientDisplayValue(ticket.client_name || ticket.client?.name || '');
                           }}
                           className="p-1 text-gray-400 hover:text-gray-600"
                         >
@@ -682,7 +685,7 @@ export default function TicketDetails() {
                           className="font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
                           title="Clique para editar"
                         >
-                          {ticket.client?.name || ticket.client_id || 'Não informado'}
+                          {ticket.client_name || ticket.client?.name || 'Não informado'}
                         </p>
                         {/* Badge de contrato */}
                         {activeContract ? (
