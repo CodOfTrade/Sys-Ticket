@@ -23,7 +23,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   },
   [TicketStatus.PAUSED]: {
     label: 'Pausado',
-    className: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300',
+    className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
   },
   [TicketStatus.WAITING_APPROVAL]: {
     label: 'Aguardando Aprovação',
