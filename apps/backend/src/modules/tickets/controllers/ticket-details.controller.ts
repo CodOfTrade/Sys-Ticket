@@ -283,11 +283,11 @@ export class TicketDetailsController {
   }
 
   @Delete('checklists/templates/:id')
-  @ApiOperation({ summary: 'Remover template de checklist' })
+  @ApiOperation({ summary: 'Excluir template de checklist permanentemente' })
   @ApiParam({ name: 'id', description: 'ID do template' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteChecklistTemplate(@Param('id') id: string) {
-    await this.checklistsService.removeTemplate(id);
+    await this.checklistsService.deleteTemplate(id);
   }
 
   // ==================== CHECKLISTS - TICKET ====================
