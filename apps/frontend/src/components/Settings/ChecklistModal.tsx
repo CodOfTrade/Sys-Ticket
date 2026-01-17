@@ -87,7 +87,7 @@ export function ChecklistModal({ checklist, onClose, onSave }: ChecklistModalPro
   // Mutation para criar/atualizar
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
-      if (isEditing) {
+      if (isEditing && checklist) {
         return api.patch(`/v1/tickets/checklists/templates/${checklist.id}`, data);
       }
       return api.post('/v1/tickets/checklists/templates', data);

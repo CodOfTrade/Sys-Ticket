@@ -4,7 +4,6 @@ import {
   CheckSquare,
   Plus,
   Trash2,
-  Square,
   CheckCircle2,
   User,
   Clock,
@@ -183,13 +182,6 @@ export function TicketChecklists({ ticketId }: TicketChecklistsProps) {
       hour: '2-digit',
       minute: '2-digit',
     }).format(new Date(date));
-  };
-
-  const formatCurrency = (value: number): string => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value);
   };
 
   const toggleExpandChecklist = (checklistId: string) => {
