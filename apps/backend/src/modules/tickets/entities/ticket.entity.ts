@@ -29,9 +29,10 @@ export enum TicketStatus {
   PAUSED = 'paused',
   WAITING_APPROVAL = 'waiting_approval',
   RESOLVED = 'resolved',
-  READY_TO_INVOICE = 'ready_to_invoice',
-  CLOSED = 'closed',
   CANCELLED = 'cancelled',
+  // Status removidos (mantidos como comentário para referência):
+  // READY_TO_INVOICE = 'ready_to_invoice' - automático no SIGE Cloud
+  // CLOSED = 'closed' - duplicado de RESOLVED
 }
 
 export enum TicketPriority {

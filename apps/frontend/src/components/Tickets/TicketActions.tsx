@@ -90,9 +90,9 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     }
   }, [showMenu]);
 
-  // Mutation para fechar ticket
+  // Mutation para fechar ticket (agora usa status 'resolved')
   const closeTicketMutation = useMutation({
-    mutationFn: () => ticketService.update(ticket.id, { status: 'closed' as any }),
+    mutationFn: () => ticketService.update(ticket.id, { status: 'resolved' as any }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] });
       setShowCloseModal(false);
@@ -188,8 +188,9 @@ export function TicketActions({ ticket }: TicketActionsProps) {
 
     // Labels
     const statusLabels: Record<string, string> = {
-      new: 'Novo', in_progress: 'Em Andamento', waiting_client: 'Aguardando',
-      paused: 'Pausado', resolved: 'Resolvido', closed: 'Fechado', cancelled: 'Cancelado'
+      new: 'Novo', in_progress: 'Em Andamento', waiting_client: 'Aguardando Cliente',
+      waiting_third_party: 'Aguardando Terceiro', paused: 'Pausado', waiting_approval: 'Aguardando Aprovação',
+      resolved: 'Resolvido', cancelled: 'Cancelado'
     };
     const priorityLabels: Record<string, string> = {
       low: 'Baixa', medium: 'Média', high: 'Alta', urgent: 'Urgente'
@@ -467,8 +468,9 @@ export function TicketActions({ ticket }: TicketActionsProps) {
 
     // Labels
     const statusLabels: Record<string, string> = {
-      new: 'Novo', in_progress: 'Em Andamento', waiting_client: 'Aguardando',
-      paused: 'Pausado', resolved: 'Resolvido', closed: 'Fechado', cancelled: 'Cancelado'
+      new: 'Novo', in_progress: 'Em Andamento', waiting_client: 'Aguardando Cliente',
+      waiting_third_party: 'Aguardando Terceiro', paused: 'Pausado', waiting_approval: 'Aguardando Aprovação',
+      resolved: 'Resolvido', cancelled: 'Cancelado'
     };
     const priorityLabels: Record<string, string> = {
       low: 'Baixa', medium: 'Média', high: 'Alta', urgent: 'Urgente'
@@ -840,7 +842,7 @@ export function TicketActions({ ticket }: TicketActionsProps) {
       label: 'Fechar Ticket',
       icon: CheckCircle,
       color: 'text-green-600',
-      disabled: ticket.status === 'closed' || ticket.status === 'cancelled',
+      disabled: ticket.status === 'resolved' || ticket.status === 'cancelled',
       disabledReason: !hasAppointments ? 'Necessário ter apontamentos' : undefined,
       onClick: () => {
         if (!hasAppointments) {
@@ -855,7 +857,7 @@ export function TicketActions({ ticket }: TicketActionsProps) {
       label: 'Cancelar Ticket',
       icon: XCircle,
       color: 'text-red-600',
-      disabled: ticket.status === 'closed' || ticket.status === 'cancelled',
+      disabled: ticket.status === 'resolved' || ticket.status === 'cancelled',
       onClick: () => setShowCancelModal(true),
     },
     {

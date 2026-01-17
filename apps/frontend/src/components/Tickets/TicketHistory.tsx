@@ -148,8 +148,6 @@ const statusLabels: Record<string, string> = {
   paused: 'Pausado',
   waiting_approval: 'Aguardando Aprovação',
   resolved: 'Resolvido',
-  ready_to_invoice: 'Pronto para Faturar',
-  closed: 'Fechado',
   cancelled: 'Cancelado',
 };
 

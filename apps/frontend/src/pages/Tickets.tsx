@@ -127,8 +127,6 @@ export default function Tickets() {
                 <option value={TicketStatus.PAUSED}>Pausado</option>
                 <option value={TicketStatus.WAITING_APPROVAL}>Aguardando Aprovação</option>
                 <option value={TicketStatus.RESOLVED}>Resolvido</option>
-                <option value={TicketStatus.READY_TO_INVOICE}>Pronto para Faturar</option>
-                <option value={TicketStatus.CLOSED}>Fechado</option>
                 <option value={TicketStatus.CANCELLED}>Cancelado</option>
               </select>
             </div>

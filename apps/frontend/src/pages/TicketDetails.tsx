@@ -29,7 +29,6 @@ import {
   CheckCircle,
   XCircle,
   Timer,
-  Receipt,
   UserPlus,
   Users
 } from 'lucide-react';
@@ -84,10 +83,18 @@ const statusLabels: Record<string, string> = {
   paused: 'Pausado',
   waiting_approval: 'Aguardando Aprovação',
   resolved: 'Resolvido',
-  ready_to_invoice: 'Pronto para Faturar',
-  closed: 'Fechado',
   cancelled: 'Cancelado',
 };
+
+// Status que podem ser alterados manualmente pelo usuário
+// Excluídos: new (automático), in_progress (automático), cancelled (via botão)
+const manualStatusOptions: string[] = [
+  'waiting_client',
+  'waiting_third_party',
+  'paused',
+  'waiting_approval',
+  'resolved',
+];
 
 const statusColors: Record<string, string> = {
   new: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
@@ -97,8 +104,6 @@ const statusColors: Record<string, string> = {
   paused: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
   waiting_approval: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
   resolved: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  ready_to_invoice: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300',
-  closed: 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-300',
   cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
 };
 
@@ -111,8 +116,6 @@ const statusIcons: Record<string, any> = {
   paused: Pause,
   waiting_approval: AlertCircle,
   resolved: CheckCircle,
-  ready_to_invoice: Receipt,
-  closed: CheckSquare,
   cancelled: XCircle,
 };
 
@@ -553,8 +556,9 @@ export default function TicketDetails() {
                   </button>
                   {showStatusDropdown && (
                     <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[180px]">
-                      {Object.entries(statusLabels).map(([key, label]) => {
+                      {manualStatusOptions.map((key) => {
                         const StatusIcon = statusIcons[key];
+                        const label = statusLabels[key];
                         return (
                           <button
                             key={key}
