@@ -402,13 +402,7 @@ export class TicketsService {
 
       case TicketStatus.RESOLVED:
         ticket.resolved_at = now;
-        break;
-
-      case TicketStatus.CLOSED:
-        ticket.closed_at = now;
-        if (!ticket.resolved_at) {
-          ticket.resolved_at = now;
-        }
+        ticket.closed_at = now; // RESOLVED agora também preenche closed_at
         break;
     }
 
