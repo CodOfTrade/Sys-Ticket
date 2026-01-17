@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, DollarSign, FolderTree, Users, Bell, Sliders, Palette } from 'lucide-react';
+import { Settings as SettingsIcon, DollarSign, FolderTree, Users, Bell, Sliders, Palette, CheckSquare } from 'lucide-react';
 import { PricingSettings } from '@/components/Settings/PricingSettings';
 import { LogoSettings } from '@/components/Settings/LogoSettings';
+import { ChecklistSettings } from '@/components/Settings/ChecklistSettings';
 
-type SettingsTab = 'pricing' | 'branding' | 'catalogs' | 'users' | 'notifications' | 'general';
+type SettingsTab = 'pricing' | 'branding' | 'checklists' | 'catalogs' | 'users' | 'notifications' | 'general';
 
 export function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('pricing');
@@ -11,6 +12,7 @@ export function Settings() {
   const tabs = [
     { id: 'pricing' as SettingsTab, label: 'Precificacao', icon: DollarSign },
     { id: 'branding' as SettingsTab, label: 'Identidade Visual', icon: Palette },
+    { id: 'checklists' as SettingsTab, label: 'Checklists', icon: CheckSquare },
     { id: 'catalogs' as SettingsTab, label: 'Catalogos de Servico', icon: FolderTree },
     { id: 'users' as SettingsTab, label: 'Usuarios e Permissoes', icon: Users },
     { id: 'notifications' as SettingsTab, label: 'Notificacoes', icon: Bell },
@@ -64,6 +66,7 @@ export function Settings() {
           <div className="p-6">
             {activeTab === 'pricing' && <PricingSettings />}
             {activeTab === 'branding' && <LogoSettings />}
+            {activeTab === 'checklists' && <ChecklistSettings />}
             {activeTab === 'catalogs' && (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 Catalogos de Servico - Em desenvolvimento

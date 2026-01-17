@@ -256,9 +256,19 @@ export class TicketDetailsController {
   async getChecklistTemplates(
     @Query('service_desk_id') serviceDeskId?: string,
     @Query('category') category?: string,
+    @Query('include_inactive') includeInactive?: string,
   ) {
-    const templates = await this.checklistsService.findTemplates(serviceDeskId, category);
+    const includeInactiveFlag = includeInactive === 'true';
+    const templates = await this.checklistsService.findTemplates(serviceDeskId, category, includeInactiveFlag);
     return { success: true, data: templates };
+  }
+
+  @Get('checklists/templates/:id')
+  @ApiOperation({ summary: 'Buscar template de checklist por ID' })
+  @ApiParam({ name: 'id', description: 'ID do template' })
+  async getChecklistTemplate(@Param('id') id: string) {
+    const template = await this.checklistsService.findTemplate(id);
+    return { success: true, data: template };
   }
 
   @Patch('checklists/templates/:id')

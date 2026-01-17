@@ -150,35 +150,82 @@ export interface TicketValuation {
   created_by_id: string;
 }
 
+// Tipos de campos do checklist
+export enum ChecklistFieldType {
+  TEXT = 'text',
+  PARAGRAPH = 'paragraph',
+  CHECKBOX = 'checkbox',
+  MULTIPLE_CHOICE = 'multiple_choice',
+  SINGLE_CHOICE = 'single_choice',
+  CURRENCY = 'currency',
+  NUMBER = 'number',
+  DATE = 'date',
+  FILE = 'file',
+}
+
+export interface ChecklistFieldOption {
+  id: string;
+  label: string;
+  order: number;
+}
+
 export interface ChecklistItemTemplate {
   id: string;
-  title: string;
+  label?: string;
+  title?: string;
   description?: string;
+  type?: ChecklistFieldType;
   order: number;
   required?: boolean;
+  options?: ChecklistFieldOption[];
+  placeholder?: string;
+  min_value?: number;
+  max_value?: number;
+  max_length?: number;
+  allowed_extensions?: string[];
 }
 
 export interface Checklist {
   id: string;
   name: string;
   description?: string;
-  service_desk_id: string;
+  service_desk_id?: string;
+  service_desk?: {
+    id: string;
+    name: string;
+  };
   items: ChecklistItemTemplate[];
   display_order: number;
   is_active: boolean;
+  is_mandatory: boolean;
   category?: string;
+  client_restrictions?: string[];
+  catalog_restrictions?: string[];
   created_at: Date;
   updated_at: Date;
   created_by_id: string;
+  created_by?: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface ChecklistItem {
   id: string;
-  title: string;
+  label?: string;
+  title?: string;
   description?: string;
+  type?: ChecklistFieldType;
   order: number;
   required?: boolean;
-  is_completed: boolean;
+  options?: ChecklistFieldOption[];
+  placeholder?: string;
+  value?: any;
+  is_filled?: boolean;
+  is_completed?: boolean;
+  filled_at?: Date;
+  filled_by_id?: string;
+  filled_by_name?: string;
   completed_at?: Date;
   completed_by_id?: string;
   completed_by_name?: string;
@@ -190,6 +237,7 @@ export interface TicketChecklist {
   ticket_id: string;
   checklist_id: string;
   checklist_name: string;
+  is_mandatory: boolean;
   items: ChecklistItem[];
   completed_items: number;
   total_items: number;
@@ -199,6 +247,10 @@ export interface TicketChecklist {
   created_at: Date;
   updated_at: Date;
   created_by_id: string;
+  created_by?: {
+    id: string;
+    name: string;
+  };
 }
 
 // DTOs para criação
@@ -272,6 +324,7 @@ export interface AddChecklistToTicketDto {
 
 export interface UpdateChecklistItemDto {
   item_id: string;
-  is_completed: boolean;
+  is_completed?: boolean;
+  value?: any;
   notes?: string;
 }

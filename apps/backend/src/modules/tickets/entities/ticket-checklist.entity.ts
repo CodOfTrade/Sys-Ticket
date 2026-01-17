@@ -8,7 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Ticket } from './ticket.entity';
-import { Checklist } from './checklist.entity';
+import { Checklist, ChecklistFieldType, ChecklistFieldOption } from './checklist.entity';
 import { User } from '../../users/entities/user.entity';
 
 /**
@@ -37,11 +37,15 @@ export class TicketChecklist {
   @Column({ type: 'varchar', length: 255 })
   checklist_name: string;
 
-  // Items com status de conclusão
-  @Column({ type: 'jsonb' })
-  items: ChecklistItem[];
+  // Se o checklist é obrigatório (snapshot do template)
+  @Column({ type: 'boolean', default: false })
+  is_mandatory: boolean;
 
-  // Progresso
+  // Items/Campos com valores preenchidos
+  @Column({ type: 'jsonb' })
+  items: ChecklistFieldInstance[];
+
+  // Progresso (campos obrigatórios preenchidos / total de campos obrigatórios)
   @Column({ type: 'int', default: 0 })
   completed_items: number;
 
@@ -71,15 +75,61 @@ export class TicketChecklist {
   created_by: User;
 }
 
-export interface ChecklistItem {
+/**
+ * Instância de um campo do checklist com seu valor preenchido
+ */
+export interface ChecklistFieldInstance {
   id: string;
-  title: string;
+  label: string;
   description?: string;
+  type: ChecklistFieldType;
   order: number;
-  required?: boolean;
-  is_completed: boolean;
+  required: boolean;
+  options?: ChecklistFieldOption[];  // Opções disponíveis (para campos de escolha)
+  placeholder?: string;
+
+  // Valor preenchido
+  value?: ChecklistFieldValue;
+
+  // Metadados de preenchimento
+  is_filled: boolean;           // Se o campo foi preenchido
+  filled_at?: Date;             // Quando foi preenchido
+  filled_by_id?: string;        // Quem preencheu
+  filled_by_name?: string;      // Nome de quem preencheu
+
+  // Campos legados para compatibilidade
+  is_completed?: boolean;       // Alias para is_filled (checkbox)
   completed_at?: Date;
   completed_by_id?: string;
   completed_by_name?: string;
   notes?: string;
 }
+
+/**
+ * Valor de um campo do checklist (varia por tipo)
+ */
+export type ChecklistFieldValue =
+  | string           // text, paragraph
+  | boolean          // checkbox
+  | number           // number, currency
+  | string[]         // multiple_choice (array de IDs selecionados)
+  | string           // single_choice (ID selecionado)
+  | Date             // date
+  | FileValue;       // file
+
+/**
+ * Valor para campo de arquivo
+ */
+export interface FileValue {
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  uploaded_at: Date;
+}
+
+/**
+ * Tipo legado para compatibilidade (alias)
+ * @deprecated Use ChecklistFieldInstance
+ */
+export type ChecklistItem = ChecklistFieldInstance;
