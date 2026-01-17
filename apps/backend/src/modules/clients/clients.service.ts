@@ -329,7 +329,7 @@ export class ClientsService {
       } else {
         // Buscar pelo ID do SIGE Cloud
         client = await this.clientRepository.findOne({
-          where: { sige_cloud_id: clientId },
+          where: { sigeId: clientId },
         });
       }
 
@@ -338,10 +338,10 @@ export class ClientsService {
         return [];
       }
 
-      this.logger.log(`Cliente encontrado: ${client.nome}, ID: ${client.id}, SIGE ID: ${client.sige_cloud_id}`);
+      this.logger.log(`Cliente encontrado: ${client.nome}, ID: ${client.id}, SIGE ID: ${client.sigeId}`);
 
       // Buscar contratos vinculados ao cliente usando o SIGE ID
-      const sigeIdForContracts = client.sige_cloud_id || clientId;
+      const sigeIdForContracts = client.sigeId || clientId;
       const contracts = await this.contractRepository.find({
         where: { sigeClientId: sigeIdForContracts },
         order: { dataInicio: 'DESC' },
