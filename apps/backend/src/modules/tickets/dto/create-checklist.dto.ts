@@ -173,9 +173,9 @@ export class CreateChecklistTemplateDto {
 }
 
 /**
- * DTO para campo do checklist no update (todos os campos opcionais exceto id)
+ * DTO para campo do checklist no update de template (todos os campos opcionais exceto id)
  */
-export class UpdateChecklistFieldDto {
+export class ChecklistFieldUpdateDto {
   @ApiProperty({ description: 'ID único do campo' })
   @IsString()
   @IsNotEmpty()
@@ -269,12 +269,12 @@ export class UpdateChecklistTemplateDto {
   @IsOptional()
   service_desk_id?: string;
 
-  @ApiPropertyOptional({ description: 'Campos do checklist', type: [UpdateChecklistFieldDto] })
+  @ApiPropertyOptional({ description: 'Campos do checklist', type: [ChecklistFieldUpdateDto] })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => UpdateChecklistFieldDto)
+  @Type(() => ChecklistFieldUpdateDto)
   @IsOptional()
-  items?: UpdateChecklistFieldDto[];
+  items?: ChecklistFieldUpdateDto[];
 
   @ApiPropertyOptional({ description: 'Categoria' })
   @IsString()
