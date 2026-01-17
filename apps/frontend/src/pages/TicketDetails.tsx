@@ -514,17 +514,24 @@ export default function TicketDetails() {
 
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
+              {/* Título e Código do Ticket */}
+              <div className="flex items-start justify-between mb-2">
                 <h1
                   onClick={() => {
                     setEditedTitle(ticket.title);
                     setShowTitleModal(true);
                   }}
-                  className="text-2xl font-bold text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  className="text-2xl font-bold text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex-1 pr-4"
                   title="Clique para editar o título"
                 >
-                  #{ticket.ticket_number} - {ticket.title}
+                  {ticket.title}
                 </h1>
+                <span className="text-sm font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap mt-1">
+                  #{ticket.ticket_number}
+                </span>
+              </div>
+              {/* Status e Prioridade */}
+              <div className="flex items-center gap-3 mb-3">
                 {/* Status Dropdown */}
                 <div className="relative">
                   <button
