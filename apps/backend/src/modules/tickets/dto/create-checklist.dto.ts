@@ -173,6 +173,84 @@ export class CreateChecklistTemplateDto {
 }
 
 /**
+ * DTO para campo do checklist no update (todos os campos opcionais exceto id)
+ */
+export class UpdateChecklistFieldDto {
+  @ApiProperty({ description: 'ID único do campo' })
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+
+  @ApiPropertyOptional({ description: 'Label/Título do campo' })
+  @IsString()
+  @IsOptional()
+  label?: string;
+
+  @ApiPropertyOptional({ description: 'Título legado (alias para label)' })
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  @ApiPropertyOptional({ description: 'Descrição/ajuda do campo' })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tipo do campo',
+    enum: ChecklistFieldType,
+  })
+  @IsEnum(ChecklistFieldType)
+  @IsOptional()
+  type?: ChecklistFieldType;
+
+  @ApiPropertyOptional({ description: 'Ordem de exibição' })
+  @IsNumber()
+  @IsOptional()
+  order?: number;
+
+  @ApiPropertyOptional({ description: 'Campo obrigatório' })
+  @IsBoolean()
+  @IsOptional()
+  required?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Opções para campos de escolha',
+    type: [ChecklistFieldOptionDto]
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ChecklistFieldOptionDto)
+  @IsOptional()
+  options?: ChecklistFieldOptionDto[];
+
+  @ApiPropertyOptional({ description: 'Placeholder para campos de texto' })
+  @IsString()
+  @IsOptional()
+  placeholder?: string;
+
+  @ApiPropertyOptional({ description: 'Valor mínimo (number/currency)' })
+  @IsNumber()
+  @IsOptional()
+  min_value?: number;
+
+  @ApiPropertyOptional({ description: 'Valor máximo (number/currency)' })
+  @IsNumber()
+  @IsOptional()
+  max_value?: number;
+
+  @ApiPropertyOptional({ description: 'Tamanho máximo (text/paragraph)' })
+  @IsNumber()
+  @IsOptional()
+  max_length?: number;
+
+  @ApiPropertyOptional({ description: 'Extensões permitidas (file)', type: [String] })
+  @IsArray()
+  @IsOptional()
+  allowed_extensions?: string[];
+}
+
+/**
  * DTO para atualizar template de checklist
  */
 export class UpdateChecklistTemplateDto {
@@ -191,12 +269,12 @@ export class UpdateChecklistTemplateDto {
   @IsOptional()
   service_desk_id?: string;
 
-  @ApiPropertyOptional({ description: 'Campos do checklist', type: [ChecklistFieldDto] })
+  @ApiPropertyOptional({ description: 'Campos do checklist', type: [UpdateChecklistFieldDto] })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ChecklistFieldDto)
+  @Type(() => UpdateChecklistFieldDto)
   @IsOptional()
-  items?: ChecklistFieldDto[];
+  items?: UpdateChecklistFieldDto[];
 
   @ApiPropertyOptional({ description: 'Categoria' })
   @IsString()

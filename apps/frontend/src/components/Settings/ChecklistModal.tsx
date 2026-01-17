@@ -75,13 +75,18 @@ export function ChecklistModal({ checklist, onClose, onSave }: ChecklistModalPro
   const [expandedFieldId, setExpandedFieldId] = useState<string | null>(null);
   const [showAddFieldMenu, setShowAddFieldMenu] = useState(false);
 
-  // Buscar service desks
+  // Buscar service desks (desabilitado por enquanto - endpoint não existe)
   const { data: serviceDesks = [] } = useQuery({
     queryKey: ['service-desks'],
     queryFn: async () => {
-      const response = await api.get('/v1/service-desks');
-      return response.data.data || [];
+      try {
+        const response = await api.get('/v1/service-catalog');
+        return response.data.data || [];
+      } catch {
+        return [];
+      }
     },
+    retry: false,
   });
 
   // Mutation para criar/atualizar
