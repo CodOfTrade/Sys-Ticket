@@ -24,7 +24,7 @@ import {
   ChecklistField,
   ChecklistFieldOption,
   ChecklistFieldType,
-} from './ChecklistSettings';
+} from './checklist.types';
 
 // Função simples para gerar IDs únicos
 const generateId = (): string => {
