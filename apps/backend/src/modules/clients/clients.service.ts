@@ -311,27 +311,39 @@ export class ClientsService {
   }
 
   /**
-   * Busca contratos de um cliente por ID local
+   * Busca contratos de um cliente por ID local ou SIGE
    */
   async getClientContracts(clientId: string): Promise<any> {
     try {
       this.logger.log(`Buscando contratos para cliente ${clientId}`);
 
-      // Buscar o cliente pelo ID local
-      const client = await this.clientRepository.findOne({
-        where: { id: clientId },
-      });
+      // Verificar se é um UUID válido
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId);
+
+      let client;
+      if (isUUID) {
+        // Buscar pelo ID local (UUID)
+        client = await this.clientRepository.findOne({
+          where: { id: clientId },
+        });
+      } else {
+        // Buscar pelo ID do SIGE Cloud
+        client = await this.clientRepository.findOne({
+          where: { sige_cloud_id: clientId },
+        });
+      }
 
       if (!client) {
         this.logger.warn(`Cliente ${clientId} não encontrado`);
         return [];
       }
 
-      this.logger.log(`Cliente encontrado: ${client.nome}, ID: ${client.id}`);
+      this.logger.log(`Cliente encontrado: ${client.nome}, ID: ${client.id}, SIGE ID: ${client.sige_cloud_id}`);
 
-      // Buscar contratos vinculados ao cliente usando o ID local (UUID) do cliente
+      // Buscar contratos vinculados ao cliente usando o SIGE ID
+      const sigeIdForContracts = client.sige_cloud_id || clientId;
       const contracts = await this.contractRepository.find({
-        where: { sigeClientId: clientId },
+        where: { sigeClientId: sigeIdForContracts },
         order: { dataInicio: 'DESC' },
       });
 
