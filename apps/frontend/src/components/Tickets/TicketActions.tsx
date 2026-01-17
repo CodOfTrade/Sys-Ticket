@@ -456,24 +456,32 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     };
 
     // ===== CABEÇALHO COM LOGO =====
+    let logoLoaded = false;
     if (logos?.logo_report) {
       try {
         const logoBase64 = await loadImageAsBase64(`${baseUrl}${logos.logo_report}`);
         if (logoBase64) {
-          // Logo centralizada no topo
-          doc.addImage(logoBase64, 'PNG', pageWidth / 2 - 25, y - 5, 50, 17);
-          y += 15;
+          // Logo à esquerda
+          doc.addImage(logoBase64, 'PNG', margin, y - 5, 45, 15);
+          logoLoaded = true;
         }
       } catch (e) {
         console.log('Erro ao carregar logo:', e);
       }
     }
 
+    // Título à direita (ou centralizado se não tiver logo)
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
+    doc.setFontSize(12);
     doc.setTextColor(black.r, black.g, black.b);
-    doc.text('RELATORIO DE ATENDIMENTO', pageWidth / 2, y, { align: 'center' });
-    y += 10;
+    if (logoLoaded) {
+      doc.text('RELATÓRIO DE ATENDIMENTO', pageWidth - margin, y + 5, { align: 'right' });
+      y += 15;
+    } else {
+      doc.setFontSize(14);
+      doc.text('RELATÓRIO DE ATENDIMENTO', pageWidth / 2, y, { align: 'center' });
+      y += 10;
+    }
 
     // Linha
     doc.setDrawColor(black.r, black.g, black.b);
@@ -482,16 +490,23 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     y += 8;
 
     // ===== INFO DO TICKET =====
+    // Título em negrito à esquerda
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.text(`#${t.ticket_number}`, margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(` - ${t.title}`.substring(0, 60), margin + 30, y);
+    doc.setTextColor(black.r, black.g, black.b);
+    doc.text(t.title.substring(0, 55), margin, y);
 
+    // Código do ticket à direita
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(gray.r, gray.g, gray.b);
+    doc.text(`#${t.ticket_number}`, pageWidth - margin, y, { align: 'right' });
+    y += 6;
+
+    // Status abaixo do título
+    doc.setFontSize(8);
     doc.text(`Status: ${statusLabels[t.status] || t.status}`, pageWidth - margin, y, { align: 'right' });
-    y += 8;
+    y += 6;
 
     // Dados em 2 colunas compactas
     doc.setFont('helvetica', 'normal');
