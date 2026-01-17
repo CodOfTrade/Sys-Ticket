@@ -340,10 +340,10 @@ export class ClientsService {
 
       this.logger.log(`Cliente encontrado: ${client.nome}, ID: ${client.id}, SIGE ID: ${client.sigeId}`);
 
-      // Buscar contratos vinculados ao cliente usando o SIGE ID
-      const sigeIdForContracts = client.sigeId || clientId;
+      // Buscar contratos vinculados ao cliente usando o UUID local
+      // O campo sigeClientId na tabela de contratos referencia o UUID do cliente, não o SIGE ID
       const contracts = await this.contractRepository.find({
-        where: { sigeClientId: sigeIdForContracts },
+        where: { sigeClientId: client.id },
         order: { dataInicio: 'DESC' },
       });
 
