@@ -126,6 +126,9 @@ export default function Tickets() {
                 <option value={TicketStatus.WAITING_THIRD_PARTY}>Aguardando Terceiros</option>
                 <option value={TicketStatus.PAUSED}>Pausado</option>
                 <option value={TicketStatus.WAITING_APPROVAL}>Aguardando Aprovação</option>
+                <option value={TicketStatus.WAITING_EVALUATION}>Fechado - Em Avaliação</option>
+                <option value={TicketStatus.APPROVED}>Aprovado</option>
+                <option value={TicketStatus.REOPENED}>Reaberto</option>
                 <option value={TicketStatus.RESOLVED}>Resolvido</option>
                 <option value={TicketStatus.CANCELLED}>Cancelado</option>
               </select>
@@ -172,9 +175,9 @@ export default function Tickets() {
           </p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Resolvidos</p>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-            {tickets.filter((t) => t.status === TicketStatus.RESOLVED).length}
+          <p className="text-sm text-gray-600 dark:text-gray-400">Aguardando Avaliação</p>
+          <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">
+            {tickets.filter((t) => t.status === TicketStatus.WAITING_EVALUATION).length}
           </p>
         </div>
       </div>

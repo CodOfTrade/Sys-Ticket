@@ -9,6 +9,7 @@ import {
   FileText,
   DollarSign,
   Building2,
+  ClipboardCheck,
 } from 'lucide-react';
 import { settingsService } from '@/services/settings.service';
 
@@ -29,6 +30,11 @@ const menuItems: MenuItem[] = [
     title: 'Tickets',
     icon: <Ticket size={20} />,
     path: '/tickets',
+  },
+  {
+    title: 'Aprovação',
+    icon: <ClipboardCheck size={20} />,
+    path: '/ticket-approval',
   },
   {
     title: 'Clientes',

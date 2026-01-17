@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Printer,
   AlertTriangle,
+  RotateCcw,
 } from 'lucide-react';
 import { ticketService } from '@/services/ticket.service';
 import { appointmentsService, valuationsService } from '@/services/ticket-details.service';
@@ -29,8 +30,10 @@ export function TicketActions({ ticket }: TicketActionsProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showReopenModal, setShowReopenModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [reopenReason, setReopenReason] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Buscar resumo de apontamentos para verificar se pode fechar
@@ -90,9 +93,9 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     }
   }, [showMenu]);
 
-  // Mutation para fechar ticket (agora usa status 'resolved')
+  // Mutation para fechar ticket (envia para avaliação do ticket master)
   const closeTicketMutation = useMutation({
-    mutationFn: () => ticketService.update(ticket.id, { status: 'resolved' as any }),
+    mutationFn: () => ticketService.update(ticket.id, { status: 'waiting_evaluation' as any }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] });
       setShowCloseModal(false);
@@ -115,6 +118,19 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     },
     onError: (error: any) => {
       alert('Erro ao cancelar ticket: ' + (error.response?.data?.message || error.message));
+    },
+  });
+
+  // Mutation para reabrir ticket
+  const reopenTicketMutation = useMutation({
+    mutationFn: () => ticketService.update(ticket.id, { status: 'reopened' as any }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] });
+      setShowReopenModal(false);
+      setReopenReason('');
+    },
+    onError: (error: any) => {
+      alert('Erro ao reabrir ticket: ' + (error.response?.data?.message || error.message));
     },
   });
 
@@ -190,6 +206,7 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     const statusLabels: Record<string, string> = {
       new: 'Novo', in_progress: 'Em Andamento', waiting_client: 'Aguardando Cliente',
       waiting_third_party: 'Aguardando Terceiro', paused: 'Pausado', waiting_approval: 'Aguardando Aprovação',
+      waiting_evaluation: 'Em Avaliação', approved: 'Aprovado', reopened: 'Reaberto',
       resolved: 'Resolvido', cancelled: 'Cancelado'
     };
     const priorityLabels: Record<string, string> = {
@@ -470,6 +487,7 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     const statusLabels: Record<string, string> = {
       new: 'Novo', in_progress: 'Em Andamento', waiting_client: 'Aguardando Cliente',
       waiting_third_party: 'Aguardando Terceiro', paused: 'Pausado', waiting_approval: 'Aguardando Aprovação',
+      waiting_evaluation: 'Em Avaliação', approved: 'Aprovado', reopened: 'Reaberto',
       resolved: 'Resolvido', cancelled: 'Cancelado'
     };
     const priorityLabels: Record<string, string> = {
@@ -836,13 +854,19 @@ export function TicketActions({ ticket }: TicketActionsProps) {
     setShowReportModal(false);
   };
 
+  // Status que bloqueiam fechamento/cancelamento
+  const isTicketClosed = ['waiting_evaluation', 'approved', 'resolved', 'cancelled'].includes(ticket.status);
+
+  // Status que permitem reabertura
+  const canReopenTicket = ['cancelled'].includes(ticket.status);
+
   const actions = [
     {
       id: 'close',
       label: 'Fechar Ticket',
       icon: CheckCircle,
       color: 'text-green-600',
-      disabled: ticket.status === 'resolved' || ticket.status === 'cancelled',
+      disabled: isTicketClosed,
       disabledReason: !hasAppointments ? 'Necessário ter apontamentos' : undefined,
       onClick: () => {
         if (!hasAppointments) {
@@ -857,8 +881,17 @@ export function TicketActions({ ticket }: TicketActionsProps) {
       label: 'Cancelar Ticket',
       icon: XCircle,
       color: 'text-red-600',
-      disabled: ticket.status === 'resolved' || ticket.status === 'cancelled',
+      disabled: isTicketClosed,
       onClick: () => setShowCancelModal(true),
+    },
+    {
+      id: 'reopen',
+      label: 'Reabrir Ticket',
+      icon: RotateCcw,
+      color: 'text-rose-600',
+      disabled: !canReopenTicket,
+      hidden: !canReopenTicket,
+      onClick: () => setShowReopenModal(true),
     },
     {
       id: 'offline',
@@ -899,7 +932,7 @@ export function TicketActions({ ticket }: TicketActionsProps) {
         {/* Menu Dropdown */}
         {showMenu && (
           <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-            {actions.map((action) => {
+            {actions.filter((action) => !action.hidden).map((action) => {
               const Icon = action.icon;
               return (
                 <button
@@ -1027,6 +1060,70 @@ export function TicketActions({ ticket }: TicketActionsProps) {
                   <>
                     <XCircle className="w-4 h-4" />
                     Confirmar Cancelamento
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Reabrir Ticket */}
+      {showReopenModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
+              <RotateCcw className="w-6 h-6 text-rose-600" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Reabrir Ticket
+              </h3>
+            </div>
+            <div className="p-4">
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Deseja reabrir este ticket? Ele voltará ao status "Reaberto" e poderá receber novos apontamentos e alterações.
+              </p>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Motivo da reabertura (opcional):
+                </label>
+                <textarea
+                  value={reopenReason}
+                  onChange={(e) => setReopenReason(e.target.value)}
+                  placeholder="Informe o motivo da reabertura..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none"
+                  rows={3}
+                />
+              </div>
+              <div className="bg-rose-50 dark:bg-rose-900/20 p-3 rounded-lg">
+                <p className="text-sm text-rose-700 dark:text-rose-400">
+                  <strong>Atenção:</strong> Ao reabrir o ticket, ele ficará disponível para edição e receberá novos apontamentos.
+                </p>
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowReopenModal(false);
+                  setReopenReason('');
+                }}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => reopenTicketMutation.mutate()}
+                disabled={reopenTicketMutation.isPending}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors disabled:bg-gray-400 flex items-center gap-2"
+              >
+                {reopenTicketMutation.isPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Reabrindo...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="w-4 h-4" />
+                    Confirmar Reabertura
                   </>
                 )}
               </button>

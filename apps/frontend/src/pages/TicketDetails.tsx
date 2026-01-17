@@ -30,7 +30,10 @@ import {
   XCircle,
   Timer,
   UserPlus,
-  Users
+  Users,
+  ClipboardCheck,
+  Send,
+  RotateCcw,
 } from 'lucide-react';
 import { ticketService, TicketFollower } from '@/services/ticket.service';
 import { ticketAttachmentsService } from '@/services/ticket-attachments.service';
@@ -82,6 +85,9 @@ const statusLabels: Record<string, string> = {
   waiting_third_party: 'Aguardando Terceiro',
   paused: 'Pausado',
   waiting_approval: 'Aguardando Aprovação',
+  waiting_evaluation: 'Fechado - Em Avaliação',
+  approved: 'Aprovado - Enviado para Faturamento',
+  reopened: 'Reaberto',
   resolved: 'Resolvido',
   cancelled: 'Cancelado',
 };
@@ -102,6 +108,9 @@ const statusColors: Record<string, string> = {
   waiting_third_party: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
   paused: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300',
   waiting_approval: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
+  waiting_evaluation: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300',
+  approved: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300',
+  reopened: 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300',
   resolved: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
   cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
 };
@@ -114,6 +123,9 @@ const statusIcons: Record<string, any> = {
   waiting_third_party: Clock,
   paused: Pause,
   waiting_approval: AlertCircle,
+  waiting_evaluation: ClipboardCheck,
+  approved: Send,
+  reopened: RotateCcw,
   resolved: CheckCircle,
   cancelled: XCircle,
 };
@@ -230,6 +242,10 @@ export default function TicketDetails() {
 
   // Encontrar primeiro contrato ativo
   const activeContract = activeContracts.length > 0 ? activeContracts[0] : null;
+
+  // Verificar se o ticket está bloqueado para edição
+  // Tickets cancelados e aguardando avaliação não podem ser editados
+  const isTicketLocked = ticket?.status && ['cancelled', 'waiting_evaluation', 'approved'].includes(ticket.status);
 
   // Mutation para atualizar título
   const updateTitleMutation = useMutation({
@@ -523,11 +539,16 @@ export default function TicketDetails() {
               <div className="flex items-start justify-between mb-2">
                 <h1
                   onClick={() => {
+                    if (isTicketLocked) return;
                     setEditedTitle(ticket.title);
                     setShowTitleModal(true);
                   }}
-                  className="text-2xl font-bold text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex-1 pr-4"
-                  title="Clique para editar o título"
+                  className={`text-2xl font-bold text-gray-900 dark:text-white flex-1 pr-4 transition-colors ${
+                    isTicketLocked
+                      ? 'cursor-default'
+                      : 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400'
+                  }`}
+                  title={isTicketLocked ? 'Ticket bloqueado para edição' : 'Clique para editar o título'}
                 >
                   {ticket.title}
                 </h1>
@@ -541,11 +562,17 @@ export default function TicketDetails() {
                 <div className="relative">
                   <button
                     onClick={() => {
+                      if (isTicketLocked) return;
                       setShowStatusDropdown(!showStatusDropdown);
                       setShowPriorityDropdown(false);
                     }}
-                    className={`px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all flex items-center gap-1.5 ${statusColors[ticket.status]}`}
-                    title="Clique para alterar o status"
+                    disabled={isTicketLocked}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${statusColors[ticket.status]} ${
+                      isTicketLocked
+                        ? 'cursor-default opacity-80'
+                        : 'cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400'
+                    }`}
+                    title={isTicketLocked ? 'Ticket bloqueado para edição' : 'Clique para alterar o status'}
                   >
                     {(() => {
                       const StatusIcon = statusIcons[ticket.status];
@@ -580,11 +607,17 @@ export default function TicketDetails() {
                 <div className="relative">
                   <button
                     onClick={() => {
+                      if (isTicketLocked) return;
                       setShowPriorityDropdown(!showPriorityDropdown);
                       setShowStatusDropdown(false);
                     }}
-                    className={`px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400 transition-all flex items-center gap-1.5 ${priorityColors[ticket.priority]}`}
-                    title="Clique para alterar a prioridade"
+                    disabled={isTicketLocked}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${priorityColors[ticket.priority]} ${
+                      isTicketLocked
+                        ? 'cursor-default opacity-80'
+                        : 'cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-blue-400'
+                    }`}
+                    title={isTicketLocked ? 'Ticket bloqueado para edição' : 'Clique para alterar a prioridade'}
                   >
                     {(() => {
                       const PriorityIcon = priorityIcons[ticket.priority];
@@ -630,16 +663,18 @@ export default function TicketDetails() {
                       </p>
                     )}
                   </div>
-                  <button
-                    onClick={() => {
-                      setEditedDescription(ticket.description || '');
-                      setShowDescriptionModal(true);
-                    }}
-                    className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                    title="Editar descrição"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
+                  {!isTicketLocked && (
+                    <button
+                      onClick={() => {
+                        setEditedDescription(ticket.description || '');
+                        setShowDescriptionModal(true);
+                      }}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                      title="Editar descrição"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -684,9 +719,13 @@ export default function TicketDetails() {
                     ) : (
                       <div className="group">
                         <p
-                          onClick={() => setIsEditingClient(true)}
-                          className="font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
-                          title="Clique para editar"
+                          onClick={() => !isTicketLocked && setIsEditingClient(true)}
+                          className={`font-medium text-gray-900 dark:text-white ${
+                            isTicketLocked
+                              ? 'cursor-default'
+                              : 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400'
+                          }`}
+                          title={isTicketLocked ? 'Ticket bloqueado para edição' : 'Clique para editar'}
                         >
                           {ticket.client_name || ticket.client?.name || 'Não informado'}
                         </p>
@@ -799,11 +838,16 @@ export default function TicketDetails() {
                     ) : (
                       <p
                         onClick={() => {
+                          if (isTicketLocked) return;
                           setRequesterDisplayValue(ticket.requester_name || '');
                           setIsEditingRequester(true);
                         }}
-                        className="font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
-                        title="Clique para editar"
+                        className={`font-medium text-gray-900 dark:text-white ${
+                          isTicketLocked
+                            ? 'cursor-default'
+                            : 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400'
+                        }`}
+                        title={isTicketLocked ? 'Ticket bloqueado para edição' : 'Clique para editar'}
                       >
                         {ticket.requester_name || 'Não informado'}
                       </p>
@@ -849,9 +893,13 @@ export default function TicketDetails() {
                       </div>
                     ) : (
                       <p
-                        onClick={() => setIsEditingFields(true)}
-                        className="font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
-                        title="Clique para editar"
+                        onClick={() => !isTicketLocked && setIsEditingFields(true)}
+                        className={`font-medium text-gray-900 dark:text-white ${
+                          isTicketLocked
+                            ? 'cursor-default'
+                            : 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400'
+                        }`}
+                        title={isTicketLocked ? 'Ticket bloqueado para edição' : 'Clique para editar'}
                       >
                         {ticket.assigned_to?.name || 'Não atribuído'}
                       </p>
@@ -905,13 +953,15 @@ export default function TicketDetails() {
                       Seguidores ({(ticket as any).followers?.length || 0})
                     </h4>
                   </div>
-                  <button
-                    onClick={() => setShowFollowerInput(!showFollowerInput)}
-                    className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Adicionar
-                  </button>
+                  {!isTicketLocked && (
+                    <button
+                      onClick={() => setShowFollowerInput(!showFollowerInput)}
+                      className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Adicionar
+                    </button>
+                  )}
                 </div>
 
                 {/* Input para adicionar seguidor */}
@@ -1021,14 +1071,16 @@ export default function TicketDetails() {
                         <span className="text-gray-700 dark:text-gray-300">
                           {follower.user?.name || follower.name || follower.email}
                         </span>
-                        <button
-                          onClick={() => removeFollowerMutation.mutate(follower.id)}
-                          disabled={removeFollowerMutation.isPending}
-                          className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Remover seguidor"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
+                        {!isTicketLocked && (
+                          <button
+                            onClick={() => removeFollowerMutation.mutate(follower.id)}
+                            disabled={removeFollowerMutation.isPending}
+                            className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Remover seguidor"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1044,21 +1096,25 @@ export default function TicketDetails() {
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="text-sm font-medium text-gray-900 dark:text-white">Anexos do Ticket</h4>
-                    <label
-                      htmlFor="ticket-file-upload-header"
-                      className="cursor-pointer flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Adicionar
-                    </label>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                      id="ticket-file-upload-header"
-                    />
+                    {!isTicketLocked && (
+                      <>
+                        <label
+                          htmlFor="ticket-file-upload-header"
+                          className="cursor-pointer flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Adicionar
+                        </label>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          id="ticket-file-upload-header"
+                        />
+                      </>
+                    )}
                   </div>
 
                   {/* Arquivos selecionados para upload */}
@@ -1185,10 +1241,10 @@ export default function TicketDetails() {
 
       {/* Conteúdo das tabs */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'appointments' && <TicketAppointments ticketId={ticket.id} clientId={ticket.client_id} />}
+        {activeTab === 'appointments' && <TicketAppointments ticketId={ticket.id} clientId={ticket.client_id} readOnly={isTicketLocked} />}
         {activeTab === 'communication' && <TicketCommunication ticketId={ticket.id} />}
-        {activeTab === 'valuation' && <TicketValuation ticketId={ticket.id} />}
-        {activeTab === 'checklists' && <TicketChecklists ticketId={ticket.id} />}
+        {activeTab === 'valuation' && <TicketValuation ticketId={ticket.id} readOnly={isTicketLocked} />}
+        {activeTab === 'checklists' && <TicketChecklists ticketId={ticket.id} readOnly={isTicketLocked} />}
         {activeTab === 'history' && <TicketHistory ticketId={ticket.id} />}
       </div>
 

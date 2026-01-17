@@ -28,11 +28,11 @@ export enum TicketStatus {
   WAITING_THIRD_PARTY = 'waiting_third_party',
   PAUSED = 'paused',
   WAITING_APPROVAL = 'waiting_approval',
-  RESOLVED = 'resolved',
+  WAITING_EVALUATION = 'waiting_evaluation', // Fechado - Em Avaliação (aguardando ticket master)
+  APPROVED = 'approved',                      // Aprovado - Enviado para Faturamento
+  REOPENED = 'reopened',                      // Reaberto (reprovado pelo ticket master ou reaberto após cancelamento)
+  RESOLVED = 'resolved',                      // Legado - manter para compatibilidade
   CANCELLED = 'cancelled',
-  // Status removidos (mantidos como comentário para referência):
-  // READY_TO_INVOICE = 'ready_to_invoice' - automático no SIGE Cloud
-  // CLOSED = 'closed' - duplicado de RESOLVED
 }
 
 export enum TicketPriority {

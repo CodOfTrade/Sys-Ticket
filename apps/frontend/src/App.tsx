@@ -6,6 +6,7 @@ import Login from '@pages/Login';
 import Dashboard from '@pages/Dashboard';
 import Tickets from '@pages/Tickets';
 import TicketDetails from '@pages/TicketDetails';
+import TicketApproval from '@pages/TicketApproval';
 import Clients from '@pages/Clients';
 import { Settings } from '@pages/Settings';
 
@@ -40,6 +41,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="tickets" element={<Tickets />} />
             <Route path="tickets/:id" element={<TicketDetails />} />
+            <Route path="ticket-approval" element={<TicketApproval />} />
             <Route path="clients" element={<Clients />} />
             <Route path="timesheets" element={
               <div className="text-gray-600 dark:text-gray-400">Página em desenvolvimento...</div>

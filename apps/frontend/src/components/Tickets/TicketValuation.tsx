@@ -7,6 +7,7 @@ import { sigeProductsService, SigeProduct } from '@/services/sige-products.servi
 
 interface TicketValuationProps {
   ticketId: string;
+  readOnly?: boolean;
 }
 
 const valuationTypeLabels: Record<ValuationType, string> = {
@@ -26,7 +27,7 @@ const valuationCategoryColors: Record<ValuationCategory, string> = {
   [ValuationCategory.INTERNAL_COST]: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
 };
 
-export function TicketValuation({ ticketId }: TicketValuationProps) {
+export function TicketValuation({ ticketId, readOnly = false }: TicketValuationProps) {
   const queryClient = useQueryClient();
   const [selectedCategory, setSelectedCategory] = useState<ValuationCategory | 'all'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -267,13 +268,15 @@ export function TicketValuation({ ticketId }: TicketValuationProps) {
           ))}
         </div>
 
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Adicionar Valorização
-        </button>
+        {!readOnly && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Adicionar Valorização
+          </button>
+        )}
       </div>
 
       {/* Lista de valorizações */}
@@ -388,43 +391,45 @@ export function TicketValuation({ ticketId }: TicketValuationProps) {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 ml-4">
-                  {valuation.requires_approval && !valuation.is_approved && (
-                    <>
-                      <button
-                        onClick={() => approveMutation.mutate({ valuationId: valuation.id, isApproved: true })}
-                        className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                        title="Aprovar"
-                      >
-                        <CheckCircle className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => approveMutation.mutate({ valuationId: valuation.id, isApproved: false })}
-                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                        title="Rejeitar"
-                      >
-                        <XCircle className="w-5 h-5" />
-                      </button>
-                    </>
-                  )}
-                  <button
-                    className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                    title="Editar"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm('Deseja realmente excluir esta valorização?')) {
-                        deleteMutation.mutate(valuation.id);
-                      }
-                    }}
-                    className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                    title="Excluir"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                {!readOnly && (
+                  <div className="flex items-center gap-2 ml-4">
+                    {valuation.requires_approval && !valuation.is_approved && (
+                      <>
+                        <button
+                          onClick={() => approveMutation.mutate({ valuationId: valuation.id, isApproved: true })}
+                          className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
+                          title="Aprovar"
+                        >
+                          <CheckCircle className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => approveMutation.mutate({ valuationId: valuation.id, isApproved: false })}
+                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                          title="Rejeitar"
+                        >
+                          <XCircle className="w-5 h-5" />
+                        </button>
+                      </>
+                    )}
+                    <button
+                      className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      title="Editar"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm('Deseja realmente excluir esta valorização?')) {
+                          deleteMutation.mutate(valuation.id);
+                        }
+                      }}
+                      className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                      title="Excluir"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

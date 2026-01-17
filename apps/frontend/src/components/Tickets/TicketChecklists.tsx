@@ -24,6 +24,7 @@ import { AddChecklistToTicketDto, UpdateChecklistItemDto } from '@/types/ticket-
 
 interface TicketChecklistsProps {
   ticketId: string;
+  readOnly?: boolean;
 }
 
 // Tipos de campos
@@ -91,7 +92,7 @@ const FIELD_TYPE_LABELS: Record<string, string> = {
   file: 'Arquivo',
 };
 
-export function TicketChecklists({ ticketId }: TicketChecklistsProps) {
+export function TicketChecklists({ ticketId, readOnly = false }: TicketChecklistsProps) {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
@@ -471,13 +472,15 @@ export function TicketChecklists({ ticketId }: TicketChecklistsProps) {
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Checklists ({ticketChecklists.length})
         </h3>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Adicionar Checklist
-        </button>
+        {!readOnly && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Adicionar Checklist
+          </button>
+        )}
       </div>
 
       {/* Lista de checklists */}
@@ -557,17 +560,19 @@ export function TicketChecklists({ ticketId }: TicketChecklistsProps) {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        if (confirm('Deseja realmente remover este checklist?')) {
-                          removeMutation.mutate(checklist.id);
-                        }
-                      }}
-                      className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                      title="Remover"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {!readOnly && (
+                      <button
+                        onClick={() => {
+                          if (confirm('Deseja realmente remover este checklist?')) {
+                            removeMutation.mutate(checklist.id);
+                          }
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                        title="Remover"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 

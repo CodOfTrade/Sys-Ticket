@@ -10,6 +10,7 @@ import { AppointmentType, ServiceCoverageType, ServiceType, ServiceLevel, Create
 interface TicketAppointmentsProps {
   ticketId: string;
   clientId: string;
+  readOnly?: boolean;
 }
 
 const appointmentTypeLabels: Record<AppointmentType, string> = {
@@ -40,7 +41,7 @@ interface ExistingAttachment {
   file_size?: number;
 }
 
-export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsProps) {
+export function TicketAppointments({ ticketId, clientId, readOnly = false }: TicketAppointmentsProps) {
   const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<string | null>(null);
@@ -355,13 +356,15 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Apontamentos ({appointments.length})
         </h3>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Adicionar Apontamento
-        </button>
+        {!readOnly && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Adicionar Apontamento
+          </button>
+        )}
       </div>
 
       {/* Lista de apontamentos */}
@@ -440,26 +443,28 @@ export function TicketAppointments({ ticketId, clientId }: TicketAppointmentsPro
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleEditAppointment(appointment)}
-                    className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                    title="Editar"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm('Deseja realmente excluir este apontamento?')) {
-                        deleteMutation.mutate(appointment.id);
-                      }
-                    }}
-                    className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                    title="Excluir"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                {!readOnly && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleEditAppointment(appointment)}
+                      className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      title="Editar"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm('Deseja realmente excluir este apontamento?')) {
+                          deleteMutation.mutate(appointment.id);
+                        }
+                      }}
+                      className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                      title="Excluir"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

@@ -147,6 +147,9 @@ const statusLabels: Record<string, string> = {
   waiting_third_party: 'Aguardando Terceiro',
   paused: 'Pausado',
   waiting_approval: 'Aguardando Aprovação',
+  waiting_evaluation: 'Em Avaliação',
+  approved: 'Aprovado',
+  reopened: 'Reaberto',
   resolved: 'Resolvido',
   cancelled: 'Cancelado',
 };
