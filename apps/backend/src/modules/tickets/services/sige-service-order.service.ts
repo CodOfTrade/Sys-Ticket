@@ -235,26 +235,26 @@ export class SigeServiceOrderService {
         };
       }
 
-      const pedido: SigePedido = {
-        OrigemVenda: 'Venda Direta',
-        Empresa: 'Infoservice Informática',
-        EmpresaID: EMPRESA_ID,
-        Deposito: 'PADRÃO',
-        DepositoID: DEPOSITO_ID,
+      // Calcular valor final total
+      const valorFinal = items.reduce((sum, item) => sum + (item.Quantidade * item.ValorUnitario), 0);
+
+      // Payload simplificado seguindo modelo da API SIGE
+      const pedido = {
+        StatusSistema: 'Orçamento',
         Cliente: sigeClient.nome,
-        ClienteID: sigeClient.sigeId,
-        PessoaID: sigeClient.sigeId,
         ClienteCNPJ: sigeClient.cpfCnpj,
-        StatusSistema: 'Orçamento', // Criar como orçamento para revisão
-        Status: `Ticket #${ticket.ticket_number}`,
-        Items: items,
-        Descricao: `Ticket #${ticket.ticket_number} - ${ticket.title}`,
-        Data: new Date().toISOString(),
-        Vendedor: ticket.assigned_to?.name || undefined,
-        PlanoDeConta: 'RECEITAS',
-        ValorFrete: 0,
-        OutrasDespesas: 0,
-        ValorSeguro: 0,
+        Empresa: 'Infoservice Informática',
+        Deposito: 'PADRÃO',
+        ValorFinal: valorFinal,
+        Items: items.map(item => ({
+          Codigo: item.Codigo,
+          Descricao: item.Descricao || '',
+          Quantidade: item.Quantidade,
+          ValorUnitario: item.ValorUnitario,
+          ValorFrete: 0,
+          DescontoUnitario: 0,
+          ValorTotal: item.Quantidade * item.ValorUnitario,
+        })),
       };
 
       this.logger.log(`Payload do pedido SIGE: ${JSON.stringify(pedido, null, 2)}`);
