@@ -78,8 +78,7 @@ export class SigeServiceOrderService {
 
   /**
    * Criar Ordem de Serviço no SIGE Cloud ao aprovar ticket
-   * O pedido é criado com status "Pedido" (aprovado, mas NÃO faturado)
-   * O faturamento será feito posteriormente de forma manual no SIGE
+   * O pedido é criado e faturado automaticamente usando /SalvarEFaturar
    */
   async createServiceOrderFromTicket(ticketId: string, userId: string, observacoes?: string): Promise<{
     success: boolean;
@@ -245,10 +244,8 @@ export class SigeServiceOrderService {
         observacoes ? `\nComentário: ${observacoes}` : '',
       ].filter(Boolean).join('');
 
-      // Payload seguindo modelo da API SIGE para criar Pedido (aprovado, não faturado)
-      // StatusSistema válidos: "Orçamento", "Pedido", "Pedido Faturado"
-      // StatusSistema: 'Pedido' = pedido aprovado, aguardando faturamento manual
-      // O endpoint /Salvar NÃO fatura automaticamente (diferente do /SalvarEFaturar)
+      // Payload seguindo modelo da API SIGE para criar Pedido e Faturar
+      // Endpoint /SalvarEFaturar cria o pedido e fatura automaticamente
       const pedido = {
         StatusSistema: 'Pedido',
         DataAprovacaoPedido: new Date().toISOString(),
@@ -260,7 +257,10 @@ export class SigeServiceOrderService {
         CEP: sigeClient.cep ? parseInt(sigeClient.cep.replace(/\D/g, '')) : 0,
         PlanoDeConta: 'RECEITAS PDV',
         Observacoes: obsTexto,
-        // Campos de faturamento REMOVIDOS - o faturamento será feito manualmente no SIGE
+        // Campos para faturamento automático
+        FormaPagamento: 'Crédito Loja',
+        ContaBancaria: 'SIGE BANK',
+        DataFaturamento: new Date().toISOString(),
         Items: items.map(item => ({
           Codigo: item.Codigo,
           Descricao: item.Descricao || '',
@@ -283,11 +283,9 @@ export class SigeServiceOrderService {
 
       this.logger.log(`Payload do pedido SIGE: ${JSON.stringify(pedido, null, 2)}`);
 
-      // 7. Enviar para o SIGE Cloud - usando POST para criar novo pedido (sem faturar)
-      // Endpoint /Salvar apenas cria o pedido com status "Pedido" (aprovado, não faturado)
-      // O faturamento será feito posteriormente de forma manual no SIGE
+      // 7. Enviar para o SIGE Cloud - usando POST para criar e faturar pedido
       const response = await this.sigeCloudService.post<SigePedidoResponse>(
-        '/request/Pedidos/Salvar',
+        '/request/Pedidos/SalvarEFaturar',
         pedido,
       );
 
