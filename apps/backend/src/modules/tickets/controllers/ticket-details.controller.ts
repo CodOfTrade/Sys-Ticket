@@ -346,6 +346,14 @@ export class TicketDetailsController {
 
   // ==================== SIGE / ORDEM DE SERVIÇO ====================
 
+  @Get('sige/empresas')
+  @ApiOperation({ summary: 'Listar empresas cadastradas no SIGE Cloud' })
+  @ApiResponse({ status: 200, description: 'Lista de empresas retornada com sucesso' })
+  async getSigeEmpresas() {
+    const empresas = await this.sigeServiceOrderService.getSigeEmpresas();
+    return { success: true, data: empresas };
+  }
+
   @Get(':ticketId/billing-summary')
   @ApiOperation({ summary: 'Obter resumo de faturamento do ticket' })
   @ApiParam({ name: 'ticketId', description: 'ID do ticket' })

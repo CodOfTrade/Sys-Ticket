@@ -319,6 +319,21 @@ export class SigeServiceOrderService {
   }
 
   /**
+   * Buscar empresas cadastradas no SIGE Cloud
+   */
+  async getSigeEmpresas(): Promise<any> {
+    try {
+      this.logger.log('Buscando empresas no SIGE Cloud');
+      const response = await this.sigeCloudService.get<any>('/request/Empresas/GetAll');
+      this.logger.log(`Empresas encontradas: ${JSON.stringify(response, null, 2)}`);
+      return response;
+    } catch (error) {
+      this.logger.error('Erro ao buscar empresas no SIGE', error);
+      throw error;
+    }
+  }
+
+  /**
    * Buscar resumo de valores a faturar de um ticket
    */
   async getTicketBillingSummary(ticketId: string): Promise<{
