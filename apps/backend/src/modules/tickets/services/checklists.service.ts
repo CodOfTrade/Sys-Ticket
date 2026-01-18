@@ -9,6 +9,8 @@ import {
   AddChecklistToTicketDto,
   UpdateChecklistItemDto,
 } from '../dto/create-checklist.dto';
+import { TicketHistoryService } from './ticket-history.service';
+import { HistoryAction } from '../entities/ticket-history.entity';
 
 @Injectable()
 export class ChecklistsService {
@@ -19,6 +21,7 @@ export class ChecklistsService {
     private checklistRepository: Repository<Checklist>,
     @InjectRepository(TicketChecklist)
     private ticketChecklistRepository: Repository<TicketChecklist>,
+    private ticketHistoryService: TicketHistoryService,
   ) {}
 
   // ==================== TEMPLATES ====================
@@ -193,7 +196,21 @@ export class ChecklistsService {
       created_by_id: userId,
     });
 
-    return this.ticketChecklistRepository.save(ticketChecklist);
+    const savedChecklist = await this.ticketChecklistRepository.save(ticketChecklist);
+
+    // Registrar no histórico
+    try {
+      await this.ticketHistoryService.recordHistory({
+        ticket_id: dto.ticket_id,
+        user_id: userId,
+        action: HistoryAction.CHECKLIST_ADDED,
+        description: `Checklist adicionado: ${template.name}`,
+      });
+    } catch (error) {
+      this.logger.warn(`Erro ao registrar checklist no histórico: ${error.message}`);
+    }
+
+    return savedChecklist;
   }
 
   /**
@@ -272,6 +289,9 @@ export class ChecklistsService {
     ticketChecklist.completed_items = completedItems;
     ticketChecklist.total_items = totalItems;
     ticketChecklist.completion_percent = completionPercent;
+
+    // Detectar se o checklist acabou de ser completado
+    const wasJustCompleted = isCompleted && !ticketChecklist.is_completed;
     ticketChecklist.is_completed = isCompleted;
 
     if (isCompleted && !ticketChecklist.completed_at) {
@@ -280,7 +300,23 @@ export class ChecklistsService {
       ticketChecklist.completed_at = null as any;
     }
 
-    return this.ticketChecklistRepository.save(ticketChecklist);
+    const savedChecklist = await this.ticketChecklistRepository.save(ticketChecklist);
+
+    // Registrar no histórico quando o checklist é completado
+    if (wasJustCompleted) {
+      try {
+        await this.ticketHistoryService.recordHistory({
+          ticket_id: ticketChecklist.ticket_id,
+          user_id: userId,
+          action: HistoryAction.CHECKLIST_COMPLETED,
+          description: `Checklist concluído: ${ticketChecklist.checklist_name}`,
+        });
+      } catch (error) {
+        this.logger.warn(`Erro ao registrar conclusão do checklist no histórico: ${error.message}`);
+      }
+    }
+
+    return savedChecklist;
   }
 
   /**

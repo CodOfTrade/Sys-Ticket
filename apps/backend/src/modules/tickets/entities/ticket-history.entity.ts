@@ -24,6 +24,8 @@ export enum HistoryAction {
   VALUATION_ADDED = 'valuation_added',
   VALUATION_APPROVED = 'valuation_approved',
   VALUATION_REJECTED = 'valuation_rejected',
+  CHECKLIST_ADDED = 'checklist_added',
+  CHECKLIST_COMPLETED = 'checklist_completed',
 }
 
 @Entity('ticket_history')

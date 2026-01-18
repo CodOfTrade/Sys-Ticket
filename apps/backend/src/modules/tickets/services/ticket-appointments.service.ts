@@ -56,7 +56,24 @@ export class TicketAppointmentsService {
       appointment.total_amount = hours * dto.unit_price;
     }
 
-    return this.appointmentRepository.save(appointment);
+    const savedAppointment = await this.appointmentRepository.save(appointment);
+
+    // Registrar no histórico
+    try {
+      const hours = Math.floor(duration / 60);
+      const minutes = duration % 60;
+      const durationText = `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+      await this.ticketHistoryService.recordHistory({
+        ticket_id: dto.ticket_id,
+        user_id: userId,
+        action: HistoryAction.APPOINTMENT_ADDED,
+        description: `Apontamento manual registrado: ${durationText}`,
+      });
+    } catch (error) {
+      this.logger.warn(`Erro ao registrar apontamento no histórico: ${error.message}`);
+    }
+
+    return savedAppointment;
   }
 
   /**
