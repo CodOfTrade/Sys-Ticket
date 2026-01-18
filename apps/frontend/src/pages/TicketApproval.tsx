@@ -54,7 +54,7 @@ export default function TicketApproval() {
       // 1. Criar OS no SIGE Cloud (se houver itens faturáveis)
       let sigeOrderId: number | undefined;
       try {
-        const sigeResponse = await ticketService.createServiceOrder(ticketId);
+        const sigeResponse = await ticketService.createServiceOrder(ticketId, comment);
         sigeOrderId = sigeResponse?.sigeOrderId;
         setSigeResult({
           success: true,

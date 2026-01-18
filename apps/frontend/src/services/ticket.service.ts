@@ -100,8 +100,8 @@ export const ticketService = {
     return response.data.data;
   },
 
-  async createServiceOrder(ticketId: string): Promise<CreateServiceOrderResponse> {
-    const response = await api.post<ApiResponse<CreateServiceOrderResponse>>(`/v1/tickets/${ticketId}/create-service-order`);
+  async createServiceOrder(ticketId: string, observacoes?: string): Promise<CreateServiceOrderResponse> {
+    const response = await api.post<ApiResponse<CreateServiceOrderResponse>>(`/v1/tickets/${ticketId}/create-service-order`, { observacoes });
     return response.data.data;
   },
 };

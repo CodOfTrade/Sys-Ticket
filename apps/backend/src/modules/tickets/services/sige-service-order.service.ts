@@ -80,7 +80,7 @@ export class SigeServiceOrderService {
    * Criar Ordem de Serviço no SIGE Cloud ao aprovar ticket
    * O pedido é criado já com status "Pedido" (aprovado)
    */
-  async createServiceOrderFromTicket(ticketId: string, userId: string): Promise<{
+  async createServiceOrderFromTicket(ticketId: string, userId: string, observacoes?: string): Promise<{
     success: boolean;
     sigeOrderId?: number;
     message: string;
@@ -238,14 +238,22 @@ export class SigeServiceOrderService {
       // Calcular valor final total
       const valorFinal = items.reduce((sum, item) => sum + (item.Quantidade * item.ValorUnitario), 0);
 
-      // Payload simplificado seguindo modelo da API SIGE
+      // Montar observações do pedido
+      const obsTexto = [
+        `Ticket #${ticket.ticket_number} - ${ticket.title}`,
+        observacoes ? `\nComentário: ${observacoes}` : '',
+      ].filter(Boolean).join('');
+
+      // Payload seguindo modelo da API SIGE - criado como PEDIDO aprovado
       const pedido = {
-        StatusSistema: 'Orçamento',
+        StatusSistema: 'Pedido',
+        DataAprovacaoPedido: new Date().toISOString(),
         Cliente: sigeClient.nome,
         ClienteCNPJ: sigeClient.cpfCnpj,
         Empresa: 'Infoservice Informática',
         Deposito: 'PADRÃO',
         ValorFinal: valorFinal,
+        Observacoes: obsTexto,
         Items: items.map(item => ({
           Codigo: item.Codigo,
           Descricao: item.Descricao || '',

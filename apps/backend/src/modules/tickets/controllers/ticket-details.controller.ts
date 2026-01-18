@@ -371,8 +371,9 @@ export class TicketDetailsController {
   async createServiceOrder(
     @Param('ticketId') ticketId: string,
     @CurrentUser('id') userId: string,
+    @Body() body?: { observacoes?: string },
   ) {
-    const result = await this.sigeServiceOrderService.createServiceOrderFromTicket(ticketId, userId);
+    const result = await this.sigeServiceOrderService.createServiceOrderFromTicket(ticketId, userId, body?.observacoes);
 
     if (!result.success) {
       return { success: false, message: result.message };
