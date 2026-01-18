@@ -51,11 +51,10 @@ interface SigePedidoResponse {
 }
 
 // Códigos dos produtos de serviço no SIGE (conforme cadastrado)
-// Usando produto 46 - SERVIÇOS TÉCNICOS (conforme dados da API)
 const SIGE_PRODUCT_CODES = {
-  ATENDIMENTO_N1: '46',      // SERVIÇOS TÉCNICOS
-  ATENDIMENTO_N2: '46',      // SERVIÇOS TÉCNICOS
-  ATENDIMENTO_CONTRATO: '46', // SERVIÇOS TÉCNICOS
+  ATENDIMENTO_N1: '891637',      // ATENDIMENTO AVULSO N1 - R$ 70,00
+  ATENDIMENTO_N2: '891638',      // ATENDIMENTO AVULSO N2 - R$ 120,00
+  ATENDIMENTO_CONTRATO: '891639', // ATENDIMENTO AVULSO - em contrato - R$ 70,00
 };
 
 @Injectable()
