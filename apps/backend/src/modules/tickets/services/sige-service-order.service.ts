@@ -245,12 +245,12 @@ export class SigeServiceOrderService {
         observacoes ? `\nComentário: ${observacoes}` : '',
       ].filter(Boolean).join('');
 
-      // Payload seguindo modelo da API SIGE para criar Pedido (sem faturar)
-      // StatusSistema: 'Pedido' = pedido aprovado, mas NÃO faturado
+      // Payload seguindo modelo da API SIGE para criar Pedido Aprovado (sem faturar)
+      // StatusSistema: 'Pedido Aprovado' = pedido aprovado pelo cliente, mas NÃO faturado
       // Campos de faturamento (FormaPagamento, ContaBancaria, DataFaturamento) foram REMOVIDOS
       // para evitar faturamento automático
       const pedido = {
-        StatusSistema: 'Pedido',
+        StatusSistema: 'Pedido Aprovado',
         DataAprovacaoPedido: new Date().toISOString(),
         Cliente: sigeClient.nome,
         ClienteCNPJ: sigeClient.cpfCnpj,
