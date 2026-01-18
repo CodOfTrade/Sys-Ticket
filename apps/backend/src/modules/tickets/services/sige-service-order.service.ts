@@ -85,13 +85,30 @@ export class SigeServiceOrderService {
       }
 
       // 2. Buscar cliente no SIGE pelo client_id do ticket
-      const sigeClient = await this.sigeClientRepository.findOne({
-        where: { id: ticket.client_id },
-      });
+      // O client_id pode ser um UUID local ou um ID do SIGE (hex string)
+      let sigeClient = null;
+      if (ticket.client_id) {
+        // Verificar se é um UUID válido
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ticket.client_id);
+
+        if (isUUID) {
+          // Buscar pelo UUID local
+          sigeClient = await this.sigeClientRepository.findOne({
+            where: { id: ticket.client_id },
+          });
+        } else {
+          // Buscar pelo ID do SIGE (hex string)
+          sigeClient = await this.sigeClientRepository.findOne({
+            where: { sigeId: ticket.client_id },
+          });
+        }
+      }
 
       if (!sigeClient) {
         this.logger.warn(`Cliente SIGE não encontrado para client_id ${ticket.client_id}`);
-        // Tentar continuar com o nome do cliente
+        // Continua mesmo sem cliente - usará o client_name
+      } else {
+        this.logger.log(`Cliente encontrado: ${sigeClient.nome}, CPF/CNPJ: ${sigeClient.cpfCnpj}`);
       }
 
       // 3. Buscar apontamentos faturáveis (billable) do ticket
