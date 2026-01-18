@@ -67,21 +67,14 @@ export class TicketsService {
   private async generateTicketNumber(): Promise<string> {
     const year = new Date().getFullYear();
 
-    // Buscar o último ticket do ano atual para garantir número único
-    const lastTicket = await this.ticketsRepository
+    // Buscar o maior número de ticket do ano atual
+    const result = await this.ticketsRepository
       .createQueryBuilder('ticket')
+      .select('MAX(CAST(SUBSTRING(ticket.ticket_number FROM \'[0-9]+$\') AS INTEGER))', 'maxNumber')
       .where('ticket.ticket_number LIKE :pattern', { pattern: `TKT-${year}-%` })
-      .orderBy('ticket.created_at', 'DESC')
-      .getOne();
+      .getRawOne();
 
-    let nextNumber = 1;
-    if (lastTicket) {
-      const match = lastTicket.ticket_number.match(/\d+$/);
-      if (match) {
-        nextNumber = parseInt(match[0], 10) + 1;
-      }
-    }
-
+    const nextNumber = (result?.maxNumber || 0) + 1;
     const paddedNumber = String(nextNumber).padStart(6, '0');
     return `TKT-${year}-${paddedNumber}`;
   }
@@ -90,40 +83,52 @@ export class TicketsService {
    * Cria um novo ticket
    */
   async create(createTicketDto: CreateTicketDto, createdById?: string): Promise<Ticket> {
-    try {
-      const ticketNumber = await this.generateTicketNumber();
+    const maxRetries = 3;
+    let lastError: Error = new Error('Erro desconhecido');
 
-      // Extrair followers do DTO para tratar separadamente
-      const { followers, ...ticketData } = createTicketDto;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const ticketNumber = await this.generateTicketNumber();
 
-      const ticket = this.ticketsRepository.create({
-        ...ticketData,
-        ticket_number: ticketNumber,
-        created_by_id: createdById,
-      });
+        // Extrair followers do DTO para tratar separadamente
+        const { followers, ...ticketData } = createTicketDto;
 
-      const savedTicket = await this.ticketsRepository.save(ticket);
+        const ticket = this.ticketsRepository.create({
+          ...ticketData,
+          ticket_number: ticketNumber,
+          created_by_id: createdById,
+        });
 
-      // TODO: Implementar criação de followers se necessário
-      // if (followers && followers.length > 0) {
-      //   await this.ticketFollowersRepository.save(
-      //     followers.map(userId => ({ ticket_id: savedTicket.id, user_id: userId }))
-      //   );
-      // }
+        const savedTicket = await this.ticketsRepository.save(ticket);
 
-      // Emitir evento de criação
-      this.eventEmitter.emit('ticket.created', savedTicket);
+        // Emitir evento de criação
+        this.eventEmitter.emit('ticket.created', savedTicket);
 
-      // Invalidar cache
-      await this.invalidateTicketCache();
+        // Invalidar cache
+        await this.invalidateTicketCache();
 
-      this.logger.log(`Ticket criado: ${ticketNumber}`);
+        this.logger.log(`Ticket criado: ${ticketNumber}`);
 
-      return savedTicket;
-    } catch (error) {
-      this.logger.error('Erro ao criar ticket', error);
-      throw new BadRequestException('Erro ao criar ticket');
+        return savedTicket;
+      } catch (error) {
+        lastError = error;
+
+        // Se for erro de chave duplicada e ainda temos tentativas, retry
+        if (error.message?.includes('duplicate key') && attempt < maxRetries) {
+          this.logger.warn(`Conflito de número de ticket, tentativa ${attempt}/${maxRetries}. Retrying...`);
+          continue;
+        }
+
+        this.logger.error('Erro ao criar ticket:');
+        this.logger.error(error.message);
+        if (error.detail) {
+          this.logger.error('Detalhe do erro:', error.detail);
+        }
+        throw new BadRequestException(`Erro ao criar ticket: ${error.message}`);
+      }
     }
+
+    throw new BadRequestException(`Erro ao criar ticket após ${maxRetries} tentativas: ${lastError.message}`);
   }
 
   /**
