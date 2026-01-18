@@ -253,6 +253,7 @@ export class SigeServiceOrderService {
         Empresa: 'Infoservice Informática',
         Deposito: 'PADRÃO',
         ValorFinal: valorFinal,
+        CEP: sigeClient.cep ? parseInt(sigeClient.cep.replace(/\D/g, '')) : 0,
         Observacoes: obsTexto,
         Items: items.map(item => ({
           Codigo: item.Codigo,
@@ -276,8 +277,8 @@ export class SigeServiceOrderService {
 
       this.logger.log(`Payload do pedido SIGE: ${JSON.stringify(pedido, null, 2)}`);
 
-      // 7. Enviar para o SIGE Cloud - endpoint SalvarEFaturar para criar e faturar automaticamente
-      const response = await this.sigeCloudService.post<SigePedidoResponse>(
+      // 7. Enviar para o SIGE Cloud - usando PUT para SalvarEFaturar
+      const response = await this.sigeCloudService.put<SigePedidoResponse>(
         '/request/pedidos/SalvarEFaturar',
         pedido,
       );
