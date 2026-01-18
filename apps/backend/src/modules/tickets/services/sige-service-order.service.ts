@@ -86,7 +86,7 @@ export class SigeServiceOrderService {
 
       // 2. Buscar cliente no SIGE pelo client_id do ticket
       // O client_id pode ser um UUID local ou um ID do SIGE (hex string)
-      let sigeClient = null;
+      let sigeClient: SigeClient | null = null;
       if (ticket.client_id) {
         // Verificar se é um UUID válido
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ticket.client_id);
