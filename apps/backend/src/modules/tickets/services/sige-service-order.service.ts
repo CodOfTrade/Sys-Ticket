@@ -261,6 +261,13 @@ export class SigeServiceOrderService {
         FormaPagamento: 'Crédito Loja',
         ContaBancaria: 'SIGE BANK',
         DataFaturamento: new Date().toISOString(),
+        Finalizado: true,
+        // Array de pagamentos necessário para faturar
+        Pagamentos: [{
+          FormaPagamento: 'Crédito Loja',
+          ValorPagamento: valorFinal,
+          Quitar: false,
+        }],
         Items: items.map(item => ({
           Codigo: item.Codigo,
           Descricao: item.Descricao || '',
