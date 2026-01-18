@@ -20,6 +20,7 @@ interface SigePedidoItem {
 interface SigePedido {
   Codigo?: number;          // Se null, cria novo. Se preenchido, atualiza
   OrigemVenda: string;      // Ex: "Sys-Ticket"
+  Empresa: string;          // CNPJ da empresa emissora (Infoservice)
   Deposito?: string;
   Cliente: string;          // CNPJ ou Nome do cliente
   ClienteCNPJ?: string;     // CNPJ do cliente
@@ -209,6 +210,7 @@ export class SigeServiceOrderService {
       // 6. Montar payload do pedido SIGE
       const pedido: SigePedido = {
         OrigemVenda: 'Sys-Ticket',
+        Empresa: '14518324000120', // CNPJ Infoservice Informática
         Deposito: 'PADRÃO', // Depósito padrão do SIGE
         Cliente: sigeClient?.cpfCnpj || ticket.client_name,
         ClienteCNPJ: sigeClient?.cpfCnpj,
