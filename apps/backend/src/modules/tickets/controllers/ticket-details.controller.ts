@@ -22,6 +22,7 @@ import { TicketCommentsService } from '../services/ticket-comments.service';
 import { TicketAppointmentsService } from '../services/ticket-appointments.service';
 import { TicketValuationsService } from '../services/ticket-valuations.service';
 import { ChecklistsService } from '../services/checklists.service';
+import { SigeServiceOrderService } from '../services/sige-service-order.service';
 import { CreateCommentDto, UpdateCommentDto } from '../dto/create-comment.dto';
 import {
   CreateAppointmentDto,
@@ -51,6 +52,7 @@ export class TicketDetailsController {
     private readonly appointmentsService: TicketAppointmentsService,
     private readonly valuationsService: TicketValuationsService,
     private readonly checklistsService: ChecklistsService,
+    private readonly sigeServiceOrderService: SigeServiceOrderService,
   ) {}
 
   // ==================== COMENTÁRIOS ====================
@@ -340,6 +342,42 @@ export class TicketDetailsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async removeChecklistFromTicket(@Param('checklistId') checklistId: string) {
     await this.checklistsService.removeFromTicket(checklistId);
+  }
+
+  // ==================== SIGE / ORDEM DE SERVIÇO ====================
+
+  @Get(':ticketId/billing-summary')
+  @ApiOperation({ summary: 'Obter resumo de faturamento do ticket' })
+  @ApiParam({ name: 'ticketId', description: 'ID do ticket' })
+  @ApiResponse({ status: 200, description: 'Resumo de faturamento retornado com sucesso' })
+  async getBillingSummary(@Param('ticketId') ticketId: string) {
+    const summary = await this.sigeServiceOrderService.getTicketBillingSummary(ticketId);
+    return { success: true, data: summary };
+  }
+
+  @Post(':ticketId/create-service-order')
+  @ApiOperation({ summary: 'Criar Ordem de Serviço no SIGE Cloud' })
+  @ApiParam({ name: 'ticketId', description: 'ID do ticket' })
+  @ApiResponse({ status: 200, description: 'OS criada com sucesso no SIGE' })
+  @ApiResponse({ status: 400, description: 'Erro ao criar OS no SIGE' })
+  async createServiceOrder(
+    @Param('ticketId') ticketId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    const result = await this.sigeServiceOrderService.createServiceOrderFromTicket(ticketId, userId);
+
+    if (!result.success) {
+      return { success: false, message: result.message };
+    }
+
+    return {
+      success: true,
+      data: {
+        sigeOrderId: result.sigeOrderId,
+        totalValue: result.totalValue,
+      },
+      message: result.message,
+    };
   }
 
   // ============ HISTÓRICO ============

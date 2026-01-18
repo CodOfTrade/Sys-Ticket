@@ -9,6 +9,7 @@ import { TicketAppointmentsService } from './services/ticket-appointments.servic
 import { TicketValuationsService } from './services/ticket-valuations.service';
 import { ChecklistsService } from './services/checklists.service';
 import { TicketAttachmentsService } from './services/ticket-attachments.service';
+import { SigeServiceOrderService } from './services/sige-service-order.service';
 import { TicketsGateway } from './gateways/tickets.gateway';
 import { Ticket } from './entities/ticket.entity';
 import { TicketComment } from './entities/ticket-comment.entity';
@@ -23,6 +24,7 @@ import { ContractsModule } from '../contracts/contracts.module';
 import { ClientsModule } from '../clients/clients.module';
 import { ServiceDesksModule } from '../service-desks/service-desks.module';
 import { EmailModule } from '../email/email.module';
+import { SharedModule } from '../../shared/shared.module';
 
 @Module({
   imports: [
@@ -41,6 +43,7 @@ import { EmailModule } from '../email/email.module';
     ClientsModule,
     ServiceDesksModule,
     EmailModule,
+    SharedModule,
   ],
   controllers: [TicketsController, TicketDetailsController, TicketAttachmentsController],
   providers: [
@@ -50,8 +53,9 @@ import { EmailModule } from '../email/email.module';
     TicketValuationsService,
     ChecklistsService,
     TicketAttachmentsService,
+    SigeServiceOrderService,
     TicketsGateway,
   ],
-  exports: [TicketsService, TicketAttachmentsService, TicketsGateway],
+  exports: [TicketsService, TicketAttachmentsService, SigeServiceOrderService, TicketsGateway],
 })
 export class TicketsModule {}

@@ -19,6 +19,6 @@ import { SigeContract } from './entities/sige-contract.entity';
   ],
   controllers: [ClientsController],
   providers: [ClientsService, SigeSyncService],
-  exports: [ClientsService, SigeSyncService],
+  exports: [ClientsService, SigeSyncService, TypeOrmModule],
 })
 export class ClientsModule {}

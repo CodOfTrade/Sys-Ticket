@@ -11,8 +11,11 @@ import {
   Eye,
   Building2,
   MessageSquare,
+  Receipt,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
-import { ticketService } from '@/services/ticket.service';
+import { ticketService, BillingSummary } from '@/services/ticket.service';
 import { commentsService } from '@/services/ticket-details.service';
 import { TicketStatus, TicketPriority, Ticket } from '@/types/ticket.types';
 import { CommentType, CommentVisibility } from '@/types/ticket-details.types';
@@ -32,6 +35,9 @@ export default function TicketApproval() {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
   const [comment, setComment] = useState('');
+  const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
+  const [loadingBilling, setLoadingBilling] = useState(false);
+  const [sigeResult, setSigeResult] = useState<{ success: boolean; message: string; sigeOrderId?: number } | null>(null);
 
   // Query para buscar tickets em avaliação
   const { data, isLoading, error } = useQuery({
@@ -45,20 +51,43 @@ export default function TicketApproval() {
   // Mutation para aprovar ticket
   const approveMutation = useMutation({
     mutationFn: async ({ ticketId, comment }: { ticketId: string; comment?: string }) => {
-      // Se houver comentário, adiciona ao ticket
+      // 1. Criar OS no SIGE Cloud (se houver itens faturáveis)
+      let sigeOrderId: number | undefined;
+      try {
+        const sigeResponse = await ticketService.createServiceOrder(ticketId);
+        sigeOrderId = sigeResponse?.sigeOrderId;
+        setSigeResult({
+          success: true,
+          message: sigeOrderId
+            ? `OS #${sigeOrderId} criada no SIGE`
+            : 'Aprovado sem itens para faturamento',
+          sigeOrderId,
+        });
+      } catch (error: any) {
+        console.error('Erro ao criar OS no SIGE:', error);
+        setSigeResult({
+          success: false,
+          message: `Erro SIGE: ${error?.response?.data?.message || error.message}`,
+        });
+        // Continua mesmo com erro no SIGE
+      }
+
+      // 2. Se houver comentário, adiciona ao ticket
       if (comment && comment.trim()) {
         await commentsService.createComment(ticketId, {
-          content: `**Ticket aprovado pelo Ticket Master**\n\n${comment}`,
+          content: `**Ticket aprovado pelo Ticket Master**\n\n${comment}${sigeOrderId ? `\n\n_OS SIGE: #${sigeOrderId}_` : ''}`,
           type: CommentType.INTERNAL,
           visibility: CommentVisibility.PRIVATE,
         });
       }
-      // Atualiza o status para aprovado
+
+      // 3. Atualiza o status para aprovado
       return ticketService.update(ticketId, { status: TicketStatus.APPROVED });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
-      closeModal();
+      // Não fecha modal imediatamente para mostrar resultado
+      setTimeout(() => closeModal(), 2000);
     },
   });
 
@@ -122,22 +151,39 @@ export default function TicketApproval() {
     ).values()
   );
 
-  const openApproveModal = (ticket: Ticket) => {
+  const openApproveModal = async (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setActionType('approve');
     setComment('');
+    setBillingSummary(null);
+    setSigeResult(null);
+
+    // Buscar resumo de faturamento
+    setLoadingBilling(true);
+    try {
+      const summary = await ticketService.getBillingSummary(ticket.id);
+      setBillingSummary(summary);
+    } catch (error) {
+      console.error('Erro ao buscar resumo de faturamento:', error);
+    } finally {
+      setLoadingBilling(false);
+    }
   };
 
   const openRejectModal = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setActionType('reject');
     setComment('');
+    setBillingSummary(null);
+    setSigeResult(null);
   };
 
   const closeModal = () => {
     setSelectedTicket(null);
     setActionType(null);
     setComment('');
+    setBillingSummary(null);
+    setSigeResult(null);
   };
 
   const handleConfirmAction = () => {
@@ -428,7 +474,7 @@ export default function TicketApproval() {
       {/* Modal de Confirmação */}
       {selectedTicket && actionType && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg">
             <div className="p-6">
               <div className="flex items-center gap-3 mb-4">
                 {actionType === 'approve' ? (
@@ -445,14 +491,99 @@ export default function TicketApproval() {
                     {actionType === 'approve' ? 'Aprovar Ticket' : 'Rejeitar Ticket'}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    #{selectedTicket.ticket_number}
+                    #{selectedTicket.ticket_number} - {selectedTicket.client_name}
                   </p>
                 </div>
               </div>
 
+              {/* Resumo de Faturamento (apenas para aprovação) */}
+              {actionType === 'approve' && (
+                <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Receipt size={18} className="text-blue-600 dark:text-blue-400" />
+                    <span className="font-semibold text-gray-900 dark:text-white">Resumo para Faturamento</span>
+                  </div>
+
+                  {loadingBilling ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                      <span className="ml-2 text-sm text-gray-500">Carregando...</span>
+                    </div>
+                  ) : billingSummary ? (
+                    <div className="space-y-2 text-sm">
+                      {billingSummary.appointments.n1.hours > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Atendimento N1</span>
+                          <span className="text-gray-900 dark:text-white">
+                            {billingSummary.appointments.n1.hours.toFixed(1)}h - R$ {billingSummary.appointments.n1.amount.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                      {billingSummary.appointments.n2.hours > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Atendimento N2</span>
+                          <span className="text-gray-900 dark:text-white">
+                            {billingSummary.appointments.n2.hours.toFixed(1)}h - R$ {billingSummary.appointments.n2.amount.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                      {billingSummary.appointments.contract.hours > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Atendimento Contrato</span>
+                          <span className="text-gray-900 dark:text-white">
+                            {billingSummary.appointments.contract.hours.toFixed(1)}h - R$ {billingSummary.appointments.contract.amount.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                      {billingSummary.valuations.count > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Valorizações ({billingSummary.valuations.count})</span>
+                          <span className="text-gray-900 dark:text-white">
+                            R$ {billingSummary.valuations.amount.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-600 flex justify-between font-semibold">
+                        <span className="text-gray-900 dark:text-white">Total a Faturar</span>
+                        <span className={billingSummary.grandTotal > 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}>
+                          R$ {billingSummary.grandTotal.toFixed(2)}
+                        </span>
+                      </div>
+
+                      {billingSummary.grandTotal === 0 && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Este ticket não possui itens faturáveis. A OS não será criada no SIGE.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">Não foi possível carregar o resumo.</p>
+                  )}
+                </div>
+              )}
+
+              {/* Resultado do SIGE */}
+              {sigeResult && (
+                <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
+                  sigeResult.success
+                    ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                    : 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400'
+                }`}>
+                  {sigeResult.success ? (
+                    <CheckCircle size={18} />
+                  ) : (
+                    <AlertCircle size={18} />
+                  )}
+                  <span className="text-sm">{sigeResult.message}</span>
+                </div>
+              )}
+
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 {actionType === 'approve'
-                  ? 'O ticket será marcado como "Aprovado - Enviado para Faturamento".'
+                  ? billingSummary?.grandTotal && billingSummary.grandTotal > 0
+                    ? 'Ao aprovar, uma Ordem de Serviço será criada automaticamente no SIGE Cloud.'
+                    : 'O ticket será marcado como "Aprovado".'
                   : 'O ticket será reaberto e retornará ao técnico responsável.'}
               </p>
 
@@ -473,6 +604,7 @@ export default function TicketApproval() {
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
                   rows={3}
+                  disabled={approveMutation.isSuccess || rejectMutation.isSuccess}
                 />
               </div>
 
@@ -482,27 +614,30 @@ export default function TicketApproval() {
                   onClick={closeModal}
                   className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Cancelar
+                  {approveMutation.isSuccess || rejectMutation.isSuccess ? 'Fechar' : 'Cancelar'}
                 </button>
-                <button
-                  onClick={handleConfirmAction}
-                  disabled={
-                    (actionType === 'reject' && !comment.trim()) ||
-                    approveMutation.isPending ||
-                    rejectMutation.isPending
-                  }
-                  className={`flex-1 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                    actionType === 'approve'
-                      ? 'bg-green-600 hover:bg-green-700 text-white'
-                      : 'bg-red-600 hover:bg-red-700 text-white'
-                  }`}
-                >
-                  {approveMutation.isPending || rejectMutation.isPending
-                    ? 'Processando...'
-                    : actionType === 'approve'
-                    ? 'Confirmar Aprovação'
-                    : 'Confirmar Rejeição'}
-                </button>
+                {!approveMutation.isSuccess && !rejectMutation.isSuccess && (
+                  <button
+                    onClick={handleConfirmAction}
+                    disabled={
+                      (actionType === 'reject' && !comment.trim()) ||
+                      approveMutation.isPending ||
+                      rejectMutation.isPending ||
+                      (actionType === 'approve' && loadingBilling)
+                    }
+                    className={`flex-1 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                      actionType === 'approve'
+                        ? 'bg-green-600 hover:bg-green-700 text-white'
+                        : 'bg-red-600 hover:bg-red-700 text-white'
+                    }`}
+                  >
+                    {approveMutation.isPending || rejectMutation.isPending
+                      ? 'Processando...'
+                      : actionType === 'approve'
+                      ? 'Aprovar e Criar OS'
+                      : 'Confirmar Rejeição'}
+                  </button>
+                )}
               </div>
             </div>
           </div>

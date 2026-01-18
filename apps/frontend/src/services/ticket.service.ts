@@ -90,7 +90,42 @@ export const ticketService = {
   async removeFollower(ticketId: string, followerId: string): Promise<void> {
     await api.delete(`/v1/tickets/${ticketId}/followers/${followerId}`);
   },
+
+  // ========================================
+  // MÉTODOS DE FATURAMENTO / OS SIGE
+  // ========================================
+
+  async getBillingSummary(ticketId: string): Promise<BillingSummary> {
+    const response = await api.get<ApiResponse<BillingSummary>>(`/v1/tickets/${ticketId}/billing-summary`);
+    return response.data.data;
+  },
+
+  async createServiceOrder(ticketId: string): Promise<CreateServiceOrderResponse> {
+    const response = await api.post<ApiResponse<CreateServiceOrderResponse>>(`/v1/tickets/${ticketId}/create-service-order`);
+    return response.data.data;
+  },
 };
+
+// Interface para resumo de faturamento
+export interface BillingSummary {
+  appointments: {
+    n1: { hours: number; amount: number };
+    n2: { hours: number; amount: number };
+    contract: { hours: number; amount: number };
+    total: { hours: number; amount: number };
+  };
+  valuations: {
+    count: number;
+    amount: number;
+  };
+  grandTotal: number;
+}
+
+// Interface para resposta de criação de OS
+export interface CreateServiceOrderResponse {
+  sigeOrderId: number;
+  totalValue: number;
+}
 
 // Interface para Follower
 export interface TicketFollower {

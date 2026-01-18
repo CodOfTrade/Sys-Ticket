@@ -1,0 +1,364 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { SigeCloudService } from '../../../shared/services/sige-cloud.service';
+import { Ticket } from '../entities/ticket.entity';
+import { TicketAppointment, ServiceCoverageType } from '../entities/ticket-appointment.entity';
+import { TicketValuation, ValuationCategory } from '../entities/ticket-valuation.entity';
+import { SigeClient } from '../../clients/entities/sige-client.entity';
+import { SigeProduct } from '../../clients/entities/sige-product.entity';
+import { ConfigService } from '@nestjs/config';
+
+// Interface para o pedido do SIGE Cloud
+interface SigePedidoItem {
+  Codigo: string;           // Código do produto no SIGE
+  Quantidade: number;
+  ValorUnitario: number;
+  Descricao?: string;       // Descrição adicional do item
+}
+
+interface SigePedido {
+  Codigo?: number;          // Se null, cria novo. Se preenchido, atualiza
+  OrigemVenda: string;      // Ex: "Sys-Ticket"
+  Deposito?: string;
+  Cliente: string;          // CNPJ ou Nome do cliente
+  ClienteCNPJ?: string;     // CNPJ do cliente
+  StatusSistema: string;    // "Orçamento", "Pedido", "Pedido Faturado"
+  Items: SigePedidoItem[];
+  Observacoes?: string;
+  DataPedido?: string;      // Formato ISO
+  Vendedor?: string;        // Nome do vendedor/técnico
+}
+
+interface SigePedidoResponse {
+  Codigo: number;
+  Mensagem?: string;
+}
+
+// Códigos dos produtos de serviço no SIGE (conforme cadastrado)
+const SIGE_PRODUCT_CODES = {
+  ATENDIMENTO_N1: '891637',      // ATENDIMENTO AVULSO N1
+  ATENDIMENTO_N2: '891638',      // ATENDIMENTO AVULSO N2
+  ATENDIMENTO_CONTRATO: '891639', // ATENDIMENTO AVULSO - em contrato
+};
+
+@Injectable()
+export class SigeServiceOrderService {
+  private readonly logger = new Logger(SigeServiceOrderService.name);
+
+  constructor(
+    private readonly sigeCloudService: SigeCloudService,
+    private readonly configService: ConfigService,
+    @InjectRepository(Ticket)
+    private ticketRepository: Repository<Ticket>,
+    @InjectRepository(TicketAppointment)
+    private appointmentRepository: Repository<TicketAppointment>,
+    @InjectRepository(TicketValuation)
+    private valuationRepository: Repository<TicketValuation>,
+    @InjectRepository(SigeClient)
+    private sigeClientRepository: Repository<SigeClient>,
+    @InjectRepository(SigeProduct)
+    private sigeProductRepository: Repository<SigeProduct>,
+  ) {}
+
+  /**
+   * Criar Ordem de Serviço no SIGE Cloud ao aprovar ticket
+   * O pedido é criado já com status "Pedido" (aprovado)
+   */
+  async createServiceOrderFromTicket(ticketId: string, userId: string): Promise<{
+    success: boolean;
+    sigeOrderId?: number;
+    message: string;
+    totalValue?: number;
+  }> {
+    try {
+      this.logger.log(`Criando OS no SIGE para ticket ${ticketId}`);
+
+      // 1. Buscar ticket com relacionamentos
+      const ticket = await this.ticketRepository.findOne({
+        where: { id: ticketId },
+        relations: ['assigned_to', 'service_desk'],
+      });
+
+      if (!ticket) {
+        return { success: false, message: 'Ticket não encontrado' };
+      }
+
+      // 2. Buscar cliente no SIGE pelo client_id do ticket
+      const sigeClient = await this.sigeClientRepository.findOne({
+        where: { id: ticket.client_id },
+      });
+
+      if (!sigeClient) {
+        this.logger.warn(`Cliente SIGE não encontrado para client_id ${ticket.client_id}`);
+        // Tentar continuar com o nome do cliente
+      }
+
+      // 3. Buscar apontamentos faturáveis (billable) do ticket
+      const appointments = await this.appointmentRepository.find({
+        where: { ticket_id: ticketId },
+      });
+
+      // 4. Buscar valorizações do tipo client_charge
+      const valuations = await this.valuationRepository.find({
+        where: {
+          ticket_id: ticketId,
+          category: ValuationCategory.CLIENT_CHARGE,
+        },
+      });
+
+      // 5. Montar itens do pedido
+      const items: SigePedidoItem[] = [];
+      let totalValue = 0;
+
+      // 5.1 Processar apontamentos faturáveis
+      const billableAppointments = appointments.filter(
+        a => a.coverage_type === ServiceCoverageType.BILLABLE && a.total_amount > 0
+      );
+
+      // Agrupar apontamentos por tipo (N1, N2, Contrato)
+      const appointmentsByLevel = this.groupAppointmentsByLevel(billableAppointments);
+
+      for (const [level, apps] of Object.entries(appointmentsByLevel)) {
+        const totalHours = apps.reduce((sum, a) => sum + (a.duration_minutes / 60), 0);
+        const totalAmount = apps.reduce((sum, a) => sum + Number(a.total_amount), 0);
+        const avgUnitPrice = totalHours > 0 ? totalAmount / totalHours : 0;
+
+        if (totalAmount > 0) {
+          const productCode = this.getProductCodeByLevel(level);
+          items.push({
+            Codigo: productCode,
+            Quantidade: parseFloat(totalHours.toFixed(2)),
+            ValorUnitario: parseFloat(avgUnitPrice.toFixed(2)),
+            Descricao: `Atendimento ${level} - Ticket #${ticket.ticket_number}`,
+          });
+          totalValue += totalAmount;
+        }
+      }
+
+      // 5.2 Processar apontamentos em contrato (se houver cobrança extra)
+      const contractAppointments = appointments.filter(
+        a => a.coverage_type === ServiceCoverageType.CONTRACT && a.total_amount > 0
+      );
+
+      if (contractAppointments.length > 0) {
+        const totalHours = contractAppointments.reduce((sum, a) => sum + (a.duration_minutes / 60), 0);
+        const totalAmount = contractAppointments.reduce((sum, a) => sum + Number(a.total_amount), 0);
+        const avgUnitPrice = totalHours > 0 ? totalAmount / totalHours : 0;
+
+        if (totalAmount > 0) {
+          items.push({
+            Codigo: SIGE_PRODUCT_CODES.ATENDIMENTO_CONTRATO,
+            Quantidade: parseFloat(totalHours.toFixed(2)),
+            ValorUnitario: parseFloat(avgUnitPrice.toFixed(2)),
+            Descricao: `Atendimento Contrato - Ticket #${ticket.ticket_number}`,
+          });
+          totalValue += totalAmount;
+        }
+      }
+
+      // 5.3 Processar valorizações (produtos/serviços extras)
+      for (const valuation of valuations) {
+        if (valuation.final_amount > 0) {
+          // Se tem produto SIGE vinculado, usar o código dele
+          const productCode = valuation.sige_product_code || valuation.sige_product_id;
+
+          if (productCode) {
+            items.push({
+              Codigo: productCode,
+              Quantidade: valuation.quantity,
+              ValorUnitario: parseFloat(valuation.unit_price.toString()),
+              Descricao: valuation.description,
+            });
+          } else {
+            // Se não tem produto vinculado, usar descrição genérica
+            // Nesse caso, pode ser necessário criar um produto genérico no SIGE
+            this.logger.warn(`Valorização ${valuation.id} sem produto SIGE vinculado`);
+          }
+          totalValue += Number(valuation.final_amount);
+        }
+      }
+
+      // Se não há itens para faturar, retornar sucesso sem criar OS
+      if (items.length === 0) {
+        this.logger.log(`Ticket ${ticketId} não possui itens faturáveis`);
+        return {
+          success: true,
+          message: 'Ticket aprovado sem itens para faturamento',
+          totalValue: 0,
+        };
+      }
+
+      // 6. Montar payload do pedido SIGE
+      const pedido: SigePedido = {
+        OrigemVenda: 'Sys-Ticket',
+        Cliente: sigeClient?.cpfCnpj || ticket.client_name,
+        ClienteCNPJ: sigeClient?.cpfCnpj,
+        StatusSistema: 'Pedido', // Já aprovado, pronto para faturamento
+        Items: items,
+        Observacoes: `Ticket #${ticket.ticket_number} - ${ticket.title}\n\nGerado automaticamente pelo Sys-Ticket`,
+        DataPedido: new Date().toISOString(),
+        Vendedor: ticket.assigned_to?.name || 'Sistema',
+      };
+
+      this.logger.log(`Payload do pedido SIGE: ${JSON.stringify(pedido, null, 2)}`);
+
+      // 7. Enviar para o SIGE Cloud
+      const response = await this.sigeCloudService.post<SigePedidoResponse>(
+        '/request/pedidos/salvar',
+        pedido,
+      );
+
+      const sigeOrderId = response?.Codigo;
+
+      if (!sigeOrderId) {
+        this.logger.error('SIGE não retornou o código do pedido');
+        return {
+          success: false,
+          message: 'Erro ao criar pedido no SIGE: código não retornado',
+        };
+      }
+
+      this.logger.log(`Pedido criado no SIGE com código: ${sigeOrderId}`);
+
+      // 8. Atualizar apontamentos e valorizações com o ID da OS
+      await this.markItemsAsSynced(ticketId, sigeOrderId.toString());
+
+      return {
+        success: true,
+        sigeOrderId,
+        message: `OS #${sigeOrderId} criada com sucesso no SIGE`,
+        totalValue,
+      };
+
+    } catch (error) {
+      this.logger.error(`Erro ao criar OS no SIGE para ticket ${ticketId}`, error);
+      return {
+        success: false,
+        message: `Erro ao criar OS no SIGE: ${error.message}`,
+      };
+    }
+  }
+
+  /**
+   * Agrupa apontamentos por nível de serviço (N1, N2, etc.)
+   */
+  private groupAppointmentsByLevel(appointments: TicketAppointment[]): Record<string, TicketAppointment[]> {
+    const grouped: Record<string, TicketAppointment[]> = {
+      'N1': [],
+      'N2': [],
+    };
+
+    for (const appointment of appointments) {
+      const level = appointment.service_level || 'n1';
+      const key = level.toUpperCase();
+
+      if (!grouped[key]) {
+        grouped[key] = [];
+      }
+      grouped[key].push(appointment);
+    }
+
+    return grouped;
+  }
+
+  /**
+   * Retorna o código do produto SIGE baseado no nível de serviço
+   */
+  private getProductCodeByLevel(level: string): string {
+    switch (level.toUpperCase()) {
+      case 'N2':
+        return SIGE_PRODUCT_CODES.ATENDIMENTO_N2;
+      case 'N1':
+      default:
+        return SIGE_PRODUCT_CODES.ATENDIMENTO_N1;
+    }
+  }
+
+  /**
+   * Marca apontamentos e valorizações como sincronizados com SIGE
+   */
+  private async markItemsAsSynced(ticketId: string, serviceOrderId: string): Promise<void> {
+    // Atualizar apontamentos
+    await this.appointmentRepository.update(
+      { ticket_id: ticketId },
+      { service_order_id: serviceOrderId },
+    );
+
+    // Atualizar valorizações
+    await this.valuationRepository.update(
+      { ticket_id: ticketId, category: ValuationCategory.CLIENT_CHARGE },
+      {
+        synced_to_sige: true,
+        synced_at: new Date(),
+        service_order_id: serviceOrderId,
+      },
+    );
+
+    this.logger.log(`Itens do ticket ${ticketId} marcados como sincronizados com OS ${serviceOrderId}`);
+  }
+
+  /**
+   * Buscar resumo de valores a faturar de um ticket
+   */
+  async getTicketBillingSummary(ticketId: string): Promise<{
+    appointments: {
+      n1: { hours: number; amount: number };
+      n2: { hours: number; amount: number };
+      contract: { hours: number; amount: number };
+      total: { hours: number; amount: number };
+    };
+    valuations: {
+      count: number;
+      amount: number;
+    };
+    grandTotal: number;
+  }> {
+    // Buscar apontamentos
+    const appointments = await this.appointmentRepository.find({
+      where: { ticket_id: ticketId },
+    });
+
+    // Buscar valorizações client_charge
+    const valuations = await this.valuationRepository.find({
+      where: {
+        ticket_id: ticketId,
+        category: ValuationCategory.CLIENT_CHARGE,
+      },
+    });
+
+    // Calcular apontamentos por tipo
+    const billableApps = appointments.filter(a => a.coverage_type === ServiceCoverageType.BILLABLE);
+    const contractApps = appointments.filter(a => a.coverage_type === ServiceCoverageType.CONTRACT);
+
+    const n1Apps = billableApps.filter(a => !a.service_level || a.service_level === 'n1');
+    const n2Apps = billableApps.filter(a => a.service_level === 'n2');
+
+    const calcHoursAndAmount = (apps: TicketAppointment[]) => ({
+      hours: apps.reduce((sum, a) => sum + (a.duration_minutes / 60), 0),
+      amount: apps.reduce((sum, a) => sum + Number(a.total_amount), 0),
+    });
+
+    const n1Summary = calcHoursAndAmount(n1Apps);
+    const n2Summary = calcHoursAndAmount(n2Apps);
+    const contractSummary = calcHoursAndAmount(contractApps);
+    const totalAppointments = calcHoursAndAmount([...billableApps, ...contractApps.filter(a => a.total_amount > 0)]);
+
+    // Calcular valorizações
+    const valuationAmount = valuations.reduce((sum, v) => sum + Number(v.final_amount), 0);
+
+    return {
+      appointments: {
+        n1: n1Summary,
+        n2: n2Summary,
+        contract: contractSummary,
+        total: totalAppointments,
+      },
+      valuations: {
+        count: valuations.length,
+        amount: valuationAmount,
+      },
+      grandTotal: totalAppointments.amount + valuationAmount,
+    };
+  }
+}
