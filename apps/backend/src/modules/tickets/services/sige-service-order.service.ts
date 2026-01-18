@@ -324,7 +324,43 @@ export class SigeServiceOrderService {
 
       this.logger.log(`Pedido criado no SIGE com código: ${sigeOrderId}`);
 
-      // 8. Atualizar apontamentos e valorizações com o ID da OS
+      // 8. Criar lançamento financeiro para faturar o pedido
+      try {
+        const dataCompetencia = ticket.created_at ? new Date(ticket.created_at) : new Date();
+        const dataVencimento = new Date(dataCompetencia);
+        dataVencimento.setDate(dataVencimento.getDate() + 30); // Vencimento em 30 dias
+
+        const lancamento = {
+          DataCompetencia: dataCompetencia.toISOString(),
+          DataVencimento: dataVencimento.toISOString(),
+          Empresa: 'Infoservice Informática',
+          Cliente: sigeClient.nome,
+          NumeroDocumento: `Pedido ${sigeOrderId}`,
+          Descricao: `Valor de R$${valorFinal.toFixed(2)} referente ao Ticket #${ticket.ticket_number}`,
+          Observacoes: obsTexto,
+          EhDespesa: false,
+          PlanoDeConta: 'RECEITAS',
+          ContaBancaria: 'BANCO DO BRASIL',
+          FormaPagamento: 'Crédito Loja',
+          Valor: valorFinal,
+          Quitado: false,
+          CodigoVenda: sigeOrderId,
+        };
+
+        this.logger.log(`Criando lançamento financeiro: ${JSON.stringify(lancamento, null, 2)}`);
+
+        const lancamentoResponse = await this.sigeCloudService.post<any>(
+          '/request/lancamentos/Salvar',
+          lancamento,
+        );
+
+        this.logger.log(`Resposta do lançamento: ${JSON.stringify(lancamentoResponse, null, 2)}`);
+      } catch (lancamentoError) {
+        // Se falhar ao criar lançamento, apenas loga o erro mas não falha o processo
+        this.logger.warn(`Não foi possível criar lançamento financeiro automático: ${lancamentoError.message}`);
+      }
+
+      // 9. Atualizar apontamentos e valorizações com o ID da OS
       await this.markItemsAsSynced(ticketId, sigeOrderId.toString());
 
       return {
