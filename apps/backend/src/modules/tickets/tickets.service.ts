@@ -18,6 +18,7 @@ import { CACHE_MANAGER } from '../../shared/shared.module';
 import { SimpleCacheService } from '../../shared/services/simple-cache.service';
 import { PaginatedResult } from './interfaces/paginated-result.interface';
 import { ClientsService } from '../clients/clients.service';
+import { TicketHistoryService } from './services/ticket-history.service';
 
 @Injectable()
 export class TicketsService {
@@ -33,6 +34,7 @@ export class TicketsService {
     @Inject(CACHE_MANAGER) private cacheManager: SimpleCacheService,
     @Inject(forwardRef(() => ClientsService))
     private clientsService: ClientsService,
+    private ticketHistoryService: TicketHistoryService,
   ) {
     this.initializeTicketCounter();
   }
@@ -100,6 +102,13 @@ export class TicketsService {
         });
 
         const savedTicket = await this.ticketsRepository.save(ticket);
+
+        // Registrar no histórico
+        await this.ticketHistoryService.recordCreated(
+          savedTicket.id,
+          createdById || '',
+          ticketNumber,
+        );
 
         // Emitir evento de criação
         this.eventEmitter.emit('ticket.created', savedTicket);
@@ -350,9 +359,14 @@ export class TicketsService {
   /**
    * Atualiza um ticket
    */
-  async update(id: string, updateTicketDto: UpdateTicketDto): Promise<Ticket> {
+  async update(id: string, updateTicketDto: UpdateTicketDto, userId?: string): Promise<Ticket> {
     try {
       const ticket = await this.findOne(id);
+
+      // Guardar valores antigos para histórico
+      const oldStatus = ticket.status;
+      const oldPriority = ticket.priority;
+      const oldAssignedToId = ticket.assigned_to_id;
 
       // Verificar mudanças de status importantes
       if (updateTicketDto.status && updateTicketDto.status !== ticket.status) {
@@ -363,6 +377,16 @@ export class TicketsService {
       Object.assign(ticket, updateTicketDto);
 
       const updatedTicket = await this.ticketsRepository.save(ticket);
+
+      // Registrar mudanças no histórico
+      await this.recordTicketChanges(
+        updatedTicket.id,
+        userId || null,
+        oldStatus,
+        oldPriority,
+        oldAssignedToId,
+        updateTicketDto,
+      );
 
       // Emitir evento de atualização
       this.eventEmitter.emit('ticket.updated', {
@@ -382,6 +406,57 @@ export class TicketsService {
       }
       this.logger.error(`Erro ao atualizar ticket ${id}`, error);
       throw new BadRequestException('Erro ao atualizar ticket');
+    }
+  }
+
+  /**
+   * Registra mudanças do ticket no histórico
+   */
+  private async recordTicketChanges(
+    ticketId: string,
+    userId: string | null,
+    oldStatus: string,
+    oldPriority: string,
+    oldAssignedToId: string | null,
+    dto: UpdateTicketDto,
+  ): Promise<void> {
+    try {
+      // Registrar mudança de status
+      if (dto.status && dto.status !== oldStatus) {
+        await this.ticketHistoryService.recordStatusChange(
+          ticketId,
+          userId,
+          oldStatus,
+          dto.status,
+        );
+      }
+
+      // Registrar mudança de prioridade
+      if (dto.priority && dto.priority !== oldPriority) {
+        await this.ticketHistoryService.recordPriorityChange(
+          ticketId,
+          userId,
+          oldPriority,
+          dto.priority,
+        );
+      }
+
+      // Registrar mudança de atribuição
+      if (dto.assigned_to_id !== undefined && dto.assigned_to_id !== oldAssignedToId) {
+        if (dto.assigned_to_id) {
+          await this.ticketHistoryService.recordAssigned(
+            ticketId,
+            userId,
+            dto.assigned_to_id,
+            'Atendente', // TODO: buscar nome do atendente
+          );
+        } else if (oldAssignedToId) {
+          await this.ticketHistoryService.recordUnassigned(ticketId, userId);
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`Erro ao registrar histórico: ${error.message}`);
+      // Não falhar a operação principal por erro no histórico
     }
   }
 
@@ -422,13 +497,31 @@ export class TicketsService {
   /**
    * Atribui um ticket a um atendente
    */
-  async assign(id: string, assignedToId: string): Promise<Ticket> {
+  async assign(id: string, assignedToId: string, userId?: string): Promise<Ticket> {
     try {
       const ticket = await this.findOne(id);
+      const oldAssignedToId = ticket.assigned_to_id;
 
       ticket.assigned_to_id = assignedToId;
 
       const updatedTicket = await this.ticketsRepository.save(ticket);
+
+      // Registrar no histórico
+      if (oldAssignedToId !== assignedToId) {
+        try {
+          // Buscar nome do atendente se possível
+          const assignedUser = updatedTicket.assigned_to;
+          const assignedName = assignedUser?.name || 'Atendente';
+          await this.ticketHistoryService.recordAssigned(
+            id,
+            userId || null,
+            assignedToId,
+            assignedName,
+          );
+        } catch (error) {
+          this.logger.warn(`Erro ao registrar atribuição no histórico: ${error.message}`);
+        }
+      }
 
       // Emitir evento de atribuição
       this.eventEmitter.emit('ticket.assigned', {
@@ -450,13 +543,25 @@ export class TicketsService {
   /**
    * Remove a atribuição de um ticket
    */
-  async unassign(id: string): Promise<Ticket> {
+  async unassign(id: string, userId?: string): Promise<Ticket> {
     try {
       const ticket = await this.findOne(id);
+      const previousAssignedName = ticket.assigned_to?.name;
 
       ticket.assigned_to_id = null;
 
       const updatedTicket = await this.ticketsRepository.save(ticket);
+
+      // Registrar no histórico
+      try {
+        await this.ticketHistoryService.recordUnassigned(
+          id,
+          userId || null,
+          previousAssignedName,
+        );
+      } catch (error) {
+        this.logger.warn(`Erro ao registrar remoção de atribuição no histórico: ${error.message}`);
+      }
 
       await this.invalidateTicketCache();
 

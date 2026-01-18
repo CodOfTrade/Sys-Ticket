@@ -23,6 +23,7 @@ import { TicketAppointmentsService } from '../services/ticket-appointments.servi
 import { TicketValuationsService } from '../services/ticket-valuations.service';
 import { ChecklistsService } from '../services/checklists.service';
 import { SigeServiceOrderService } from '../services/sige-service-order.service';
+import { TicketHistoryService } from '../services/ticket-history.service';
 import { CreateCommentDto, UpdateCommentDto } from '../dto/create-comment.dto';
 import {
   CreateAppointmentDto,
@@ -53,6 +54,7 @@ export class TicketDetailsController {
     private readonly valuationsService: TicketValuationsService,
     private readonly checklistsService: ChecklistsService,
     private readonly sigeServiceOrderService: SigeServiceOrderService,
+    private readonly historyService: TicketHistoryService,
   ) {}
 
   // ==================== COMENTÁRIOS ====================
@@ -395,9 +397,35 @@ export class TicketDetailsController {
   @ApiOperation({ summary: 'Buscar histórico de alterações do ticket' })
   @ApiParam({ name: 'ticketId', description: 'ID do ticket' })
   @ApiResponse({ status: 200, description: 'Histórico retornado com sucesso' })
-  async getTicketHistory(@Param('ticketId') ticketId: string) {
-    // TODO: Implementar serviço de histórico completo
-    // Por enquanto retorna array vazio para não quebrar o frontend
-    return { success: true, data: [], errors: [] };
+  async getTicketHistory(
+    @Param('ticketId') ticketId: string,
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
+  ) {
+    const history = await this.historyService.getTicketHistory(
+      ticketId,
+      limit || 100,
+      offset || 0,
+    );
+
+    // Formatar para o frontend
+    const formattedHistory = history.map((h) => ({
+      id: h.id,
+      action: h.action,
+      field: h.field,
+      old_value: h.old_value,
+      new_value: h.new_value,
+      description: h.description,
+      created_at: h.created_at,
+      user: h.user
+        ? {
+            id: h.user.id,
+            name: h.user.name,
+            email: h.user.email,
+          }
+        : null,
+    }));
+
+    return { success: true, data: formattedHistory, errors: [] };
   }
 }

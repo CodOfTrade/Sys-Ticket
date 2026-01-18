@@ -13,6 +13,7 @@ import {
 } from '../dto/create-appointment.dto';
 import { PricingConfigService } from '../../service-desks/services/pricing-config.service';
 import { ServiceType, PricingConfig } from '../../service-desks/entities/pricing-config.entity';
+import { TicketHistoryService } from './ticket-history.service';
 
 @Injectable()
 export class TicketAppointmentsService {
@@ -30,6 +31,7 @@ export class TicketAppointmentsService {
     @InjectRepository(TicketAttachment)
     private attachmentRepository: Repository<TicketAttachment>,
     private pricingConfigService: PricingConfigService,
+    private ticketHistoryService: TicketHistoryService,
   ) {}
 
   /**
@@ -160,6 +162,21 @@ export class TicketAppointmentsService {
     await this.calculateAndApplyPrice(appointment);
 
     const savedAppointment = await this.appointmentRepository.save(appointment);
+
+    // Registrar no histórico
+    try {
+      const hours = Math.floor(duration / 60);
+      const minutes = duration % 60;
+      const durationText = `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+      await this.ticketHistoryService.recordHistory({
+        ticket_id: dto.ticket_id,
+        user_id: userId,
+        action: 'appointment_added',
+        description: `Apontamento registrado: ${durationText}`,
+      });
+    } catch (error) {
+      this.logger.warn(`Erro ao registrar apontamento no histórico: ${error.message}`);
+    }
 
     // Criar comentário se send_as_response = true
     if (dto.send_as_response) {

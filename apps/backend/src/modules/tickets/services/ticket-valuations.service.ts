@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TicketValuation } from '../entities/ticket-valuation.entity';
@@ -7,12 +7,16 @@ import {
   UpdateValuationDto,
   ApproveValuationDto,
 } from '../dto/create-valuation.dto';
+import { TicketHistoryService } from './ticket-history.service';
 
 @Injectable()
 export class TicketValuationsService {
+  private readonly logger = new Logger(TicketValuationsService.name);
+
   constructor(
     @InjectRepository(TicketValuation)
     private valuationRepository: Repository<TicketValuation>,
+    private ticketHistoryService: TicketHistoryService,
   ) {}
 
   /**
@@ -45,7 +49,21 @@ export class TicketValuationsService {
       final_amount: finalAmount,
     });
 
-    return this.valuationRepository.save(valuation);
+    const savedValuation = await this.valuationRepository.save(valuation);
+
+    // Registrar no histórico
+    try {
+      await this.ticketHistoryService.recordHistory({
+        ticket_id: dto.ticket_id,
+        user_id: userId,
+        action: 'valuation_added',
+        description: `Valorização adicionada: ${dto.description} (R$ ${finalAmount.toFixed(2)})`,
+      });
+    } catch (error) {
+      this.logger.warn(`Erro ao registrar valorização no histórico: ${error.message}`);
+    }
+
+    return savedValuation;
   }
 
   /**
@@ -127,7 +145,23 @@ export class TicketValuationsService {
     valuation.approved_by_id = userId;
     valuation.approved_at = new Date();
 
-    return this.valuationRepository.save(valuation);
+    const savedValuation = await this.valuationRepository.save(valuation);
+
+    // Registrar no histórico
+    try {
+      const action = dto.is_approved ? 'valuation_approved' : 'valuation_rejected';
+      const statusText = dto.is_approved ? 'aprovada' : 'rejeitada';
+      await this.ticketHistoryService.recordHistory({
+        ticket_id: valuation.ticket_id,
+        user_id: userId,
+        action,
+        description: `Valorização ${statusText}: ${valuation.description}`,
+      });
+    } catch (error) {
+      this.logger.warn(`Erro ao registrar aprovação de valorização no histórico: ${error.message}`);
+    }
+
+    return savedValuation;
   }
 
   /**

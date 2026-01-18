@@ -6,6 +6,7 @@ import { Ticket } from '../entities/ticket.entity';
 import { CreateCommentDto, UpdateCommentDto } from '../dto/create-comment.dto';
 import { EmailService } from '../../email/email.service';
 import { ConfigService } from '@nestjs/config';
+import { TicketHistoryService } from './ticket-history.service';
 
 @Injectable()
 export class TicketCommentsService {
@@ -18,6 +19,7 @@ export class TicketCommentsService {
     private ticketRepository: Repository<Ticket>,
     private emailService: EmailService,
     private configService: ConfigService,
+    private ticketHistoryService: TicketHistoryService,
   ) {}
 
   async create(userId: string, dto: CreateCommentDto, ticketId: string) {
@@ -33,6 +35,17 @@ export class TicketCommentsService {
     }
 
     const savedComment = await this.commentRepository.save(comment);
+
+    // Registrar no histórico
+    try {
+      await this.ticketHistoryService.recordCommented(
+        ticketId,
+        userId,
+        dto.is_internal || false,
+      );
+    } catch (error) {
+      this.logger.warn(`Erro ao registrar comentário no histórico: ${error.message}`);
+    }
 
     // Enviar email se send_to_client = true
     if (dto.sent_to_client) {

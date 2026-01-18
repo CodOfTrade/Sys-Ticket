@@ -188,8 +188,12 @@ export class TicketsController {
     status: 400,
     description: 'Dados inválidos',
   })
-  async update(@Param('id') id: string, @Body() updateTicketDto: UpdateTicketDto) {
-    return this.ticketsService.update(id, updateTicketDto);
+  async update(
+    @Param('id') id: string,
+    @Body() updateTicketDto: UpdateTicketDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.ticketsService.update(id, updateTicketDto, userId);
   }
 
   @Patch(':id/assign/:assigneeId')
@@ -207,8 +211,12 @@ export class TicketsController {
     status: 404,
     description: 'Ticket não encontrado',
   })
-  async assign(@Param('id') id: string, @Param('assigneeId') assigneeId: string) {
-    return this.ticketsService.assign(id, assigneeId);
+  async assign(
+    @Param('id') id: string,
+    @Param('assigneeId') assigneeId: string,
+    @CurrentUser('id') userId?: string,
+  ) {
+    return this.ticketsService.assign(id, assigneeId, userId);
   }
 
   @Patch(':id/unassign')
@@ -225,8 +233,8 @@ export class TicketsController {
     status: 404,
     description: 'Ticket não encontrado',
   })
-  async unassign(@Param('id') id: string) {
-    return this.ticketsService.unassign(id);
+  async unassign(@Param('id') id: string, @CurrentUser('id') userId?: string) {
+    return this.ticketsService.unassign(id, userId);
   }
 
   @Delete(':id')
