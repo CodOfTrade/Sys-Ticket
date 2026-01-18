@@ -244,7 +244,7 @@ export class SigeServiceOrderService {
         observacoes ? `\nComentário: ${observacoes}` : '',
       ].filter(Boolean).join('');
 
-      // Payload seguindo modelo exato da API SIGE para criar Pedido aprovado
+      // Payload seguindo modelo exato da API SIGE para criar Pedido e faturar
       const pedido = {
         StatusSistema: 'Pedido',
         DataAprovacaoPedido: new Date().toISOString(),
@@ -256,6 +256,10 @@ export class SigeServiceOrderService {
         CEP: sigeClient.cep ? parseInt(sigeClient.cep.replace(/\D/g, '')) : 0,
         PlanoDeConta: 'RECEITAS',
         Observacoes: obsTexto,
+        // Campos para faturamento automático
+        FormaPagamento: 'Crédito Loja',
+        ContaBancaria: 'BANCO DO BRASIL',
+        DataFaturamento: ticket.created_at ? new Date(ticket.created_at).toISOString() : new Date().toISOString(),
         Items: items.map(item => ({
           Codigo: item.Codigo,
           Descricao: item.Descricao || '',
@@ -289,11 +293,13 @@ export class SigeServiceOrderService {
 
       // Extrair código do pedido da resposta
       // A resposta pode vir como objeto com Codigo ou como string "PEDIDO 11205 SALVO COM SUCESSO!"
-      let sigeOrderId = response?.Codigo;
+      let sigeOrderId: number | undefined = (response as SigePedidoResponse)?.Codigo;
 
-      if (!sigeOrderId && typeof response === 'string') {
+      // Se não veio como objeto, tentar extrair da string
+      const responseStr = String(response);
+      if (!sigeOrderId) {
         // Tentar extrair o número do pedido da mensagem de sucesso
-        const match = response.match(/PEDIDO\s+(\d+)\s+SALVO/i);
+        const match = responseStr.match(/PEDIDO\s+(\d+)\s+SALVO/i);
         if (match) {
           sigeOrderId = parseInt(match[1], 10);
           this.logger.log(`Código do pedido extraído da mensagem: ${sigeOrderId}`);
@@ -303,7 +309,6 @@ export class SigeServiceOrderService {
       if (!sigeOrderId) {
         this.logger.error('SIGE não retornou o código do pedido');
         // Mesmo sem código, o pedido foi criado se a resposta contém "SUCESSO"
-        const responseStr = typeof response === 'string' ? response : JSON.stringify(response);
         if (responseStr.includes('SUCESSO')) {
           return {
             success: true,
