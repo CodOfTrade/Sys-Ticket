@@ -210,7 +210,7 @@ export class SigeServiceOrderService {
       // 6. Montar payload do pedido SIGE
       const pedido: SigePedido = {
         OrigemVenda: 'Sys-Ticket',
-        Empresa: '603e5f19fe1ad70dfc322954', // ID da Infoservice no SIGE
+        Empresa: 'Infoservice Informática', // NomeFantasia da empresa no SIGE
         Deposito: 'PADRÃO', // Depósito padrão do SIGE
         Cliente: sigeClient?.cpfCnpj || ticket.client_name,
         ClienteCNPJ: sigeClient?.cpfCnpj,
