@@ -282,6 +282,9 @@ export class SigeServiceOrderService {
         pedido,
       );
 
+      // Log da resposta completa do SIGE para debug
+      this.logger.log(`Resposta completa do SIGE: ${JSON.stringify(response, null, 2)}`);
+
       const sigeOrderId = response?.Codigo;
 
       if (!sigeOrderId) {
