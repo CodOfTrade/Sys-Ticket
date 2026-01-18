@@ -9,30 +9,44 @@ import { SigeClient } from '../../clients/entities/sige-client.entity';
 import { SigeProduct } from '../../clients/entities/sige-product.entity';
 import { ConfigService } from '@nestjs/config';
 
-// Interface para o pedido do SIGE Cloud
+// Interface para o pedido do SIGE Cloud (baseado no modelo real da API)
 interface SigePedidoItem {
   Codigo: string;           // Código do produto no SIGE
   Quantidade: number;
   ValorUnitario: number;
-  Descricao?: string;       // Descrição adicional do item
+  Descricao?: string;       // Descrição do item (será preenchida automaticamente pelo SIGE)
+  Unidade?: string;
+  ValorFrete?: number;
+  DescontoUnitario?: number;
+  ValorTotal?: number;
 }
 
 interface SigePedido {
   Codigo?: number;          // Se null, cria novo. Se preenchido, atualiza
-  OrigemVenda: string;      // Ex: "Sys-Ticket"
-  Empresa: string;          // CNPJ da empresa emissora (Infoservice)
-  Deposito?: string;
-  Cliente: string;          // CNPJ ou Nome do cliente
+  OrigemVenda: string;      // "PDV", "Venda Direta", etc.
+  Empresa: string;          // NomeFantasia da empresa
+  EmpresaID: string;        // ID da empresa no SIGE
+  Deposito: string;         // Nome do depósito
+  DepositoID: string;       // ID do depósito no SIGE
+  Cliente: string;          // Nome do cliente
+  ClienteID: string;        // ID do cliente no SIGE
+  PessoaID: string;         // ID do cliente no SIGE (mesmo que ClienteID)
   ClienteCNPJ?: string;     // CNPJ do cliente
   StatusSistema: string;    // "Orçamento", "Pedido", "Pedido Faturado"
+  Status?: string;          // Status customizado (opcional)
   Items: SigePedidoItem[];
-  Observacoes?: string;
-  DataPedido?: string;      // Formato ISO
+  Descricao?: string;       // Observações
+  Data: string;             // Data do pedido (formato ISO)
   Vendedor?: string;        // Nome do vendedor/técnico
+  PlanoDeConta?: string;    // Plano de conta (default: "RECEITAS")
+  ValorFrete?: number;
+  OutrasDespesas?: number;
+  ValorSeguro?: number;
 }
 
 interface SigePedidoResponse {
   Codigo: number;
+  ID?: string;
   Mensagem?: string;
 }
 
@@ -207,18 +221,40 @@ export class SigeServiceOrderService {
         };
       }
 
-      // 6. Montar payload do pedido SIGE
+      // 6. Montar payload do pedido SIGE (seguindo modelo real da API)
+      // IDs fixos da Infoservice (conforme dados do SIGE)
+      const EMPRESA_ID = '603e5f19fe1ad70dfc322954';
+      const DEPOSITO_ID = '6036575cfe1ad809806199e5';
+
+      // Verificar se temos o sigeId do cliente
+      if (!sigeClient?.sigeId) {
+        this.logger.error(`Cliente não possui sigeId para criar pedido no SIGE`);
+        return {
+          success: false,
+          message: 'Cliente não está sincronizado com o SIGE. Sincronize o cliente primeiro.',
+        };
+      }
+
       const pedido: SigePedido = {
-        OrigemVenda: 'Venda Direta', // Origem válida no SIGE (PDV, Venda Direta, etc.)
-        Empresa: 'Infoservice Informática', // NomeFantasia da empresa no SIGE
-        Deposito: 'PADRÃO', // Depósito padrão do SIGE
-        Cliente: sigeClient?.cpfCnpj || ticket.client_name,
-        ClienteCNPJ: sigeClient?.cpfCnpj,
-        StatusSistema: 'Pedido', // Já aprovado, pronto para faturamento
+        OrigemVenda: 'Venda Direta',
+        Empresa: 'Infoservice Informática',
+        EmpresaID: EMPRESA_ID,
+        Deposito: 'PADRÃO',
+        DepositoID: DEPOSITO_ID,
+        Cliente: sigeClient.nome,
+        ClienteID: sigeClient.sigeId,
+        PessoaID: sigeClient.sigeId,
+        ClienteCNPJ: sigeClient.cpfCnpj,
+        StatusSistema: 'Orçamento', // Criar como orçamento para revisão
+        Status: `Ticket #${ticket.ticket_number}`,
         Items: items,
-        Observacoes: `Ticket #${ticket.ticket_number} - ${ticket.title}\n\nGerado automaticamente pelo Sys-Ticket`,
-        DataPedido: new Date().toISOString(),
-        Vendedor: ticket.assigned_to?.name || 'Sistema',
+        Descricao: `Ticket #${ticket.ticket_number} - ${ticket.title}`,
+        Data: new Date().toISOString(),
+        Vendedor: ticket.assigned_to?.name || null,
+        PlanoDeConta: 'RECEITAS',
+        ValorFrete: 0,
+        OutrasDespesas: 0,
+        ValorSeguro: 0,
       };
 
       this.logger.log(`Payload do pedido SIGE: ${JSON.stringify(pedido, null, 2)}`);
