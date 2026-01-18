@@ -250,7 +250,7 @@ export class SigeServiceOrderService {
         Items: items,
         Descricao: `Ticket #${ticket.ticket_number} - ${ticket.title}`,
         Data: new Date().toISOString(),
-        Vendedor: ticket.assigned_to?.name || null,
+        Vendedor: ticket.assigned_to?.name || undefined,
         PlanoDeConta: 'RECEITAS',
         ValorFrete: 0,
         OutrasDespesas: 0,
