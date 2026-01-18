@@ -245,13 +245,12 @@ export class SigeServiceOrderService {
         observacoes ? `\nComentário: ${observacoes}` : '',
       ].filter(Boolean).join('');
 
-      // Payload seguindo modelo da API SIGE para criar Pedido Não Faturado
-      // Fluxo SIGE: Orçamento -> Pedido -> Pedido Não Faturado (aprovado, aguardando faturamento)
-      // StatusSistema: 'Pedido Não Faturado' = pedido aprovado, aguardando faturamento manual
-      // Campos de faturamento (FormaPagamento, ContaBancaria, DataFaturamento) foram REMOVIDOS
-      // para evitar faturamento automático
+      // Payload seguindo modelo da API SIGE para criar Pedido (aprovado, não faturado)
+      // StatusSistema válidos: "Orçamento", "Pedido", "Pedido Faturado"
+      // StatusSistema: 'Pedido' = pedido aprovado, aguardando faturamento manual
+      // O endpoint /Salvar NÃO fatura automaticamente (diferente do /SalvarEFaturar)
       const pedido = {
-        StatusSistema: 'Pedido Não Faturado',
+        StatusSistema: 'Pedido',
         DataAprovacaoPedido: new Date().toISOString(),
         Cliente: sigeClient.nome,
         ClienteCNPJ: sigeClient.cpfCnpj,
