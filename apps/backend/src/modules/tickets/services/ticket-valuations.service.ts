@@ -8,6 +8,7 @@ import {
   ApproveValuationDto,
 } from '../dto/create-valuation.dto';
 import { TicketHistoryService } from './ticket-history.service';
+import { HistoryAction } from '../entities/ticket-history.entity';
 
 @Injectable()
 export class TicketValuationsService {
@@ -56,7 +57,7 @@ export class TicketValuationsService {
       await this.ticketHistoryService.recordHistory({
         ticket_id: dto.ticket_id,
         user_id: userId,
-        action: 'valuation_added',
+        action: HistoryAction.VALUATION_ADDED,
         description: `Valorização adicionada: ${dto.description} (R$ ${finalAmount.toFixed(2)})`,
       });
     } catch (error) {
@@ -149,7 +150,7 @@ export class TicketValuationsService {
 
     // Registrar no histórico
     try {
-      const action = dto.is_approved ? 'valuation_approved' : 'valuation_rejected';
+      const action = dto.is_approved ? HistoryAction.VALUATION_APPROVED : HistoryAction.VALUATION_REJECTED;
       const statusText = dto.is_approved ? 'aprovada' : 'rejeitada';
       await this.ticketHistoryService.recordHistory({
         ticket_id: valuation.ticket_id,

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { TicketComment } from '../entities/ticket-comment.entity';
+import { TicketComment, CommentType, CommentVisibility } from '../entities/ticket-comment.entity';
 import { Ticket } from '../entities/ticket.entity';
 import { CreateCommentDto, UpdateCommentDto } from '../dto/create-comment.dto';
 import { EmailService } from '../../email/email.service';
@@ -38,10 +38,11 @@ export class TicketCommentsService {
 
     // Registrar no histórico
     try {
+      const isInternal = dto.type === CommentType.INTERNAL || dto.visibility === CommentVisibility.PRIVATE;
       await this.ticketHistoryService.recordCommented(
         ticketId,
         userId,
-        dto.is_internal || false,
+        isInternal,
       );
     } catch (error) {
       this.logger.warn(`Erro ao registrar comentário no histórico: ${error.message}`);

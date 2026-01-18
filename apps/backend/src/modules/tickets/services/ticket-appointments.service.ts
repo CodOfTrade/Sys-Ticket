@@ -14,6 +14,7 @@ import {
 import { PricingConfigService } from '../../service-desks/services/pricing-config.service';
 import { ServiceType, PricingConfig } from '../../service-desks/entities/pricing-config.entity';
 import { TicketHistoryService } from './ticket-history.service';
+import { HistoryAction } from '../entities/ticket-history.entity';
 
 @Injectable()
 export class TicketAppointmentsService {
@@ -169,9 +170,9 @@ export class TicketAppointmentsService {
       const minutes = duration % 60;
       const durationText = `${hours}h ${minutes.toString().padStart(2, '0')}m`;
       await this.ticketHistoryService.recordHistory({
-        ticket_id: dto.ticket_id,
+        ticket_id: appointment.ticket_id,
         user_id: userId,
-        action: 'appointment_added',
+        action: HistoryAction.APPOINTMENT_ADDED,
         description: `Apontamento registrado: ${durationText}`,
       });
     } catch (error) {

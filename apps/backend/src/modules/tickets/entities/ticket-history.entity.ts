@@ -20,6 +20,10 @@ export enum HistoryAction {
   PRIORITY_CHANGED = 'priority_changed',
   CLIENT_CHANGED = 'client_changed',
   REQUESTER_CHANGED = 'requester_changed',
+  APPOINTMENT_ADDED = 'appointment_added',
+  VALUATION_ADDED = 'valuation_added',
+  VALUATION_APPROVED = 'valuation_approved',
+  VALUATION_REJECTED = 'valuation_rejected',
 }
 
 @Entity('ticket_history')

@@ -4,12 +4,12 @@ import { Repository } from 'typeorm';
 import { TicketHistory, HistoryAction } from '../entities/ticket-history.entity';
 
 interface RecordHistoryParams {
-  ticketId: string;
-  userId?: string | null;
+  ticket_id: string;
+  user_id?: string | null;
   action: HistoryAction;
   field?: string | null;
-  oldValue?: string | null;
-  newValue?: string | null;
+  old_value?: string | null;
+  new_value?: string | null;
   description?: string | null;
 }
 
@@ -26,20 +26,20 @@ export class TicketHistoryService {
    * Registra uma ação no histórico do ticket
    */
   async recordHistory(params: RecordHistoryParams): Promise<TicketHistory> {
-    const { ticketId, userId, action, field, oldValue, newValue, description } = params;
+    const { ticket_id, user_id, action, field, old_value, new_value, description } = params;
 
     const history = this.historyRepository.create({
-      ticket_id: ticketId,
-      user_id: userId || null,
+      ticket_id,
+      user_id: user_id || null,
       action,
       field: field || null,
-      old_value: oldValue || null,
-      new_value: newValue || null,
+      old_value: old_value || null,
+      new_value: new_value || null,
       description: description || null,
     });
 
     const saved = await this.historyRepository.save(history);
-    this.logger.debug(`Histórico registrado: ${action} para ticket ${ticketId}`);
+    this.logger.debug(`Histórico registrado: ${action} para ticket ${ticket_id}`);
     return saved;
   }
 
@@ -48,8 +48,8 @@ export class TicketHistoryService {
    */
   async recordCreated(ticketId: string, userId: string, ticketNumber: string): Promise<void> {
     await this.recordHistory({
-      ticketId,
-      userId,
+      ticket_id: ticketId,
+      user_id: userId,
       action: HistoryAction.CREATED,
       description: `Ticket ${ticketNumber} criado`,
     });
@@ -65,12 +65,12 @@ export class TicketHistoryService {
     newStatus: string,
   ): Promise<void> {
     await this.recordHistory({
-      ticketId,
-      userId,
+      ticket_id: ticketId,
+      user_id: userId,
       action: HistoryAction.STATUS_CHANGED,
       field: 'status',
-      oldValue: oldStatus,
-      newValue: newStatus,
+      old_value: oldStatus,
+      new_value: newStatus,
       description: `Status alterado de "${this.translateStatus(oldStatus)}" para "${this.translateStatus(newStatus)}"`,
     });
   }
@@ -85,11 +85,11 @@ export class TicketHistoryService {
     assignedToName: string,
   ): Promise<void> {
     await this.recordHistory({
-      ticketId,
-      userId,
+      ticket_id: ticketId,
+      user_id: userId,
       action: HistoryAction.ASSIGNED,
       field: 'assigned_to_id',
-      newValue: assignedToId,
+      new_value: assignedToId,
       description: `Ticket atribuído a ${assignedToName}`,
     });
   }
@@ -103,8 +103,8 @@ export class TicketHistoryService {
     previousAssignedName?: string,
   ): Promise<void> {
     await this.recordHistory({
-      ticketId,
-      userId,
+      ticket_id: ticketId,
+      user_id: userId,
       action: HistoryAction.UNASSIGNED,
       field: 'assigned_to_id',
       description: previousAssignedName
@@ -123,12 +123,12 @@ export class TicketHistoryService {
     newPriority: string,
   ): Promise<void> {
     await this.recordHistory({
-      ticketId,
-      userId,
+      ticket_id: ticketId,
+      user_id: userId,
       action: HistoryAction.PRIORITY_CHANGED,
       field: 'priority',
-      oldValue: oldPriority,
-      newValue: newPriority,
+      old_value: oldPriority,
+      new_value: newPriority,
       description: `Prioridade alterada de "${this.translatePriority(oldPriority)}" para "${this.translatePriority(newPriority)}"`,
     });
   }
@@ -143,12 +143,12 @@ export class TicketHistoryService {
     newClientName: string,
   ): Promise<void> {
     await this.recordHistory({
-      ticketId,
-      userId,
+      ticket_id: ticketId,
+      user_id: userId,
       action: HistoryAction.CLIENT_CHANGED,
       field: 'client_id',
-      oldValue: oldClientName,
-      newValue: newClientName,
+      old_value: oldClientName,
+      new_value: newClientName,
       description: oldClientName
         ? `Cliente alterado de "${oldClientName}" para "${newClientName}"`
         : `Cliente definido como "${newClientName}"`,
@@ -165,12 +165,12 @@ export class TicketHistoryService {
     newRequester: string,
   ): Promise<void> {
     await this.recordHistory({
-      ticketId,
-      userId,
+      ticket_id: ticketId,
+      user_id: userId,
       action: HistoryAction.REQUESTER_CHANGED,
       field: 'requester_name',
-      oldValue: oldRequester,
-      newValue: newRequester,
+      old_value: oldRequester,
+      new_value: newRequester,
       description: oldRequester
         ? `Solicitante alterado de "${oldRequester}" para "${newRequester}"`
         : `Solicitante definido como "${newRequester}"`,
@@ -186,8 +186,8 @@ export class TicketHistoryService {
     isInternal: boolean,
   ): Promise<void> {
     await this.recordHistory({
-      ticketId,
-      userId,
+      ticket_id: ticketId,
+      user_id: userId,
       action: HistoryAction.COMMENTED,
       description: isInternal ? 'Comentário interno adicionado' : 'Comentário adicionado',
     });
@@ -204,12 +204,12 @@ export class TicketHistoryService {
     newValue: string | null,
   ): Promise<void> {
     await this.recordHistory({
-      ticketId,
-      userId,
+      ticket_id: ticketId,
+      user_id: userId,
       action: HistoryAction.UPDATED,
       field,
-      oldValue,
-      newValue,
+      old_value: oldValue,
+      new_value: newValue,
       description: `Campo "${this.translateField(field)}" atualizado`,
     });
   }
