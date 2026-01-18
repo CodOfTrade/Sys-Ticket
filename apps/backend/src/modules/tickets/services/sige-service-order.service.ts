@@ -257,16 +257,20 @@ export class SigeServiceOrderService {
         CEP: sigeClient.cep ? parseInt(sigeClient.cep.replace(/\D/g, '')) : 0,
         PlanoDeConta: 'RECEITAS PDV',
         Observacoes: obsTexto,
-        // Campos para faturamento automático
+        // Campos para faturamento automático (baseado em lançamentos reais do SIGE)
         FormaPagamento: 'Crédito Loja',
         ContaBancaria: 'SIGE BANK',
         DataFaturamento: new Date().toISOString(),
         Finalizado: true,
-        // Array de pagamentos necessário para faturar
+        NumeroParcelas: 1,
+        // Array de pagamentos no formato correto do SIGE
         Pagamentos: [{
           FormaPagamento: 'Crédito Loja',
+          ContaBancaria: 'SIGE BANK',
           ValorPagamento: valorFinal,
           Quitar: false,
+          Data: new Date().toISOString(),
+          NumeroDocumento: `Ticket ${ticket.ticket_number}`,
         }],
         Items: items.map(item => ({
           Codigo: item.Codigo,
