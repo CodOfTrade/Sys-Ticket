@@ -184,7 +184,7 @@ export class SigeServiceOrderService {
           if (productCode) {
             items.push({
               Codigo: productCode,
-              Quantidade: valuation.quantity,
+              Quantidade: parseFloat(valuation.quantity.toString()),
               ValorUnitario: parseFloat(valuation.unit_price.toString()),
               Descricao: valuation.description,
             });
