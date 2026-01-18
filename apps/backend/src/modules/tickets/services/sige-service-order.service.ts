@@ -277,8 +277,8 @@ export class SigeServiceOrderService {
 
       this.logger.log(`Payload do pedido SIGE: ${JSON.stringify(pedido, null, 2)}`);
 
-      // 7. Enviar para o SIGE Cloud - usando PUT para SalvarEFaturar
-      const response = await this.sigeCloudService.put<SigePedidoResponse>(
+      // 7. Enviar para o SIGE Cloud - usando POST para criar novo pedido e faturar
+      const response = await this.sigeCloudService.post<SigePedidoResponse>(
         '/request/pedidos/SalvarEFaturar',
         pedido,
       );
