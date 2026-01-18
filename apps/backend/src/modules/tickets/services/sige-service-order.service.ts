@@ -209,6 +209,7 @@ export class SigeServiceOrderService {
       // 6. Montar payload do pedido SIGE
       const pedido: SigePedido = {
         OrigemVenda: 'Sys-Ticket',
+        Deposito: 'PADRÃO', // Depósito padrão do SIGE
         Cliente: sigeClient?.cpfCnpj || ticket.client_name,
         ClienteCNPJ: sigeClient?.cpfCnpj,
         StatusSistema: 'Pedido', // Já aprovado, pronto para faturamento
