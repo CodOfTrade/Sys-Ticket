@@ -244,7 +244,7 @@ export class SigeServiceOrderService {
         observacoes ? `\nComentário: ${observacoes}` : '',
       ].filter(Boolean).join('');
 
-      // Payload seguindo modelo da API SIGE - criado como Pedido
+      // Payload seguindo modelo exato da API SIGE para criar Pedido aprovado
       const pedido = {
         StatusSistema: 'Pedido',
         DataAprovacaoPedido: new Date().toISOString(),
@@ -261,16 +261,24 @@ export class SigeServiceOrderService {
           ValorUnitario: item.ValorUnitario,
           ValorFrete: 0,
           DescontoUnitario: 0,
-          ValorTotal: item.Quantidade * item.ValorUnitario,
+          ValorTotal: 0,
+          PesoKG: 0,
+          Comprimento: 0,
+          Altura: 0,
+          Largura: 0,
+          FreteGratis: false,
+          ValorUnitarioFrete: 0,
+          PrazoEntregaFrete: 0,
+          Seguro: 0,
+          ProductGroupId: 0,
         })),
       };
 
       this.logger.log(`Payload do pedido SIGE: ${JSON.stringify(pedido, null, 2)}`);
 
-      // 7. Enviar para o SIGE Cloud usando SalvarEFaturar para criar já aprovado/faturado
-      // Endpoint: /request/Pedidos/SalvarEFaturar - cria e já prepara para faturamento
+      // 7. Enviar para o SIGE Cloud - endpoint Salvar para criar Pedido aprovado
       const response = await this.sigeCloudService.post<SigePedidoResponse>(
-        '/request/pedidos/SalvarEFaturar',
+        '/request/pedidos/salvar',
         pedido,
       );
 
