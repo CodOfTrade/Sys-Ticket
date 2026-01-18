@@ -244,9 +244,9 @@ export class SigeServiceOrderService {
         observacoes ? `\nComentário: ${observacoes}` : '',
       ].filter(Boolean).join('');
 
-      // Payload seguindo modelo da API SIGE - criado como Pedido Não Faturado
+      // Payload seguindo modelo da API SIGE - criado como Pedido
       const pedido = {
-        StatusSistema: 'Pedido Não Faturado',
+        StatusSistema: 'Pedido',
         DataAprovacaoPedido: new Date().toISOString(),
         Cliente: sigeClient.nome,
         ClienteCNPJ: sigeClient.cpfCnpj,
