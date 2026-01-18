@@ -287,10 +287,30 @@ export class SigeServiceOrderService {
       // Log da resposta completa do SIGE para debug
       this.logger.log(`Resposta completa do SIGE: ${JSON.stringify(response, null, 2)}`);
 
-      const sigeOrderId = response?.Codigo;
+      // Extrair código do pedido da resposta
+      // A resposta pode vir como objeto com Codigo ou como string "PEDIDO 11205 SALVO COM SUCESSO!"
+      let sigeOrderId = response?.Codigo;
+
+      if (!sigeOrderId && typeof response === 'string') {
+        // Tentar extrair o número do pedido da mensagem de sucesso
+        const match = response.match(/PEDIDO\s+(\d+)\s+SALVO/i);
+        if (match) {
+          sigeOrderId = parseInt(match[1], 10);
+          this.logger.log(`Código do pedido extraído da mensagem: ${sigeOrderId}`);
+        }
+      }
 
       if (!sigeOrderId) {
         this.logger.error('SIGE não retornou o código do pedido');
+        // Mesmo sem código, o pedido foi criado se a resposta contém "SUCESSO"
+        const responseStr = typeof response === 'string' ? response : JSON.stringify(response);
+        if (responseStr.includes('SUCESSO')) {
+          return {
+            success: true,
+            message: 'Pedido criado no SIGE (código não retornado)',
+            totalValue,
+          };
+        }
         return {
           success: false,
           message: 'Erro ao criar pedido no SIGE: código não retornado',
