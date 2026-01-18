@@ -254,6 +254,7 @@ export class SigeServiceOrderService {
         Deposito: 'PADRÃO',
         ValorFinal: valorFinal,
         CEP: sigeClient.cep ? parseInt(sigeClient.cep.replace(/\D/g, '')) : 0,
+        PlanoDeConta: 'RECEITAS',
         Observacoes: obsTexto,
         Items: items.map(item => ({
           Codigo: item.Codigo,
