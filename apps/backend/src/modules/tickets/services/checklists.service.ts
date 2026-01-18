@@ -201,7 +201,7 @@ export class ChecklistsService {
     // Registrar no histórico
     try {
       await this.ticketHistoryService.recordHistory({
-        ticket_id: dto.ticket_id,
+        ticket_id: ticketChecklist.ticket_id,
         user_id: userId,
         action: HistoryAction.CHECKLIST_ADDED,
         description: `Checklist adicionado: ${template.name}`,
