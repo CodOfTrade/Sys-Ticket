@@ -60,7 +60,7 @@ export class TicketApprovalsService {
     // Buscar ticket
     const ticket = await this.ticketRepository.findOne({
       where: { id: ticketId },
-      relations: ['client', 'created_by'],
+      relations: ['created_by', 'service_desk'],
     });
 
     if (!ticket) {
