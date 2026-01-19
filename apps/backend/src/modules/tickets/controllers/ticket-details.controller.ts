@@ -1139,8 +1139,8 @@ export class TicketDetailsController {
             const comment = document.getElementById('comment').value;
 
             loading.classList.add('active');
-            btnApprove.disabled = true;
-            btnReject.disabled = true;
+            if (btnApprove) btnApprove.disabled = true;
+            if (btnReject) btnReject.disabled = true;
 
             fetch('/api/v1/tickets/public/approval/${token}/submit', {
               method: 'POST',
@@ -1177,15 +1177,15 @@ export class TicketDetailsController {
                   </div>
                 \`;
               } else {
-                btnApprove.disabled = false;
-                btnReject.disabled = false;
+                if (btnApprove) btnApprove.disabled = false;
+                if (btnReject) btnReject.disabled = false;
                 alert('Erro: ' + (data.message || 'Falha ao processar aprovacao'));
               }
             })
             .catch(error => {
               loading.classList.remove('active');
-              btnApprove.disabled = false;
-              btnReject.disabled = false;
+              if (btnApprove) btnApprove.disabled = false;
+              if (btnReject) btnReject.disabled = false;
               alert('Erro ao enviar: ' + error.message);
             });
           }
