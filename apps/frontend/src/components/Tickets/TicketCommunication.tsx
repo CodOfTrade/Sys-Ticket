@@ -186,7 +186,7 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
         </div>
       ) : (
         <div className="space-y-4">
-          {comments.map((comment) => (
+          {[...comments].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((comment) => (
             <div
               key={comment.id}
               className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"

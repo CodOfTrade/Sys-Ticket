@@ -28,6 +28,7 @@ export enum TicketStatus {
   WAITING_THIRD_PARTY = 'waiting_third_party',
   PAUSED = 'paused',
   WAITING_APPROVAL = 'waiting_approval',
+  REJECTED_BY_APPROVER = 'rejected_by_approver', // Rejeitado pelo aprovador externo
   WAITING_EVALUATION = 'waiting_evaluation', // Fechado - Em Avaliação (aguardando ticket master)
   APPROVED = 'approved',                      // Aprovado - Enviado para Faturamento
   REOPENED = 'reopened',                      // Reaberto (reprovado pelo ticket master ou reaberto após cancelamento)

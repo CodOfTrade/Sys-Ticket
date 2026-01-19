@@ -220,9 +220,11 @@ export class TicketApprovalsService {
     // Atualizar status do ticket
     if (dto.decision === 'approved') {
       ticket.status = TicketStatus.IN_PROGRESS;
-      await this.ticketRepository.save(ticket);
+    } else {
+      // Se rejeitado, muda para REJECTED_BY_APPROVER
+      ticket.status = TicketStatus.REJECTED_BY_APPROVER;
     }
-    // Se rejeitado, mantém em WAITING_APPROVAL para nova tentativa ou ação manual
+    await this.ticketRepository.save(ticket);
 
     // Sempre adicionar comentário ao ticket com a decisão
     await this.addApprovalComment(approval, dto.decision);

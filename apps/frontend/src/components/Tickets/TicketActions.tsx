@@ -208,8 +208,8 @@ export function TicketActions({ ticket, onNavigateToApproval }: TicketActionsPro
     const statusLabels: Record<string, string> = {
       new: 'Novo', in_progress: 'Em Andamento', waiting_client: 'Aguardando Cliente',
       waiting_third_party: 'Aguardando Terceiro', paused: 'Pausado', waiting_approval: 'Aguardando Aprovação',
-      waiting_evaluation: 'Em Avaliação', approved: 'Aprovado', reopened: 'Reaberto',
-      resolved: 'Resolvido', cancelled: 'Cancelado'
+      rejected_by_approver: 'Rejeitado pelo Aprovador', waiting_evaluation: 'Em Avaliação', approved: 'Aprovado',
+      reopened: 'Reaberto', resolved: 'Resolvido', cancelled: 'Cancelado'
     };
     const priorityLabels: Record<string, string> = {
       low: 'Baixa', medium: 'Média', high: 'Alta', urgent: 'Urgente'
@@ -489,8 +489,8 @@ export function TicketActions({ ticket, onNavigateToApproval }: TicketActionsPro
     const statusLabels: Record<string, string> = {
       new: 'Novo', in_progress: 'Em Andamento', waiting_client: 'Aguardando Cliente',
       waiting_third_party: 'Aguardando Terceiro', paused: 'Pausado', waiting_approval: 'Aguardando Aprovação',
-      waiting_evaluation: 'Em Avaliação', approved: 'Aprovado', reopened: 'Reaberto',
-      resolved: 'Resolvido', cancelled: 'Cancelado'
+      rejected_by_approver: 'Rejeitado pelo Aprovador', waiting_evaluation: 'Em Avaliação', approved: 'Aprovado',
+      reopened: 'Reaberto', resolved: 'Resolvido', cancelled: 'Cancelado'
     };
     const priorityLabels: Record<string, string> = {
       low: 'Baixa', medium: 'Média', high: 'Alta', urgent: 'Urgente'
