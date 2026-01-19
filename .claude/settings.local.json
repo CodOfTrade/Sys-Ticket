@@ -101,7 +101,10 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nFeature: aplicar gradiente azulado no fundo do sistema \\(tema claro\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(find:*)",
       "Bash(npm run build:backend:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(timeout 60 ssh:*)",
+      "Bash(timeout 90 ssh:*)",
+      "Bash(timeout 180 ssh:*)"
     ]
   }
 }

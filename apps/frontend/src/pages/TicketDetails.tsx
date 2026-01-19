@@ -243,8 +243,9 @@ export default function TicketDetails() {
   });
 
   // Buscar contagem de comentários para badge na aba Comunicação
+  // Usa undefined como tipo para buscar todos os comentários (mesma queryKey que TicketCommunication quando não há filtro)
   const { data: allComments = [] } = useQuery({
-    queryKey: ['comments', id, 'all'],
+    queryKey: ['comments', id, undefined],
     queryFn: () => commentsService.getComments(id!),
     enabled: !!id,
   });
