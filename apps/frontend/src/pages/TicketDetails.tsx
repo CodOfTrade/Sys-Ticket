@@ -1237,7 +1237,7 @@ export default function TicketDetails() {
           <div className="flex gap-1 overflow-x-auto">
             {tabs.map((tab) => {
               const Icon = tab.icon;
-              const showBadge = tab.id === 'communication' && commentsCount > 0;
+              const showBadge = tab.id === 'communication' && commentsCount > 0 && activeTab !== 'communication';
               return (
                 <button
                   key={tab.id}
