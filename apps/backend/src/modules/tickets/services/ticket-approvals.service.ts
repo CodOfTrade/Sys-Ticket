@@ -157,7 +157,7 @@ export class TicketApprovalsService {
   async validateToken(token: string): Promise<TokenValidationResult> {
     const approval = await this.approvalRepository.findOne({
       where: { approval_token: token },
-      relations: ['ticket', 'ticket.client', 'ticket.created_by', 'requested_by'],
+      relations: ['ticket', 'ticket.service_desk', 'ticket.created_by', 'requested_by'],
     });
 
     if (!approval) {
@@ -330,7 +330,7 @@ export class TicketApprovalsService {
   async resendApprovalEmail(approvalId: string, userId: string): Promise<boolean> {
     const approval = await this.approvalRepository.findOne({
       where: { id: approvalId },
-      relations: ['ticket', 'ticket.client', 'ticket.created_by'],
+      relations: ['ticket', 'ticket.service_desk', 'ticket.created_by'],
     });
 
     if (!approval) {
@@ -370,7 +370,7 @@ export class TicketApprovalsService {
   ): Promise<TicketApproval> {
     const approval = await this.approvalRepository.findOne({
       where: { id: approvalId },
-      relations: ['ticket', 'ticket.client', 'ticket.created_by'],
+      relations: ['ticket', 'ticket.service_desk', 'ticket.created_by'],
     });
 
     if (!approval) {
@@ -420,7 +420,7 @@ export class TicketApprovalsService {
   async getPublicApprovalDetails(token: string): Promise<PublicApprovalDetailsDto> {
     const approval = await this.approvalRepository.findOne({
       where: { approval_token: token },
-      relations: ['ticket', 'ticket.client', 'ticket.created_by'],
+      relations: ['ticket', 'ticket.service_desk', 'ticket.created_by'],
     });
 
     if (!approval) {
@@ -435,7 +435,7 @@ export class TicketApprovalsService {
       ticket_number: ticket.ticket_number,
       ticket_title: ticket.title,
       ticket_description: ticket.description || '',
-      client_name: ticket.client_name || 'Não informado',
+      client_name: ticket.service_desk_name || 'Não informado',
       requester_name: ticket.requester_name || ticket.created_by?.name || 'Não informado',
       approver_name: approval.approver_name,
       status: approval.status,
@@ -506,7 +506,7 @@ export class TicketApprovalsService {
         ticket.ticket_number,
         ticket.title,
         ticket.description || '',
-        ticket.client_name || 'Não informado',
+        ticket.service_desk_name || 'Não informado',
         ticket.requester_name || ticket.created_by?.name || 'Não informado',
         approveUrl,
         rejectUrl,
