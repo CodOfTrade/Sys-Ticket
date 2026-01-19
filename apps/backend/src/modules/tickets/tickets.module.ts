@@ -11,6 +11,7 @@ import { ChecklistsService } from './services/checklists.service';
 import { TicketAttachmentsService } from './services/ticket-attachments.service';
 import { SigeServiceOrderService } from './services/sige-service-order.service';
 import { TicketHistoryService } from './services/ticket-history.service';
+import { TicketApprovalsService } from './services/ticket-approvals.service';
 import { TicketsGateway } from './gateways/tickets.gateway';
 import { Ticket } from './entities/ticket.entity';
 import { TicketComment } from './entities/ticket-comment.entity';
@@ -21,7 +22,9 @@ import { Checklist } from './entities/checklist.entity';
 import { TicketFollower } from './entities/ticket-follower.entity';
 import { TicketAttachment } from './entities/ticket-attachment.entity';
 import { TicketHistory } from './entities/ticket-history.entity';
+import { TicketApproval } from './entities/ticket-approval.entity';
 import { PricingConfig } from '../service-desks/entities/pricing-config.entity';
+import { ClientContact } from '../clients/entities/client-contact.entity';
 import { ContractsModule } from '../contracts/contracts.module';
 import { ClientsModule } from '../clients/clients.module';
 import { ServiceDesksModule } from '../service-desks/service-desks.module';
@@ -40,7 +43,9 @@ import { SharedModule } from '../../shared/shared.module';
       TicketFollower,
       TicketAttachment,
       TicketHistory,
+      TicketApproval,
       PricingConfig,
+      ClientContact,
     ]),
     ContractsModule,
     ClientsModule,
@@ -58,6 +63,7 @@ import { SharedModule } from '../../shared/shared.module';
     TicketAttachmentsService,
     SigeServiceOrderService,
     TicketHistoryService,
+    TicketApprovalsService,
     TicketsGateway,
   ],
   exports: [TicketsService, TicketAttachmentsService, SigeServiceOrderService, TicketHistoryService, TicketsGateway],

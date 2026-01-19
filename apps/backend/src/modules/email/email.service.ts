@@ -315,4 +315,189 @@ export class EmailService {
       text: `Ticket #${ticketNumber}: ${ticketTitle}\n\n${changedBy} alterou o status do ticket:\n\nDe: ${oldStatus}\nPara: ${newStatus}\n\nAcesse: ${ticketUrl}`,
     });
   }
+
+  /**
+   * Envia solicitação de aprovação de ticket
+   */
+  async sendApprovalRequestEmail(
+    to: string,
+    approverName: string,
+    ticketNumber: string,
+    ticketTitle: string,
+    ticketDescription: string,
+    clientName: string,
+    requesterName: string,
+    approveUrl: string,
+    rejectUrl: string,
+    approvalPageUrl: string,
+    customMessage?: string,
+  ): Promise<boolean> {
+    // Escapar HTML da descrição
+    const safeDescription = ticketDescription
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>');
+
+    const messageSection = customMessage
+      ? `<div style="background-color: #fef3c7; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #f59e0b;">
+           <p style="margin: 0;"><strong>Mensagem do solicitante:</strong></p>
+           <p style="margin: 10px 0 0 0;">${customMessage.replace(/\n/g, '<br>')}</p>
+         </div>`
+      : '';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Solicitação de Aprovação</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f3f4f6;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <!-- Header -->
+            <div style="background-color: #f59e0b; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 style="margin: 0; font-size: 24px;">Solicitação de Aprovação</h1>
+            </div>
+
+            <!-- Content -->
+            <div style="background-color: white; padding: 30px; border-radius: 0 0 8px 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <p style="margin: 0 0 20px 0; font-size: 16px;">
+                Olá <strong>${approverName}</strong>,
+              </p>
+              <p style="margin: 0 0 20px 0;">
+                Você recebeu uma solicitação de aprovação para o seguinte ticket:
+              </p>
+
+              <!-- Ticket Info -->
+              <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                      <strong>Ticket:</strong>
+                    </td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                      #${ticketNumber}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                      <strong>Título:</strong>
+                    </td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                      ${ticketTitle}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                      <strong>Cliente:</strong>
+                    </td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                      ${clientName}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0;">
+                      <strong>Solicitante:</strong>
+                    </td>
+                    <td style="padding: 8px 0;">
+                      ${requesterName}
+                    </td>
+                  </tr>
+                </table>
+
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+                  <strong>Descrição:</strong>
+                  <p style="margin: 10px 0 0 0; color: #4b5563;">
+                    ${safeDescription || '<em>Sem descrição</em>'}
+                  </p>
+                </div>
+              </div>
+
+              ${messageSection}
+
+              <!-- Action Buttons -->
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${approveUrl}"
+                   style="display: inline-block; padding: 14px 32px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; margin: 0 10px 10px 0;">
+                  APROVAR
+                </a>
+                <a href="${rejectUrl}"
+                   style="display: inline-block; padding: 14px 32px; background-color: #ef4444; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; margin: 0 0 10px 10px;">
+                  REJEITAR
+                </a>
+              </div>
+
+              <!-- Secondary Link -->
+              <div style="text-align: center; margin: 20px 0; padding: 15px; background-color: #f3f4f6; border-radius: 6px;">
+                <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
+                  Deseja adicionar um comentário à sua decisão?
+                </p>
+                <a href="${approvalPageUrl}"
+                   style="color: #2563eb; text-decoration: underline; font-size: 14px;">
+                  Acessar página de aprovação
+                </a>
+              </div>
+
+              <!-- Warning -->
+              <div style="margin-top: 25px; padding: 15px; background-color: #fef2f2; border-radius: 6px; border-left: 4px solid #ef4444;">
+                <p style="margin: 0; font-size: 13px; color: #991b1b;">
+                  <strong>Importante:</strong> Este link expira em <strong>48 horas</strong>.
+                </p>
+                <p style="margin: 5px 0 0 0; font-size: 13px; color: #991b1b;">
+                  Se você não solicitou esta aprovação, ignore este email.
+                </p>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="text-align: center; margin-top: 20px; padding: 20px; color: #6b7280; font-size: 12px;">
+              <p style="margin: 0;">Este é um email automático do sistema Sys-Ticket.</p>
+              <p style="margin: 5px 0 0 0;">Por favor, não responda este email.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const plainText = `
+Solicitação de Aprovação
+
+Olá ${approverName},
+
+Você recebeu uma solicitação de aprovação para o seguinte ticket:
+
+Ticket: #${ticketNumber}
+Título: ${ticketTitle}
+Cliente: ${clientName}
+Solicitante: ${requesterName}
+
+Descrição:
+${ticketDescription || 'Sem descrição'}
+
+${customMessage ? `Mensagem do solicitante:\n${customMessage}\n\n` : ''}
+Para APROVAR, acesse:
+${approveUrl}
+
+Para REJEITAR, acesse:
+${rejectUrl}
+
+Para adicionar um comentário à sua decisão:
+${approvalPageUrl}
+
+IMPORTANTE: Este link expira em 48 horas.
+
+---
+Este é um email automático do sistema Sys-Ticket.
+Por favor, não responda este email.
+    `.trim();
+
+    return this.sendEmail({
+      to,
+      subject: `[Aprovação Necessária] Ticket #${ticketNumber}: ${ticketTitle}`,
+      html,
+      text: plainText,
+    });
+  }
 }
