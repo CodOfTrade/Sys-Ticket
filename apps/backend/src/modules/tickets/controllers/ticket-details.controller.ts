@@ -10,8 +10,9 @@ import {
   HttpCode,
   HttpStatus,
   Req,
-  Header,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -535,24 +536,27 @@ export class TicketDetailsController {
   @ApiOperation({ summary: 'Submeter decisão via GET (para links de email)' })
   @ApiParam({ name: 'token', description: 'Token de aprovação' })
   @ApiResponse({ status: 200, description: 'Decisão processada - retorna página HTML' })
-  @Header('Content-Type', 'text/html; charset=utf-8')
   async submitApprovalViaGet(
     @Param('token') token: string,
     @Query('decision') decision: 'approved' | 'rejected',
     @Req() req: Request,
+    @Res() res: Response,
   ) {
     const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
 
     try {
       if (!decision || !['approved', 'rejected'].includes(decision)) {
-        return this.renderApprovalResultPage(false, 'Decisão inválida. Use approved ou rejected.');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.send(this.renderApprovalResultPage(false, 'Decisao invalida. Use approved ou rejected.'));
       }
 
       await this.approvalsService.submitApproval(token, { decision }, clientIp);
       const statusText = decision === 'approved' ? 'aprovado' : 'rejeitado';
-      return this.renderApprovalResultPage(true, `Ticket ${statusText} com sucesso!`);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.send(this.renderApprovalResultPage(true, `Ticket ${statusText} com sucesso!`));
     } catch (error) {
-      return this.renderApprovalResultPage(false, error.message || 'Erro ao processar aprovação');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.send(this.renderApprovalResultPage(false, error.message || 'Erro ao processar aprovacao'));
     }
   }
 
@@ -580,211 +584,578 @@ export class TicketDetailsController {
   @Public()
   @ApiOperation({ summary: 'Página HTML de aprovação com formulário' })
   @ApiParam({ name: 'token', description: 'Token de aprovação' })
-  @Header('Content-Type', 'text/html; charset=utf-8')
-  async renderApprovalPage(@Param('token') token: string) {
+  async renderApprovalPage(
+    @Param('token') token: string,
+    @Res() res: Response,
+  ) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+
     try {
       const details = await this.approvalsService.getPublicApprovalDetails(token);
 
       if (details.is_expired) {
-        return this.renderApprovalResultPage(false, 'Esta solicitação de aprovação expirou.');
+        return res.send(this.renderApprovalResultPage(false, 'Esta solicitacao de aprovacao expirou.'));
       }
 
       if (details.is_already_responded) {
         const statusText = details.status === 'approved' ? 'aprovada' : 'rejeitada';
-        return this.renderApprovalResultPage(false, `Esta solicitação já foi ${statusText}.`);
+        return res.send(this.renderApprovalResultPage(false, `Esta solicitacao ja foi ${statusText}.`));
       }
 
-      return this.renderApprovalFormPage(token, details);
+      return res.send(this.renderApprovalFormPage(token, details));
     } catch (error) {
-      return this.renderApprovalResultPage(false, error.message || 'Erro ao carregar aprovação');
+      return res.send(this.renderApprovalResultPage(false, error.message || 'Erro ao carregar aprovacao'));
     }
   }
 
   // ==================== HELPERS PARA PÁGINAS HTML ====================
 
   private renderApprovalFormPage(token: string, details: any): string {
+    const expiresAt = new Date(details.expires_at);
+    const now = new Date();
+    const hoursRemaining = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60)));
+
     return `
       <!DOCTYPE html>
       <html lang="pt-BR">
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Aprovação de Ticket - Sys-Ticket</title>
+        <title>Aprovacao de Ticket #${details.ticket_number} - Sys-Ticket</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
+
           body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f3f4f6;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
           }
-          .container {
+
+          .card {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            max-width: 600px;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-width: 520px;
             width: 100%;
             overflow: hidden;
+            animation: slideUp 0.5s ease-out;
           }
+
+          @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+
           .header {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: white;
-            padding: 30px;
-            text-align: center;
+            padding: 32px 28px;
+            position: relative;
+            overflow: hidden;
           }
-          .header h1 { font-size: 24px; margin-bottom: 5px; }
-          .header p { opacity: 0.9; }
-          .content { padding: 30px; }
-          .ticket-info {
-            background: #f9fafb;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 25px;
-          }
-          .info-row {
-            display: flex;
-            padding: 10px 0;
-            border-bottom: 1px solid #e5e7eb;
-          }
-          .info-row:last-child { border-bottom: none; }
-          .info-label { font-weight: 600; width: 120px; color: #374151; }
-          .info-value { flex: 1; color: #4b5563; }
-          .description {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #e5e7eb;
-          }
-          .description-label { font-weight: 600; color: #374151; margin-bottom: 8px; }
-          .description-text { color: #4b5563; white-space: pre-wrap; }
-          .form-group { margin-bottom: 20px; }
-          .form-group label { display: block; font-weight: 600; margin-bottom: 8px; color: #374151; }
-          .form-group textarea {
+
+          .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
             width: 100%;
-            padding: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 14px;
-            resize: vertical;
-            min-height: 100px;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
           }
-          .form-group textarea:focus {
+
+          .header-content { position: relative; z-index: 1; }
+
+          .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 16px;
+          }
+
+          .badge svg { width: 14px; height: 14px; }
+
+          .header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+          }
+
+          .ticket-number {
+            font-size: 15px;
+            opacity: 0.9;
+            font-weight: 500;
+          }
+
+          .content { padding: 28px; }
+
+          .info-card {
+            background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+          }
+
+          .info-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+          }
+
+          .info-title svg { width: 16px; height: 16px; color: #f59e0b; }
+
+          .info-grid {
+            display: grid;
+            gap: 16px;
+          }
+
+          .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          }
+
+          .info-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+          }
+
+          .info-value {
+            font-size: 15px;
+            font-weight: 500;
+            color: #1e293b;
+            line-height: 1.5;
+          }
+
+          .description-box {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+          }
+
+          .description-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 8px;
+          }
+
+          .description-text {
+            font-size: 14px;
+            color: #475569;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+          }
+
+          .comment-section {
+            margin-bottom: 24px;
+          }
+
+          .comment-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 10px;
+          }
+
+          .comment-label svg { width: 18px; height: 18px; color: #64748b; }
+
+          .comment-label span.optional {
+            font-size: 12px;
+            font-weight: 400;
+            color: #94a3b8;
+          }
+
+          textarea {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            min-height: 120px;
+            transition: all 0.2s ease;
+            background: #f8fafc;
+          }
+
+          textarea:focus {
             outline: none;
             border-color: #f59e0b;
-            box-shadow: 0 0 0 3px rgba(245,158,11,0.1);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
           }
+
+          textarea::placeholder { color: #94a3b8; }
+
           .buttons {
-            display: flex;
-            gap: 15px;
-            margin-top: 25px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
           }
+
           .btn {
-            flex: 1;
-            padding: 14px 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px 24px;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.1s, box-shadow 0.1s;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
           }
-          .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+          .btn svg { width: 20px; height: 20px; }
+
+          .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+          }
+
+          .btn:hover::before { left: 100%; }
+
+          .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); }
           .btn:active { transform: translateY(0); }
-          .btn-approve { background: #10b981; color: white; }
-          .btn-reject { background: #ef4444; color: white; }
+
+          .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+          }
+
+          .btn-approve {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+          }
+
+          .btn-approve:hover { box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4); }
+
+          .btn-reject {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+          }
+
+          .btn-reject:hover { box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4); }
+
+          .expiry-notice {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #92400e;
+            font-weight: 500;
+          }
+
+          .expiry-notice svg { width: 16px; height: 16px; }
+
           .footer {
             text-align: center;
-            padding: 20px;
-            background: #f9fafb;
-            color: #6b7280;
+            padding: 20px 28px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+          }
+
+          .footer-logo {
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+            letter-spacing: -0.3px;
+          }
+
+          .footer-text {
             font-size: 12px;
+            color: #94a3b8;
+            margin-top: 4px;
+          }
+
+          .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+          }
+
+          .loading-overlay.active { display: flex; }
+
+          .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #f59e0b;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+          }
+
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+
+          .success-card {
+            text-align: center;
+            padding: 48px 32px;
+          }
+
+          .success-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            animation: scaleIn 0.3s ease-out;
+          }
+
+          @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+          }
+
+          .success-icon.approved { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); }
+          .success-icon.rejected { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); }
+
+          .success-icon svg { width: 40px; height: 40px; }
+          .success-icon.approved svg { color: #059669; }
+          .success-icon.rejected svg { color: #dc2626; }
+
+          .success-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+          }
+
+          .success-title.approved { color: #059669; }
+          .success-title.rejected { color: #dc2626; }
+
+          .success-message {
+            color: #64748b;
+            font-size: 15px;
+            line-height: 1.6;
+          }
+
+          @media (max-width: 480px) {
+            .card { border-radius: 20px; }
+            .header { padding: 24px 20px; }
+            .header h1 { font-size: 22px; }
+            .content { padding: 20px; }
+            .buttons { grid-template-columns: 1fr; }
           }
         </style>
       </head>
       <body>
-        <div class="container">
+        <div class="loading-overlay" id="loadingOverlay">
+          <div class="spinner"></div>
+        </div>
+
+        <div class="card" id="mainCard">
           <div class="header">
-            <h1>Aprovação de Ticket</h1>
-            <p>Ticket #${details.ticket_number}</p>
+            <div class="header-content">
+              <div class="badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Aguardando sua decisao
+              </div>
+              <h1>Solicitacao de Aprovacao</h1>
+              <p class="ticket-number">Ticket #${details.ticket_number}</p>
+            </div>
           </div>
+
           <div class="content">
-            <div class="ticket-info">
-              <div class="info-row">
-                <span class="info-label">Título:</span>
-                <span class="info-value">${this.escapeHtml(details.ticket_title)}</span>
+            <div class="info-card">
+              <div class="info-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                Detalhes do Ticket
               </div>
-              <div class="info-row">
-                <span class="info-label">Cliente:</span>
-                <span class="info-value">${this.escapeHtml(details.client_name)}</span>
+
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="info-label">Titulo</span>
+                  <span class="info-value">${this.escapeHtml(details.ticket_title)}</span>
+                </div>
+
+                <div class="info-item">
+                  <span class="info-label">Cliente</span>
+                  <span class="info-value">${this.escapeHtml(details.client_name)}</span>
+                </div>
+
+                <div class="info-item">
+                  <span class="info-label">Solicitado por</span>
+                  <span class="info-value">${this.escapeHtml(details.requester_name)}</span>
+                </div>
               </div>
-              <div class="info-row">
-                <span class="info-label">Solicitante:</span>
-                <span class="info-value">${this.escapeHtml(details.requester_name)}</span>
-              </div>
+
               ${details.ticket_description ? `
-              <div class="description">
-                <div class="description-label">Descrição:</div>
+              <div class="description-box">
+                <div class="description-label">Descricao</div>
                 <div class="description-text">${this.escapeHtml(details.ticket_description)}</div>
               </div>
               ` : ''}
             </div>
 
-            <form id="approvalForm" method="POST" action="/api/v1/tickets/public/approval/${token}/submit">
-              <div class="form-group">
-                <label for="comment">Comentário (opcional):</label>
-                <textarea name="comment" id="comment" placeholder="Adicione um comentário sobre sua decisão..."></textarea>
+            <form id="approvalForm">
+              <div class="comment-section">
+                <label class="comment-label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                  </svg>
+                  Seu Comentario <span class="optional">(opcional)</span>
+                </label>
+                <textarea
+                  name="comment"
+                  id="comment"
+                  placeholder="Deixe um comentario sobre sua decisao. Ex: Aprovado conforme solicitado, Rejeitado pois necessita mais detalhes..."
+                ></textarea>
               </div>
-              <input type="hidden" name="decision" id="decision" value="">
+
               <div class="buttons">
-                <button type="button" class="btn btn-approve" onclick="submitDecision('approved')">
-                  APROVAR
+                <button type="button" class="btn btn-approve" onclick="submitDecision('approved')" id="btnApprove">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M5 13l4 4L19 7"/>
+                  </svg>
+                  Aprovar
                 </button>
-                <button type="button" class="btn btn-reject" onclick="submitDecision('rejected')">
-                  REJEITAR
+                <button type="button" class="btn btn-reject" onclick="submitDecision('rejected')" id="btnReject">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                  Rejeitar
                 </button>
+              </div>
+
+              <div class="expiry-notice">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                ${hoursRemaining > 0 ? `Este link expira em aproximadamente ${hoursRemaining} hora${hoursRemaining !== 1 ? 's' : ''}` : 'Este link expira em breve'}
               </div>
             </form>
           </div>
+
           <div class="footer">
-            <p>Sys-Ticket - Sistema de Gestão de Chamados</p>
+            <div class="footer-logo">Sys-Ticket</div>
+            <div class="footer-text">Sistema de Gestao de Chamados</div>
           </div>
         </div>
 
         <script>
           function submitDecision(decision) {
-            document.getElementById('decision').value = decision;
-            const form = document.getElementById('approvalForm');
-            const formData = new FormData(form);
+            const loading = document.getElementById('loadingOverlay');
+            const btnApprove = document.getElementById('btnApprove');
+            const btnReject = document.getElementById('btnReject');
+            const comment = document.getElementById('comment').value;
 
-            fetch(form.action, {
+            loading.classList.add('active');
+            btnApprove.disabled = true;
+            btnReject.disabled = true;
+
+            fetch('/api/v1/tickets/public/approval/${token}/submit', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                decision: formData.get('decision'),
-                comment: formData.get('comment')
-              })
+              body: JSON.stringify({ decision, comment })
             })
             .then(response => response.json())
             .then(data => {
+              loading.classList.remove('active');
+
               if (data.success) {
-                const statusText = decision === 'approved' ? 'aprovado' : 'rejeitado';
-                document.body.innerHTML = \`
-                  <div class="container" style="text-align: center; padding: 50px;">
-                    <div style="font-size: 60px; margin-bottom: 20px;">\${decision === 'approved' ? '✅' : '❌'}</div>
-                    <h1 style="color: \${decision === 'approved' ? '#10b981' : '#ef4444'}; margin-bottom: 15px;">
-                      Ticket \${statusText}!
-                    </h1>
-                    <p style="color: #6b7280;">Sua decisão foi registrada com sucesso.</p>
-                    <p style="color: #6b7280; margin-top: 10px;">Você pode fechar esta página.</p>
+                const isApproved = decision === 'approved';
+                const card = document.getElementById('mainCard');
+
+                card.innerHTML = \`
+                  <div class="success-card">
+                    <div class="success-icon \${isApproved ? 'approved' : 'rejected'}">
+                      \${isApproved
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>'
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12"/></svg>'
+                      }
+                    </div>
+                    <h2 class="success-title \${isApproved ? 'approved' : 'rejected'}">
+                      Ticket \${isApproved ? 'Aprovado' : 'Rejeitado'}!
+                    </h2>
+                    <p class="success-message">
+                      Sua decisao foi registrada com sucesso.<br>
+                      Voce pode fechar esta pagina.
+                    </p>
+                  </div>
+                  <div class="footer">
+                    <div class="footer-logo">Sys-Ticket</div>
+                    <div class="footer-text">Sistema de Gestao de Chamados</div>
                   </div>
                 \`;
               } else {
-                alert('Erro: ' + (data.message || 'Falha ao processar aprovação'));
+                btnApprove.disabled = false;
+                btnReject.disabled = false;
+                alert('Erro: ' + (data.message || 'Falha ao processar aprovacao'));
               }
             })
             .catch(error => {
+              loading.classList.remove('active');
+              btnApprove.disabled = false;
+              btnReject.disabled = false;
               alert('Erro ao enviar: ' + error.message);
             });
           }
@@ -795,9 +1166,6 @@ export class TicketDetailsController {
   }
 
   private renderApprovalResultPage(success: boolean, message: string): string {
-    const icon = success ? '✅' : '❌';
-    const color = success ? '#10b981' : '#ef4444';
-
     return `
       <!DOCTYPE html>
       <html lang="pt-BR">
@@ -805,38 +1173,142 @@ export class TicketDetailsController {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${success ? 'Sucesso' : 'Erro'} - Sys-Ticket</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
+
           body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f3f4f6;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
           }
-          .container {
+
+          .card {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            max-width: 500px;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-width: 450px;
             width: 100%;
-            text-align: center;
-            padding: 50px 30px;
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
           }
-          .icon { font-size: 80px; margin-bottom: 20px; }
-          h1 { color: ${color}; margin-bottom: 15px; font-size: 24px; }
-          p { color: #6b7280; line-height: 1.6; }
-          .footer { margin-top: 30px; color: #9ca3af; font-size: 12px; }
+
+          @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+
+          .content {
+            text-align: center;
+            padding: 48px 32px;
+          }
+
+          .icon-wrapper {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 28px;
+            animation: scaleIn 0.4s ease-out 0.2s both;
+          }
+
+          @keyframes scaleIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+          }
+
+          .icon-wrapper.success {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+          }
+
+          .icon-wrapper.error {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+          }
+
+          .icon-wrapper svg {
+            width: 50px;
+            height: 50px;
+          }
+
+          .icon-wrapper.success svg { color: #059669; }
+          .icon-wrapper.error svg { color: #dc2626; }
+
+          h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+            animation: fadeIn 0.4s ease-out 0.3s both;
+          }
+
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+
+          h1.success { color: #059669; }
+          h1.error { color: #dc2626; }
+
+          .message {
+            color: #64748b;
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 8px;
+            animation: fadeIn 0.4s ease-out 0.4s both;
+          }
+
+          .hint {
+            color: #94a3b8;
+            font-size: 14px;
+            animation: fadeIn 0.4s ease-out 0.5s both;
+          }
+
+          .footer {
+            text-align: center;
+            padding: 20px 28px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+          }
+
+          .footer-logo {
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+            letter-spacing: -0.3px;
+          }
+
+          .footer-text {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 4px;
+          }
         </style>
       </head>
       <body>
-        <div class="container">
-          <div class="icon">${icon}</div>
-          <h1>${success ? 'Sucesso!' : 'Ops!'}</h1>
-          <p>${this.escapeHtml(message)}</p>
-          <p class="footer">Você pode fechar esta página.</p>
+        <div class="card">
+          <div class="content">
+            <div class="icon-wrapper ${success ? 'success' : 'error'}">
+              ${success
+                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>'
+                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>'
+              }
+            </div>
+            <h1 class="${success ? 'success' : 'error'}">${success ? 'Sucesso!' : 'Ops!'}</h1>
+            <p class="message">${this.escapeHtml(message)}</p>
+            <p class="hint">Voce pode fechar esta pagina.</p>
+          </div>
+          <div class="footer">
+            <div class="footer-logo">Sys-Ticket</div>
+            <div class="footer-text">Sistema de Gestao de Chamados</div>
+          </div>
         </div>
       </body>
       </html>
