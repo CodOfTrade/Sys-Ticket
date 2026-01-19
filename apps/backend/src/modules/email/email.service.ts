@@ -63,6 +63,27 @@ export class EmailService {
   }
 
   /**
+   * Remove tags HTML e converte para texto plano
+   */
+  private stripHtmlTags(html: string): string {
+    if (!html) return '';
+    return html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  /**
    * Verifica se a conexão SMTP está funcionando
    */
   private async verifyConnection() {
@@ -332,8 +353,9 @@ export class EmailService {
     approvalPageUrl: string,
     customMessage?: string,
   ): Promise<boolean> {
-    // Escapar HTML da descrição
-    const safeDescription = ticketDescription
+    // Limpar HTML da descrição e escapar para exibição segura
+    const cleanDescription = this.stripHtmlTags(ticketDescription);
+    const safeDescription = cleanDescription
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
@@ -341,7 +363,7 @@ export class EmailService {
 
     const messageSection = customMessage
       ? `<div style="background-color: #fef3c7; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #f59e0b;">
-           <p style="margin: 0;"><strong>Mensagem do solicitante:</strong></p>
+           <p style="margin: 0;"><strong>Mensagem do técnico:</strong></p>
            <p style="margin: 10px 0 0 0;">${customMessage.replace(/\n/g, '<br>')}</p>
          </div>`
       : '';
@@ -472,7 +494,7 @@ Solicitante: ${requesterName}
 Descrição:
 ${ticketDescription || 'Sem descrição'}
 
-${customMessage ? `Mensagem do solicitante:\n${customMessage}\n\n` : ''}
+${customMessage ? `Mensagem do técnico:\n${customMessage}\n\n` : ''}
 Para APROVAR, acesse:
 ${approvalPageUrl}?action=approve
 

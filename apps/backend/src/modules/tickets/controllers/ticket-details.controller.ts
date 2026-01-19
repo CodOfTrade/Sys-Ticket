@@ -1059,7 +1059,7 @@ export class TicketDetailsController {
               ${details.ticket_description ? `
               <div class="description-box">
                 <div class="description-label">Descricao</div>
-                <div class="description-text">${this.escapeHtml(details.ticket_description)}</div>
+                <div class="description-text">${this.escapeHtml(this.stripHtmlTags(details.ticket_description))}</div>
               </div>
               ` : ''}
             </div>
@@ -1353,5 +1353,24 @@ export class TicketDetailsController {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  private stripHtmlTags(html: string): string {
+    if (!html) return '';
+    // Remove tags HTML e converte entidades comuns
+    return html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   }
 }
