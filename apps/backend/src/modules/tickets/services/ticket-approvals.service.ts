@@ -12,7 +12,7 @@ import * as crypto from 'crypto';
 import { TicketApproval, ApprovalStatus } from '../entities/ticket-approval.entity';
 import { Ticket, TicketStatus } from '../entities/ticket.entity';
 import { ClientContact } from '../../clients/entities/client-contact.entity';
-import { TicketComment, CommentType, CommentVisibility } from '../entities/ticket-comment.entity';
+import { TicketComment, CommentType } from '../entities/ticket-comment.entity';
 import {
   RequestApprovalDto,
   SubmitApprovalDto,
@@ -435,7 +435,7 @@ export class TicketApprovalsService {
       ticket_number: ticket.ticket_number,
       ticket_title: ticket.title,
       ticket_description: ticket.description || '',
-      client_name: ticket.client?.trade_name || ticket.client?.legal_name || 'Não informado',
+      client_name: ticket.client_name || 'Não informado',
       requester_name: ticket.requester_name || ticket.created_by?.name || 'Não informado',
       approver_name: approval.approver_name,
       status: approval.status,
@@ -506,7 +506,7 @@ export class TicketApprovalsService {
         ticket.ticket_number,
         ticket.title,
         ticket.description || '',
-        ticket.client?.trade_name || ticket.client?.legal_name || 'Não informado',
+        ticket.client_name || 'Não informado',
         ticket.requester_name || ticket.created_by?.name || 'Não informado',
         approveUrl,
         rejectUrl,
@@ -540,17 +540,19 @@ export class TicketApprovalsService {
 
       const content = `**[${statusText}]** por ${approverName}\n\n${approval.comment}`;
 
+      // Usar o user que solicitou a aprovação como autor do comentário
+      // já que o aprovador é externo e user_id não pode ser null
       const comment = this.commentRepository.create({
         ticket_id: approval.ticket_id,
-        user_id: null, // Aprovador externo
+        user_id: approval.requested_by_id,
         content,
-        type: CommentType.PUBLIC,
-        visibility: CommentVisibility.PUBLIC,
+        type: CommentType.CLIENT,
         sent_to_client: false,
         metadata: {
           approval_id: approval.id,
           approval_decision: decision,
           approver_email: approval.approver_email,
+          is_external_approval: true,
         },
       });
 
