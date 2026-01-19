@@ -419,25 +419,21 @@ export class EmailService {
 
               <!-- Action Buttons -->
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${approveUrl}"
+                <a href="${approvalPageUrl}?action=approve"
                    style="display: inline-block; padding: 14px 32px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; margin: 0 10px 10px 0;">
                   APROVAR
                 </a>
-                <a href="${rejectUrl}"
+                <a href="${approvalPageUrl}?action=reject"
                    style="display: inline-block; padding: 14px 32px; background-color: #ef4444; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; margin: 0 0 10px 10px;">
                   REJEITAR
                 </a>
               </div>
 
-              <!-- Secondary Link -->
+              <!-- Info -->
               <div style="text-align: center; margin: 20px 0; padding: 15px; background-color: #f3f4f6; border-radius: 6px;">
-                <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
-                  Deseja adicionar um comentário à sua decisão?
+                <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                  Ao clicar, voce sera direcionado para uma pagina onde podera adicionar um comentario antes de confirmar.
                 </p>
-                <a href="${approvalPageUrl}"
-                   style="color: #2563eb; text-decoration: underline; font-size: 14px;">
-                  Acessar página de aprovação
-                </a>
               </div>
 
               <!-- Warning -->
@@ -478,13 +474,12 @@ ${ticketDescription || 'Sem descrição'}
 
 ${customMessage ? `Mensagem do solicitante:\n${customMessage}\n\n` : ''}
 Para APROVAR, acesse:
-${approveUrl}
+${approvalPageUrl}?action=approve
 
 Para REJEITAR, acesse:
-${rejectUrl}
+${approvalPageUrl}?action=reject
 
-Para adicionar um comentário à sua decisão:
-${approvalPageUrl}
+Voce sera direcionado para uma pagina onde podera adicionar um comentario antes de confirmar.
 
 IMPORTANTE: Este link expira em 48 horas.
 

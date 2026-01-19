@@ -224,10 +224,8 @@ export class TicketApprovalsService {
     }
     // Se rejeitado, mantém em WAITING_APPROVAL para nova tentativa ou ação manual
 
-    // Adicionar comentário ao ticket se houver
-    if (dto.comment) {
-      await this.addApprovalComment(approval, dto.decision);
-    }
+    // Sempre adicionar comentário ao ticket com a decisão
+    await this.addApprovalComment(approval, dto.decision);
 
     // Registrar no histórico
     try {
@@ -536,9 +534,14 @@ export class TicketApprovalsService {
   ): Promise<void> {
     try {
       const statusText = decision === 'approved' ? 'APROVADO' : 'REJEITADO';
+      const statusEmoji = decision === 'approved' ? '✅' : '❌';
       const approverName = approval.approver_name || approval.approver_email;
 
-      const content = `**[${statusText}]** por ${approverName}\n\n${approval.comment}`;
+      // Criar conteúdo do comentário
+      let content = `${statusEmoji} **Ticket ${statusText}** por ${approverName}`;
+      if (approval.comment && approval.comment.trim()) {
+        content += `\n\n**Comentário do aprovador:**\n${approval.comment}`;
+      }
 
       // Usar o user que solicitou a aprovação como autor do comentário
       // já que o aprovador é externo e user_id não pode ser null
@@ -552,11 +555,13 @@ export class TicketApprovalsService {
           approval_id: approval.id,
           approval_decision: decision,
           approver_email: approval.approver_email,
+          approver_name: approval.approver_name,
           is_external_approval: true,
         },
       });
 
       await this.commentRepository.save(comment);
+      this.logger.log(`Comentário de aprovação adicionado ao ticket ${approval.ticket_id}`);
     } catch (error) {
       this.logger.warn(`Erro ao adicionar comentário de aprovação: ${error.message}`);
     }

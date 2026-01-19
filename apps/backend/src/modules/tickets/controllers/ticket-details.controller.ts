@@ -586,6 +586,7 @@ export class TicketDetailsController {
   @ApiParam({ name: 'token', description: 'Token de aprovação' })
   async renderApprovalPage(
     @Param('token') token: string,
+    @Query('action') action: 'approve' | 'reject' | undefined,
     @Res() res: Response,
   ) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -602,7 +603,7 @@ export class TicketDetailsController {
         return res.send(this.renderApprovalResultPage(false, `Esta solicitacao ja foi ${statusText}.`));
       }
 
-      return res.send(this.renderApprovalFormPage(token, details));
+      return res.send(this.renderApprovalFormPage(token, details, action));
     } catch (error) {
       return res.send(this.renderApprovalResultPage(false, error.message || 'Erro ao carregar aprovacao'));
     }
@@ -610,10 +611,17 @@ export class TicketDetailsController {
 
   // ==================== HELPERS PARA PÁGINAS HTML ====================
 
-  private renderApprovalFormPage(token: string, details: any): string {
+  private renderApprovalFormPage(token: string, details: any, preselectedAction?: 'approve' | 'reject'): string {
     const expiresAt = new Date(details.expires_at);
     const now = new Date();
     const hoursRemaining = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60)));
+
+    // Determinar título e cor do header baseado na ação pre-selecionada
+    const isApproveAction = preselectedAction === 'approve';
+    const isRejectAction = preselectedAction === 'reject';
+    const headerTitle = isApproveAction ? 'Confirmar Aprovacao' : isRejectAction ? 'Confirmar Rejeicao' : 'Solicitacao de Aprovacao';
+    const badgeText = isApproveAction ? 'Voce escolheu APROVAR' : isRejectAction ? 'Voce escolheu REJEITAR' : 'Aguardando sua decisao';
+    const headerColor = isApproveAction ? '#10b981, #059669' : isRejectAction ? '#ef4444, #dc2626' : '#f59e0b, #d97706';
 
     return `
       <!DOCTYPE html>
@@ -654,7 +662,7 @@ export class TicketDetailsController {
           }
 
           .header {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            background: linear-gradient(135deg, ${headerColor});
             color: white;
             padding: 32px 28px;
             position: relative;
@@ -1013,11 +1021,11 @@ export class TicketDetailsController {
             <div class="header-content">
               <div class="badge">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  ${isApproveAction ? '<path d="M5 13l4 4L19 7"/>' : isRejectAction ? '<path d="M6 18L18 6M6 6l12 12"/>' : '<path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>'}
                 </svg>
-                Aguardando sua decisao
+                ${badgeText}
               </div>
-              <h1>Solicitacao de Aprovacao</h1>
+              <h1>${headerTitle}</h1>
               <p class="ticket-number">Ticket #${details.ticket_number}</p>
             </div>
           </div>
@@ -1072,6 +1080,27 @@ export class TicketDetailsController {
               </div>
 
               <div class="buttons">
+                ${isApproveAction ? `
+                <button type="button" class="btn btn-approve" onclick="submitDecision('approved')" id="btnApprove" style="flex: 1;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M5 13l4 4L19 7"/>
+                  </svg>
+                  Confirmar Aprovacao
+                </button>
+                <a href="?action=" class="btn" style="background: #64748b; color: white; text-decoration: none; flex: 0.5;">
+                  Cancelar
+                </a>
+                ` : isRejectAction ? `
+                <button type="button" class="btn btn-reject" onclick="submitDecision('rejected')" id="btnReject" style="flex: 1;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                  Confirmar Rejeicao
+                </button>
+                <a href="?action=" class="btn" style="background: #64748b; color: white; text-decoration: none; flex: 0.5;">
+                  Cancelar
+                </a>
+                ` : `
                 <button type="button" class="btn btn-approve" onclick="submitDecision('approved')" id="btnApprove">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <path d="M5 13l4 4L19 7"/>
@@ -1084,6 +1113,7 @@ export class TicketDetailsController {
                   </svg>
                   Rejeitar
                 </button>
+                `}
               </div>
 
               <div class="expiry-notice">

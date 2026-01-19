@@ -44,6 +44,7 @@ import { TicketChecklists } from '@/components/Tickets/TicketChecklists';
 import { TicketHistory } from '@/components/Tickets/TicketHistory';
 import { TicketActions } from '@/components/Tickets/TicketActions';
 import { TicketApprovalRequest } from '@/components/Tickets/TicketApprovalRequest';
+import { commentsService } from '@/services/ticket-details.service';
 import { Autocomplete, AutocompleteOption } from '@/components/Common/Autocomplete';
 import { clientService, Client, ClientContract } from '@/services/client.service';
 import { userService, User as UserType } from '@/services/user.service';
@@ -240,6 +241,15 @@ export default function TicketDetails() {
     queryFn: () => clientService.getContacts(ticket!.client_id!),
     enabled: !!ticket?.client_id,
   });
+
+  // Buscar contagem de comentários para badge na aba Comunicação
+  const { data: allComments = [] } = useQuery({
+    queryKey: ['comments', id, 'all'],
+    queryFn: () => commentsService.getComments(id!),
+    enabled: !!id,
+  });
+
+  const commentsCount = allComments.length;
 
   // Filtrar apenas contratos ativos
   const activeContracts = clientContracts?.filter(
@@ -1226,6 +1236,7 @@ export default function TicketDetails() {
           <div className="flex gap-1 overflow-x-auto">
             {tabs.map((tab) => {
               const Icon = tab.icon;
+              const showBadge = tab.id === 'communication' && commentsCount > 0;
               return (
                 <button
                   key={tab.id}
@@ -1238,6 +1249,11 @@ export default function TicketDetails() {
                 >
                   <Icon className="w-5 h-5" />
                   {tab.label}
+                  {showBadge && (
+                    <span className="ml-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-500 text-white">
+                      {commentsCount}
+                    </span>
+                  )}
                 </button>
               );
             })}
