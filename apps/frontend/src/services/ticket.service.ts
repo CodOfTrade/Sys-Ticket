@@ -1,5 +1,5 @@
 import { api } from './api';
-import { Ticket, CreateTicketDto, UpdateTicketDto } from '@/types/ticket.types';
+import { Ticket, CreateTicketDto, UpdateTicketDto, TicketApproval, RequestApprovalDto, UpdateApproverDto } from '@/types/ticket.types';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -102,6 +102,46 @@ export const ticketService = {
 
   async createServiceOrder(ticketId: string, observacoes?: string): Promise<CreateServiceOrderResponse> {
     const response = await api.post<ApiResponse<CreateServiceOrderResponse>>(`/v1/tickets/${ticketId}/create-service-order`, { observacoes });
+    return response.data.data;
+  },
+
+  // ========================================
+  // MÉTODOS DE APROVAÇÃO DE TICKETS
+  // ========================================
+
+  async requestApproval(ticketId: string, data: RequestApprovalDto): Promise<TicketApproval> {
+    const response = await api.post<ApiResponse<TicketApproval>>(`/v1/tickets/${ticketId}/approval/request`, data);
+    return response.data.data;
+  },
+
+  async getPendingApproval(ticketId: string): Promise<TicketApproval | null> {
+    try {
+      const response = await api.get<ApiResponse<TicketApproval>>(`/v1/tickets/${ticketId}/approval/pending`);
+      return response.data.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
+  async getApprovalHistory(ticketId: string): Promise<TicketApproval[]> {
+    const response = await api.get<ApiResponse<TicketApproval[]>>(`/v1/tickets/${ticketId}/approval/history`);
+    return response.data.data;
+  },
+
+  async cancelApproval(ticketId: string, approvalId: string): Promise<void> {
+    await api.delete(`/v1/tickets/${ticketId}/approval/${approvalId}`);
+  },
+
+  async resendApprovalEmail(ticketId: string, approvalId: string): Promise<TicketApproval> {
+    const response = await api.post<ApiResponse<TicketApproval>>(`/v1/tickets/${ticketId}/approval/${approvalId}/resend`);
+    return response.data.data;
+  },
+
+  async updateApproverEmail(ticketId: string, approvalId: string, data: UpdateApproverDto): Promise<TicketApproval> {
+    const response = await api.patch<ApiResponse<TicketApproval>>(`/v1/tickets/${ticketId}/approval/${approvalId}`, data);
     return response.data.data;
   },
 };

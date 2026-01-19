@@ -12,6 +12,7 @@ import {
   Printer,
   AlertTriangle,
   RotateCcw,
+  Shield,
 } from 'lucide-react';
 import { ticketService } from '@/services/ticket.service';
 import { appointmentsService, valuationsService } from '@/services/ticket-details.service';
@@ -22,9 +23,10 @@ import jsPDF from 'jspdf';
 
 interface TicketActionsProps {
   ticket: Ticket;
+  onNavigateToApproval?: () => void;
 }
 
-export function TicketActions({ ticket }: TicketActionsProps) {
+export function TicketActions({ ticket, onNavigateToApproval }: TicketActionsProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showMenu, setShowMenu] = useState(false);
@@ -883,6 +885,14 @@ export function TicketActions({ ticket }: TicketActionsProps) {
       color: 'text-red-600',
       disabled: isTicketClosed,
       onClick: () => setShowCancelModal(true),
+    },
+    {
+      id: 'approval',
+      label: 'Solicitar Aprovacao',
+      icon: Shield,
+      color: 'text-yellow-600',
+      disabled: isTicketClosed,
+      onClick: () => onNavigateToApproval?.(),
     },
     {
       id: 'reopen',

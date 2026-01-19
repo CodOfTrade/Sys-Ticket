@@ -43,12 +43,13 @@ import { TicketValuation } from '@/components/Tickets/TicketValuation';
 import { TicketChecklists } from '@/components/Tickets/TicketChecklists';
 import { TicketHistory } from '@/components/Tickets/TicketHistory';
 import { TicketActions } from '@/components/Tickets/TicketActions';
+import { TicketApprovalRequest } from '@/components/Tickets/TicketApprovalRequest';
 import { Autocomplete, AutocompleteOption } from '@/components/Common/Autocomplete';
 import { clientService, Client, ClientContract } from '@/services/client.service';
 import { userService, User as UserType } from '@/services/user.service';
 import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
 
-type TabType = 'appointments' | 'communication' | 'valuation' | 'checklists' | 'history';
+type TabType = 'appointments' | 'communication' | 'valuation' | 'checklists' | 'approval' | 'history';
 
 const tabs = [
   {
@@ -58,12 +59,12 @@ const tabs = [
   },
   {
     id: 'communication' as TabType,
-    label: 'Comunicação',
+    label: 'Comunicacao',
     icon: MessageSquare,
   },
   {
     id: 'valuation' as TabType,
-    label: 'Valorização Extra',
+    label: 'Valorizacao Extra',
     icon: DollarSign,
   },
   {
@@ -72,8 +73,13 @@ const tabs = [
     icon: CheckSquare,
   },
   {
+    id: 'approval' as TabType,
+    label: 'Aprovacao',
+    icon: ClipboardCheck,
+  },
+  {
     id: 'history' as TabType,
-    label: 'Histórico',
+    label: 'Historico',
     icon: History,
   },
 ];
@@ -527,9 +533,9 @@ export default function TicketDetails() {
           <div className="flex items-start justify-between">
             <div className="flex-1">
             </div>
-            {/* Botão de Ações */}
+            {/* Botao de Acoes */}
             <div className="flex-shrink-0 ml-4">
-              <TicketActions ticket={ticket} />
+              <TicketActions ticket={ticket} onNavigateToApproval={() => setActiveTab('approval')} />
             </div>
           </div>
 
@@ -1245,6 +1251,7 @@ export default function TicketDetails() {
         {activeTab === 'communication' && <TicketCommunication ticketId={ticket.id} />}
         {activeTab === 'valuation' && <TicketValuation ticketId={ticket.id} readOnly={isTicketLocked} />}
         {activeTab === 'checklists' && <TicketChecklists ticketId={ticket.id} readOnly={isTicketLocked} />}
+        {activeTab === 'approval' && <TicketApprovalRequest ticketId={ticket.id} clientId={ticket.client_id} readOnly={isTicketLocked} />}
         {activeTab === 'history' && <TicketHistory ticketId={ticket.id} />}
       </div>
 

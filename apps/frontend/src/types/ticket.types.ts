@@ -112,3 +112,52 @@ export interface UpdateTicketDto {
   requester_name?: string;
   assigned_to_id?: string;
 }
+
+// ========================================
+// TIPOS PARA APROVAÇÃO DE TICKETS
+// ========================================
+
+export enum ApprovalStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  EXPIRED = 'expired',
+  CANCELLED = 'cancelled',
+}
+
+export interface TicketApproval {
+  id: string;
+  ticket_id: string;
+  status: ApprovalStatus;
+  contact_id?: string;
+  approver_email: string;
+  approver_name?: string;
+  expires_at: string;
+  comment?: string;
+  responded_at?: string;
+  response_ip?: string;
+  requested_by_id: string;
+  requested_by?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  email_sent: boolean;
+  email_sent_at?: string;
+  email_retry_count: number;
+  custom_message?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RequestApprovalDto {
+  contact_id?: string;
+  approver_email?: string;
+  approver_name?: string;
+  message?: string;
+}
+
+export interface UpdateApproverDto {
+  approver_email: string;
+  approver_name?: string;
+}
