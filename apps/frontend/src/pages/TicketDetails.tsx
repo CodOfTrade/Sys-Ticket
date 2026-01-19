@@ -242,15 +242,47 @@ export default function TicketDetails() {
     enabled: !!ticket?.client_id,
   });
 
-  // Buscar contagem de comentários para badge na aba Comunicação
+  // Buscar comentários para verificar mensagens não lidas
   // Usa undefined como tipo para buscar todos os comentários (mesma queryKey que TicketCommunication quando não há filtro)
   const { data: allComments = [] } = useQuery({
     queryKey: ['comments', id, undefined],
     queryFn: () => commentsService.getComments(id!),
     enabled: !!id,
+    refetchInterval: 30000, // Refetch a cada 30 segundos para verificar novas mensagens
   });
 
-  const commentsCount = allComments.length;
+  // Sistema de notificação de mensagens não lidas (estilo WhatsApp)
+  const getLastViewedKey = (ticketId: string) => `ticket_${ticketId}_communication_last_viewed`;
+
+  const getLastViewedTimestamp = (): number => {
+    if (!id) return Date.now();
+    const stored = localStorage.getItem(getLastViewedKey(id));
+    return stored ? parseInt(stored, 10) : 0;
+  };
+
+  const markAsViewed = () => {
+    if (!id) return;
+    localStorage.setItem(getLastViewedKey(id), Date.now().toString());
+  };
+
+  // Verificar se há mensagens não lidas (criadas após a última visualização)
+  const hasUnreadMessages = (): boolean => {
+    if (!allComments || allComments.length === 0) return false;
+    const lastViewed = getLastViewedTimestamp();
+    if (lastViewed === 0) return true; // Nunca visualizou, mostrar notificação se houver comentários
+
+    return allComments.some((comment: any) => {
+      const commentDate = new Date(comment.created_at).getTime();
+      return commentDate > lastViewed;
+    });
+  };
+
+  // Marcar como visualizado quando entrar na aba Comunicação
+  useEffect(() => {
+    if (activeTab === 'communication' && id) {
+      markAsViewed();
+    }
+  }, [activeTab, id]);
 
   // Filtrar apenas contratos ativos
   const activeContracts = clientContracts?.filter(
@@ -1237,7 +1269,8 @@ export default function TicketDetails() {
           <div className="flex gap-1 overflow-x-auto">
             {tabs.map((tab) => {
               const Icon = tab.icon;
-              const showBadge = tab.id === 'communication' && commentsCount > 0 && activeTab !== 'communication';
+              // Mostrar bolinha amarela apenas se houver mensagens não lidas e não estiver na aba
+              const showUnreadIndicator = tab.id === 'communication' && hasUnreadMessages() && activeTab !== 'communication';
               return (
                 <button
                   key={tab.id}
@@ -1250,10 +1283,8 @@ export default function TicketDetails() {
                 >
                   <Icon className="w-5 h-5" />
                   {tab.label}
-                  {showBadge && (
-                    <span className="ml-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-500 text-white">
-                      {commentsCount}
-                    </span>
+                  {showUnreadIndicator && (
+                    <span className="ml-1 w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse" title="Novas mensagens" />
                   )}
                 </button>
               );
