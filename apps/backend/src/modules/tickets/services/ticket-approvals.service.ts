@@ -491,14 +491,14 @@ export class TicketApprovalsService {
   ): Promise<boolean> {
     try {
       const appUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3000';
-      const apiUrl = this.configService.get<string>('API_URL') || 'http://localhost:3001';
+      const apiUrl = this.configService.get<string>('API_URL') || 'http://localhost:3001/api';
 
-      // URLs de ação direta
-      const approveUrl = `${apiUrl}/api/v1/tickets/public/approval/${approval.approval_token}/submit?decision=approved`;
-      const rejectUrl = `${apiUrl}/api/v1/tickets/public/approval/${approval.approval_token}/submit?decision=rejected`;
+      // URLs de ação direta (API_URL já contém /api)
+      const approveUrl = `${apiUrl}/v1/tickets/public/approval/${approval.approval_token}/submit?decision=approved`;
+      const rejectUrl = `${apiUrl}/v1/tickets/public/approval/${approval.approval_token}/submit?decision=rejected`;
 
       // URL da página de aprovação (com campo de comentário)
-      const approvalPageUrl = `${apiUrl}/api/v1/tickets/public/approval/${approval.approval_token}/page`;
+      const approvalPageUrl = `${apiUrl}/v1/tickets/public/approval/${approval.approval_token}/page`;
 
       const sent = await this.emailService.sendApprovalRequestEmail(
         approval.approver_email,
