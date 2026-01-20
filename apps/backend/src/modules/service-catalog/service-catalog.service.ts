@@ -87,17 +87,9 @@ export class ServiceCatalogService {
 
   async remove(id: string): Promise<void> {
     const catalog = await this.findOne(id);
-    catalog.is_active = false;
-    await this.serviceCatalogRepository.save(catalog);
-  }
-
-  async hardDelete(id: string): Promise<void> {
-    const catalog = await this.findOne(id);
-    // Primeiro desativa todas as categorias
-    await this.serviceCategoryRepository.update(
-      { service_catalog_id: id },
-      { is_active: false }
-    );
+    // Primeiro exclui todas as categorias vinculadas
+    await this.serviceCategoryRepository.delete({ service_catalog_id: id });
+    // Depois exclui o catalogo
     await this.serviceCatalogRepository.remove(catalog);
   }
 
@@ -173,12 +165,6 @@ export class ServiceCatalogService {
   }
 
   async removeCategory(id: string): Promise<void> {
-    const category = await this.findOneCategory(id);
-    category.is_active = false;
-    await this.serviceCategoryRepository.save(category);
-  }
-
-  async hardDeleteCategory(id: string): Promise<void> {
     const category = await this.findOneCategory(id);
     await this.serviceCategoryRepository.remove(category);
   }
