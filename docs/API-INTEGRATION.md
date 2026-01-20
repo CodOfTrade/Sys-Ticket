@@ -399,6 +399,109 @@ curl -X POST http://localhost:3000/api/v1/tickets/{ticket_id}/close \
 2. Selecione o arquivo JSON
 3. Configure as variáveis de ambiente
 
+## 📂 Catalogos de Servico
+
+### Endpoints de Catalogos
+
+**Listar Catalogos:**
+```http
+GET /api/v1/service-catalog?service_desk_id={uuid}
+```
+
+Resposta:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "name": "Suporte Tecnico",
+      "description": "Servicos de suporte tecnico remoto e presencial",
+      "code": "SUP-TEC",
+      "service_desk_id": "uuid",
+      "is_billable": true,
+      "default_price": 150.00,
+      "estimated_time": 60,
+      "requires_approval": false,
+      "is_active": true,
+      "categories": [
+        {
+          "id": "uuid",
+          "name": "Impressoras",
+          "color": "#3B82F6",
+          "display_order": 0
+        },
+        {
+          "id": "uuid",
+          "name": "Rede",
+          "color": "#10B981",
+          "display_order": 1
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Criar Catalogo:**
+```http
+POST /api/v1/service-catalog
+Content-Type: application/json
+
+{
+  "name": "Manutencao de Hardware",
+  "description": "Servicos de manutencao de equipamentos",
+  "code": "MNT-HW",
+  "service_desk_id": "uuid",
+  "is_billable": true,
+  "default_price": 200.00,
+  "estimated_time": 120,
+  "requires_approval": false
+}
+```
+
+**Atualizar Catalogo:**
+```http
+PUT /api/v1/service-catalog/{id}
+```
+
+**Remover Catalogo (soft delete):**
+```http
+DELETE /api/v1/service-catalog/{id}
+```
+
+### Endpoints de Categorias
+
+**Listar Categorias de um Catalogo:**
+```http
+GET /api/v1/service-catalog/{catalogId}/categories
+```
+
+**Criar Categoria:**
+```http
+POST /api/v1/service-catalog/categories
+Content-Type: application/json
+
+{
+  "name": "Impressoras",
+  "description": "Problemas com impressoras",
+  "code": "IMP",
+  "service_catalog_id": "uuid",
+  "color": "#3B82F6",
+  "display_order": 0
+}
+```
+
+**Atualizar Categoria:**
+```http
+PUT /api/v1/service-catalog/categories/{id}
+```
+
+**Remover Categoria (soft delete):**
+```http
+DELETE /api/v1/service-catalog/categories/{id}
+```
+
 ## 🛡️ Rate Limiting
 
 - **Limite padrão**: 100 requisições por minuto por IP

@@ -3,6 +3,7 @@ import { Settings as SettingsIcon, DollarSign, FolderTree, Users, Bell, Sliders,
 import { PricingSettings } from '@/components/Settings/PricingSettings';
 import { LogoSettings } from '@/components/Settings/LogoSettings';
 import { ChecklistSettings } from '@/components/Settings/ChecklistSettings';
+import { ServiceCatalogSettings } from '@/components/Settings/ServiceCatalogSettings';
 
 type SettingsTab = 'pricing' | 'branding' | 'checklists' | 'catalogs' | 'users' | 'notifications' | 'general';
 
@@ -67,11 +68,7 @@ export function Settings() {
             {activeTab === 'pricing' && <PricingSettings />}
             {activeTab === 'branding' && <LogoSettings />}
             {activeTab === 'checklists' && <ChecklistSettings />}
-            {activeTab === 'catalogs' && (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                Catalogos de Servico - Em desenvolvimento
-              </div>
-            )}
+            {activeTab === 'catalogs' && <ServiceCatalogSettings />}
             {activeTab === 'users' && (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 Usuarios e Permissoes - Em desenvolvimento

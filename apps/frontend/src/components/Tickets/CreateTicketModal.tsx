@@ -260,32 +260,12 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     };
   }, [showRequesterDropdown]);
 
-  // Categorias de exemplo
-  const categories = [
-    'Hardware',
-    'Software',
-    'Rede',
-    'Impressora',
-    'E-mail',
-    'Sistema',
-    'Telefonia',
-    'Infraestrutura',
-    'Backup',
-    'Segurança',
-    'Outro',
-  ];
+  // Usar apenas catálogos do banco (não usar exemplos para evitar erros de UUID)
+  const availableCatalogs = catalogs || [];
 
-  // Catálogos de exemplo caso não haja no banco
-  const exampleCatalogs = [
-    { id: 'example-1', name: 'Suporte Técnico' },
-    { id: 'example-2', name: 'Manutenção de Hardware' },
-    { id: 'example-3', name: 'Configuração de Software' },
-    { id: 'example-4', name: 'Instalação de Rede' },
-    { id: 'example-5', name: 'Backup e Restore' },
-  ];
-
-  // Usar catálogos do banco ou exemplos
-  const availableCatalogs = (catalogs && catalogs.length > 0) ? catalogs : exampleCatalogs;
+  // Buscar catálogo selecionado para obter suas categorias
+  const selectedCatalogData = availableCatalogs.find(c => c.id === formData.service_catalog_id);
+  const availableCategories = selectedCatalogData?.categories || [];
 
   // Selecionar cliente da busca
   const handleSelectClient = (client: Client) => {
@@ -377,7 +357,8 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
       newErrors.description = 'Descrição é obrigatória';
     }
 
-    if (!formData.service_catalog_id) {
+    // Só exigir catálogo se houver catálogos cadastrados
+    if (availableCatalogs.length > 0 && !formData.service_catalog_id) {
       newErrors.service_catalog_id = 'Catálogo de serviço é obrigatório';
     }
 
@@ -424,12 +405,16 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
         description: formData.description,
         priority: formData.priority,
         type: formData.service_type,
-        service_catalog_id: formData.service_catalog_id,
         client_id: formData.client_id || 'CLI-' + Date.now(), // Gerar ID temporário se não houver
         client_name: formData.client_name,
         requester_name: formData.requester_name,
         service_desk_id: serviceDeskId,
       };
+
+      // Só enviar service_catalog_id se for um UUID válido (não enviar IDs de exemplo)
+      if (formData.service_catalog_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(formData.service_catalog_id)) {
+        ticketData.service_catalog_id = formData.service_catalog_id;
+      }
 
       // Adicionar campos opcionais apenas se preenchidos
       if (formData.contact_id) {
@@ -476,7 +461,14 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Se mudou o catálogo, limpar a categoria selecionada
+    if (name === 'service_catalog_id') {
+      setFormData((prev) => ({ ...prev, [name]: value, category: '' }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+
     // Limpar erro do campo quando o usuário começar a digitar
     if (errors[name]) {
       setErrors((prev) => {
@@ -901,12 +893,19 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                     name="category"
                     value={formData.category}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    disabled={!formData.service_catalog_id || availableCategories.length === 0}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <option value="">Selecione uma categoria</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
+                    <option value="">
+                      {!formData.service_catalog_id
+                        ? 'Selecione um catálogo primeiro'
+                        : availableCategories.length === 0
+                          ? 'Nenhuma categoria disponível'
+                          : 'Selecione uma categoria'}
+                    </option>
+                    {availableCategories.map((cat) => (
+                      <option key={cat.id} value={cat.name}>
+                        {cat.name}
                       </option>
                     ))}
                   </select>

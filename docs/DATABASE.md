@@ -12,32 +12,49 @@ Documentação completa do schema do banco de dados PostgreSQL.
 │ name         │       │ name         │       │ ticket_number│
 │ email        │       │ description  │       │ client_id    │
 │ password     │       │ sla_config   │◄──────┤ service_desk │
-│ role         │       └──────────────┘       │ assigned_to  │
-│ status       │                              │ status       │
-└──────┬───────┘                              │ priority     │
-       │                                      │ contract_id  │
-       │        ┌──────────────┐              └──────┬───────┘
-       │        │ Timesheets   │                     │
-       │        ├──────────────┤                     │
-       └────────┤ id (PK)      │                     │
-                │ ticket_id    │◄────────────────────┘
-                │ user_id      │
-                │ start_time   │
-                │ end_time     │
-                │ duration     │
-                │ type         │
-                │ billable     │
-                └──────────────┘
-
-       ┌──────────────┐              ┌──────────────┐
+│ role         │       └──────┬───────┘       │ assigned_to  │
+│ status       │              │               │ status       │
+└──────┬───────┘              │               │ catalog_id   │
+       │                      │               │ category     │
+       │                      ▼               └──────┬───────┘
+       │        ┌────────────────────┐               │
+       │        │  ServiceCatalogs   │               │
+       │        ├────────────────────┤               │
+       │        │ id (PK)            │               │
+       │        │ name               │◄──────────────┘
+       │        │ service_desk_id    │
+       │        │ is_billable        │
+       │        │ default_price      │
+       │        └──────────┬─────────┘
+       │                   │
+       │                   ▼
+       │        ┌────────────────────┐
+       │        │ ServiceCategories  │
+       │        ├────────────────────┤
+       │        │ id (PK)            │
+       │        │ name               │
+       │        │ service_catalog_id │
+       │        │ color              │
+       │        └────────────────────┘
+       │
+       │        ┌──────────────┐
+       │        │ Timesheets   │
+       │        ├──────────────┤
+       └────────┤ id (PK)      │
+                │ ticket_id    │◄─────────┐
+                │ user_id      │          │
+                │ duration     │          │
+                │ billable     │          │
+                └──────────────┘          │
+                                          │
+       ┌──────────────┐              ┌────┴─────────┐
        │  Signatures  │              │   Photos     │
        ├──────────────┤              ├──────────────┤
        │ id (PK)      │              │ id (PK)      │
        │ ticket_id    │◄────────┐    │ ticket_id    │
        │ image_url    │         │    │ image_url    │
        │ signatory    │         │    │ category     │
-       │ gps_lat      │         │    │ gps_lat      │
-       │ gps_lng      │         └────┤ gps_lng      │
+       │ gps_lat      │         └────┤ gps_lat      │
        └──────────────┘              └──────────────┘
 ```
 
@@ -275,6 +292,75 @@ CREATE TABLE photos (
 
 CREATE INDEX idx_photos_ticket ON photos(ticket_id);
 ```
+
+### `service_catalogs` - Catalogos de Servico
+
+```sql
+CREATE TABLE service_catalogs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  code VARCHAR(100),
+
+  -- Relacionamento com Mesa de Servico
+  service_desk_id UUID NOT NULL REFERENCES service_desks(id),
+
+  -- Configuracoes de SLA por prioridade (em minutos)
+  sla_config JSONB,  -- { low: {first_response: 60, resolution: 480}, medium: {...}, high: {...}, urgent: {...} }
+
+  -- Configuracoes de Faturamento
+  requires_approval BOOLEAN DEFAULT false,
+  is_billable BOOLEAN DEFAULT true,
+  default_price DECIMAL(10,2),
+  estimated_time INTEGER,  -- em minutos
+
+  -- Exibicao
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+
+  -- Metadados
+  metadata JSONB,
+
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_service_catalogs_desk ON service_catalogs(service_desk_id);
+CREATE INDEX idx_service_catalogs_active ON service_catalogs(is_active);
+```
+
+### `service_categories` - Categorias de Servico (Segundo Nivel)
+
+```sql
+CREATE TABLE service_categories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  code VARCHAR(100),
+
+  -- Relacionamento com Catalogo de Servico
+  service_catalog_id UUID NOT NULL REFERENCES service_catalogs(id),
+
+  -- Identificacao Visual
+  icon VARCHAR(50),
+  color VARCHAR(20),  -- Cor em hex (ex: #3B82F6)
+
+  -- Exibicao
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_service_categories_catalog ON service_categories(service_catalog_id);
+CREATE INDEX idx_service_categories_active ON service_categories(is_active);
+```
+
+**Relacionamento Hierarquico:**
+- Uma Mesa de Servico (`service_desks`) pode ter varios Catalogos (`service_catalogs`)
+- Um Catalogo pode ter varias Categorias (`service_categories`)
+- Ao criar um ticket, o usuario seleciona primeiro o Catalogo, depois a Categoria
 
 ### `webhooks` - Webhooks para Integrações
 

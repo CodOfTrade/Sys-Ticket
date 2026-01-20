@@ -27,10 +27,10 @@ export class SigeClient {
   @Column({ length: 255, nullable: true })
   email?: string;
 
-  @Column({ length: 20, nullable: true })
+  @Column({ length: 50, nullable: true })
   telefone?: string;
 
-  @Column({ length: 20, nullable: true })
+  @Column({ length: 50, nullable: true })
   celular?: string;
 
   @Column({ type: 'text', nullable: true })
