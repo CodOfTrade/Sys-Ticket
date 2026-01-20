@@ -94,10 +94,14 @@ export function Autocomplete({
     onChange(option);
   };
 
-  const handleClear = () => {
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Evitar que o clique propague e feche a edição
     setSearchQuery('');
-    setShowSuggestions(false);
-    onChange(null);
+    setShowSuggestions(true); // Manter sugestões abertas para escolher outra opção
+    // Disparar busca para mostrar todas as opções novamente
+    if (minChars === 0) {
+      onSearchChangeRef.current?.('');
+    }
   };
 
   const defaultRenderOption = (option: AutocompleteOption) => (
