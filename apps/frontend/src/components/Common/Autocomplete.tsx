@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import { useState, useEffect, useRef, ReactNode } from 'react';
 import { Search, X } from 'lucide-react';
 
 export interface AutocompleteOption {
