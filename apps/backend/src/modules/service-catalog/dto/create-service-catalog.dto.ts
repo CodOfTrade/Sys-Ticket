@@ -37,13 +37,13 @@ export class CreateServiceCatalogDto {
   @MaxLength(100)
   code?: string;
 
-  @ApiProperty({
-    description: 'ID da mesa de serviço',
+  @ApiPropertyOptional({
+    description: 'ID da mesa de serviço (opcional)',
     example: 'uuid',
   })
   @IsUUID()
-  @IsNotEmpty()
-  service_desk_id: string;
+  @IsOptional()
+  service_desk_id?: string;
 
   @ApiPropertyOptional({
     description: 'Configuração de SLA por prioridade',

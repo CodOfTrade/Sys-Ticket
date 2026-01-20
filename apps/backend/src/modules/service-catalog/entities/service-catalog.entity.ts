@@ -25,11 +25,11 @@ export class ServiceCatalog {
   @Column({ type: 'varchar', length: 100, nullable: true })
   code: string;
 
-  // Mesa de serviço associada
-  @Column({ type: 'uuid' })
+  // Mesa de serviço associada (opcional - catalogo pode ser global)
+  @Column({ type: 'uuid', nullable: true })
   service_desk_id: string;
 
-  @ManyToOne(() => ServiceDesk)
+  @ManyToOne(() => ServiceDesk, { nullable: true })
   @JoinColumn({ name: 'service_desk_id' })
   service_desk: ServiceDesk;
 
