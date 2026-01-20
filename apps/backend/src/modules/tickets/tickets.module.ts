@@ -30,6 +30,7 @@ import { ClientsModule } from '../clients/clients.module';
 import { ServiceDesksModule } from '../service-desks/service-desks.module';
 import { EmailModule } from '../email/email.module';
 import { SharedModule } from '../../shared/shared.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { SharedModule } from '../../shared/shared.module';
     ServiceDesksModule,
     EmailModule,
     SharedModule,
+    SettingsModule,
   ],
   controllers: [TicketsController, TicketDetailsController, TicketAttachmentsController],
   providers: [

@@ -13,6 +13,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -30,6 +31,8 @@ import { ChecklistsService } from '../services/checklists.service';
 import { SigeServiceOrderService } from '../services/sige-service-order.service';
 import { TicketHistoryService } from '../services/ticket-history.service';
 import { TicketApprovalsService } from '../services/ticket-approvals.service';
+import { SettingsService } from '../../settings/settings.service';
+import { SettingKey } from '../../settings/entities/system-setting.entity';
 import { CreateCommentDto, UpdateCommentDto } from '../dto/create-comment.dto';
 import {
   CreateAppointmentDto,
@@ -67,7 +70,25 @@ export class TicketDetailsController {
     private readonly sigeServiceOrderService: SigeServiceOrderService,
     private readonly historyService: TicketHistoryService,
     private readonly approvalsService: TicketApprovalsService,
+    private readonly settingsService: SettingsService,
+    private readonly configService: ConfigService,
   ) {}
+
+  /**
+   * Busca a URL absoluta da logo para as páginas
+   */
+  private async getLogoUrl(): Promise<string | null> {
+    try {
+      const logoPath = await this.settingsService.getValue(SettingKey.LOGO_REPORT);
+      if (logoPath) {
+        const baseUrl = this.configService.get<string>('BASE_URL', 'https://172.31.255.26');
+        return `${baseUrl}/api${logoPath}`;
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }
 
   // ==================== COMENTÁRIOS ====================
 
@@ -543,20 +564,21 @@ export class TicketDetailsController {
     @Res() res: Response,
   ) {
     const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    const logoUrl = await this.getLogoUrl();
 
     try {
       if (!decision || !['approved', 'rejected'].includes(decision)) {
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(this.renderApprovalResultPage(false, 'Decisao invalida. Use approved ou rejected.'));
+        return res.send(this.renderApprovalResultPage(false, 'Decisao invalida. Use approved ou rejected.', logoUrl));
       }
 
       await this.approvalsService.submitApproval(token, { decision }, clientIp);
       const statusText = decision === 'approved' ? 'aprovado' : 'rejeitado';
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.send(this.renderApprovalResultPage(true, `Ticket ${statusText} com sucesso!`));
+      return res.send(this.renderApprovalResultPage(true, `Ticket ${statusText} com sucesso!`, logoUrl));
     } catch (error) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.send(this.renderApprovalResultPage(false, error.message || 'Erro ao processar aprovacao'));
+      return res.send(this.renderApprovalResultPage(false, error.message || 'Erro ao processar aprovacao', logoUrl));
     }
   }
 
@@ -590,28 +612,29 @@ export class TicketDetailsController {
     @Res() res: Response,
   ) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    const logoUrl = await this.getLogoUrl();
 
     try {
       const details = await this.approvalsService.getPublicApprovalDetails(token);
 
       if (details.is_expired) {
-        return res.send(this.renderApprovalResultPage(false, 'Esta solicitacao de aprovacao expirou.'));
+        return res.send(this.renderApprovalResultPage(false, 'Esta solicitacao de aprovacao expirou.', logoUrl));
       }
 
       if (details.is_already_responded) {
         const statusText = details.status === 'approved' ? 'aprovada' : 'rejeitada';
-        return res.send(this.renderApprovalResultPage(false, `Esta solicitacao ja foi ${statusText}.`));
+        return res.send(this.renderApprovalResultPage(false, `Esta solicitacao ja foi ${statusText}.`, logoUrl));
       }
 
-      return res.send(this.renderApprovalFormPage(token, details, action));
+      return res.send(this.renderApprovalFormPage(token, details, action, logoUrl));
     } catch (error) {
-      return res.send(this.renderApprovalResultPage(false, error.message || 'Erro ao carregar aprovacao'));
+      return res.send(this.renderApprovalResultPage(false, error.message || 'Erro ao carregar aprovacao', logoUrl));
     }
   }
 
   // ==================== HELPERS PARA PÁGINAS HTML ====================
 
-  private renderApprovalFormPage(token: string, details: any, preselectedAction?: 'approve' | 'reject'): string {
+  private renderApprovalFormPage(token: string, details: any, preselectedAction?: 'approve' | 'reject', logoUrl?: string | null): string {
     const expiresAt = new Date(details.expires_at);
     const now = new Date();
     const hoursRemaining = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60)));
@@ -621,7 +644,15 @@ export class TicketDetailsController {
     const isRejectAction = preselectedAction === 'reject';
     const headerTitle = isApproveAction ? 'Confirmar Aprovacao' : isRejectAction ? 'Confirmar Rejeicao' : 'Solicitacao de Aprovacao';
     const badgeText = isApproveAction ? 'Voce escolheu APROVAR' : isRejectAction ? 'Voce escolheu REJEITAR' : 'Aguardando sua decisao';
-    const headerColor = isApproveAction ? '#10b981, #059669' : isRejectAction ? '#ef4444, #dc2626' : '#f59e0b, #d97706';
+    // Cores: azul para padrão, verde para aprovar, vermelho para rejeitar
+    const headerColor = isApproveAction ? '#10b981, #059669' : isRejectAction ? '#ef4444, #dc2626' : '#2563eb, #1d4ed8';
+
+    // Seção da logo
+    const logoSection = logoUrl
+      ? `<div class="logo-section">
+           <img src="${logoUrl}" alt="Logo" />
+         </div>`
+      : '';
 
     return `
       <!DOCTYPE html>
@@ -638,7 +669,7 @@ export class TicketDetailsController {
 
           body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -659,6 +690,19 @@ export class TicketDetailsController {
           @keyframes slideUp {
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
+          }
+
+          .logo-section {
+            background: white;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+          }
+
+          .logo-section img {
+            max-width: 200px;
+            max-height: 70px;
+            height: auto;
           }
 
           .header {
@@ -733,7 +777,7 @@ export class TicketDetailsController {
             border-bottom: 1px solid #e2e8f0;
           }
 
-          .info-title svg { width: 16px; height: 16px; color: #f59e0b; }
+          .info-title svg { width: 16px; height: 16px; color: #2563eb; }
 
           .info-grid {
             display: grid;
@@ -809,6 +853,25 @@ export class TicketDetailsController {
             color: #94a3b8;
           }
 
+          .comment-hint {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 10px 12px;
+            background: #dbeafe;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #1e40af;
+          }
+
+          .comment-hint svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            margin-top: 1px;
+          }
+
           textarea {
             width: 100%;
             padding: 16px;
@@ -825,9 +888,9 @@ export class TicketDetailsController {
 
           textarea:focus {
             outline: none;
-            border-color: #f59e0b;
+            border-color: #2563eb;
             background: white;
-            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
           }
 
           textarea::placeholder { color: #94a3b8; }
@@ -1017,6 +1080,7 @@ export class TicketDetailsController {
         </div>
 
         <div class="card" id="mainCard">
+          ${logoSection}
           <div class="header">
             <div class="header-content">
               <div class="badge">
@@ -1077,6 +1141,12 @@ export class TicketDetailsController {
                   id="comment"
                   placeholder="Deixe um comentario sobre sua decisao. Ex: Aprovado conforme solicitado, Rejeitado pois necessita mais detalhes..."
                 ></textarea>
+                <div class="comment-hint">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  <span>Esta mensagem sera visivel apenas para o tecnico responsavel pelo atendimento.</span>
+                </div>
               </div>
 
               <div class="buttons">
@@ -1195,7 +1265,14 @@ export class TicketDetailsController {
     `;
   }
 
-  private renderApprovalResultPage(success: boolean, message: string): string {
+  private renderApprovalResultPage(success: boolean, message: string, logoUrl?: string | null): string {
+    // Seção da logo
+    const logoSection = logoUrl
+      ? `<div class="logo-section">
+           <img src="${logoUrl}" alt="Logo" />
+         </div>`
+      : '';
+
     return `
       <!DOCTYPE html>
       <html lang="pt-BR">
@@ -1211,7 +1288,7 @@ export class TicketDetailsController {
 
           body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -1232,6 +1309,19 @@ export class TicketDetailsController {
           @keyframes slideUp {
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
+          }
+
+          .logo-section {
+            background: white;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+          }
+
+          .logo-section img {
+            max-width: 200px;
+            max-height: 70px;
+            height: auto;
           }
 
           .content {
@@ -1324,6 +1414,7 @@ export class TicketDetailsController {
       </head>
       <body>
         <div class="card">
+          ${logoSection}
           <div class="content">
             <div class="icon-wrapper ${success ? 'success' : 'error'}">
               ${success

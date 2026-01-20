@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
+import { SettingsService } from '../settings/settings.service';
+import { SettingKey } from '../settings/entities/system-setting.entity';
 
 export interface SendEmailDto {
   to: string | string[];
@@ -23,8 +25,29 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private transporter: Transporter;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private settingsService: SettingsService,
+  ) {
     this.initializeTransporter();
+  }
+
+  /**
+   * Busca a URL absoluta da logo para emails
+   */
+  private async getLogoUrl(): Promise<string | null> {
+    try {
+      const logoPath = await this.settingsService.getValue(SettingKey.LOGO_REPORT);
+      if (logoPath) {
+        // Construir URL absoluta usando a variável de ambiente ou domínio padrão
+        const baseUrl = this.configService.get<string>('BASE_URL', 'https://172.31.255.26');
+        return `${baseUrl}/api${logoPath}`;
+      }
+      return null;
+    } catch (error) {
+      this.logger.warn('Erro ao buscar logo para email:', error);
+      return null;
+    }
   }
 
   /**
@@ -353,6 +376,9 @@ export class EmailService {
     approvalPageUrl: string,
     customMessage?: string,
   ): Promise<boolean> {
+    // Buscar logo do sistema
+    const logoUrl = await this.getLogoUrl();
+
     // Limpar HTML da descrição e escapar para exibição segura
     const cleanDescription = this.stripHtmlTags(ticketDescription);
     const safeDescription = cleanDescription
@@ -362,9 +388,16 @@ export class EmailService {
       .replace(/\n/g, '<br>');
 
     const messageSection = customMessage
-      ? `<div style="background-color: #fef3c7; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #f59e0b;">
-           <p style="margin: 0;"><strong>Mensagem do técnico:</strong></p>
-           <p style="margin: 10px 0 0 0;">${customMessage.replace(/\n/g, '<br>')}</p>
+      ? `<div style="background-color: #dbeafe; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #2563eb;">
+           <p style="margin: 0; color: #1e40af;"><strong>Mensagem do técnico:</strong></p>
+           <p style="margin: 10px 0 0 0; color: #1e40af;">${customMessage.replace(/\n/g, '<br>')}</p>
+         </div>`
+      : '';
+
+    // Seção da logo (se existir)
+    const logoSection = logoUrl
+      ? `<div style="text-align: center; padding: 20px 0;">
+           <img src="${logoUrl}" alt="Logo" style="max-width: 200px; max-height: 80px; height: auto;" />
          </div>`
       : '';
 
@@ -378,9 +411,13 @@ export class EmailService {
         </head>
         <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f3f4f6;">
           <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <!-- Logo -->
+            ${logoSection}
+
             <!-- Header -->
-            <div style="background-color: #f59e0b; color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
-              <h1 style="margin: 0; font-size: 24px;">Solicitação de Aprovação</h1>
+            <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 600;">Solicitação de Aprovação</h1>
+              <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Ticket #${ticketNumber}</p>
             </div>
 
             <!-- Content -->
@@ -393,46 +430,46 @@ export class EmailService {
               </p>
 
               <!-- Ticket Info -->
-              <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
                 <table style="width: 100%; border-collapse: collapse;">
                   <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-                      <strong>Ticket:</strong>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; width: 120px;">
+                      <strong style="color: #64748b;">Ticket:</strong>
                     </td>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-                      #${ticketNumber}
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b;">
+                      <strong>#${ticketNumber}</strong>
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-                      <strong>Título:</strong>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <strong style="color: #64748b;">Título:</strong>
                     </td>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b;">
                       ${ticketTitle}
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-                      <strong>Cliente:</strong>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <strong style="color: #64748b;">Cliente:</strong>
                     </td>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b;">
                       ${clientName}
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding: 8px 0;">
-                      <strong>Solicitante:</strong>
+                    <td style="padding: 10px 0;">
+                      <strong style="color: #64748b;">Solicitante:</strong>
                     </td>
-                    <td style="padding: 8px 0;">
+                    <td style="padding: 10px 0; color: #1e293b;">
                       ${requesterName}
                     </td>
                   </tr>
                 </table>
 
-                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
-                  <strong>Descrição:</strong>
-                  <p style="margin: 10px 0 0 0; color: #4b5563;">
-                    ${safeDescription || '<em>Sem descrição</em>'}
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                  <strong style="color: #64748b;">Descrição:</strong>
+                  <p style="margin: 10px 0 0 0; color: #475569; line-height: 1.6;">
+                    ${safeDescription || '<em style="color: #94a3b8;">Sem descrição</em>'}
                   </p>
                 </div>
               </div>
@@ -442,26 +479,26 @@ export class EmailService {
               <!-- Action Buttons -->
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${approvalPageUrl}?action=approve"
-                   style="display: inline-block; padding: 14px 32px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; margin: 0 10px 10px 0;">
-                  APROVAR
+                   style="display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin: 0 10px 10px 0; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.25);">
+                  ✓ APROVAR
                 </a>
                 <a href="${approvalPageUrl}?action=reject"
-                   style="display: inline-block; padding: 14px 32px; background-color: #ef4444; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; margin: 0 0 10px 10px;">
-                  REJEITAR
+                   style="display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.25);">
+                  ✗ REJEITAR
                 </a>
               </div>
 
               <!-- Info -->
-              <div style="text-align: center; margin: 20px 0; padding: 15px; background-color: #f3f4f6; border-radius: 6px;">
-                <p style="margin: 0; color: #6b7280; font-size: 14px;">
-                  Ao clicar, voce sera direcionado para uma pagina onde podera adicionar um comentario antes de confirmar.
+              <div style="text-align: center; margin: 20px 0; padding: 15px; background-color: #f1f5f9; border-radius: 8px;">
+                <p style="margin: 0; color: #64748b; font-size: 14px;">
+                  Ao clicar, você será direcionado para uma página onde poderá adicionar um comentário antes de confirmar.
                 </p>
               </div>
 
               <!-- Warning -->
-              <div style="margin-top: 25px; padding: 15px; background-color: #fef2f2; border-radius: 6px; border-left: 4px solid #ef4444;">
+              <div style="margin-top: 25px; padding: 15px; background-color: #fef2f2; border-radius: 8px; border-left: 4px solid #ef4444;">
                 <p style="margin: 0; font-size: 13px; color: #991b1b;">
-                  <strong>Importante:</strong> Este link expira em <strong>48 horas</strong>.
+                  <strong>⚠ Importante:</strong> Este link expira em <strong>48 horas</strong>.
                 </p>
                 <p style="margin: 5px 0 0 0; font-size: 13px; color: #991b1b;">
                   Se você não solicitou esta aprovação, ignore este email.
@@ -470,9 +507,9 @@ export class EmailService {
             </div>
 
             <!-- Footer -->
-            <div style="text-align: center; margin-top: 20px; padding: 20px; color: #6b7280; font-size: 12px;">
-              <p style="margin: 0;">Este é um email automático do sistema Sys-Ticket.</p>
-              <p style="margin: 5px 0 0 0;">Por favor, não responda este email.</p>
+            <div style="text-align: center; margin-top: 20px; padding: 20px; color: #64748b; font-size: 12px;">
+              <p style="margin: 0; font-weight: 600; color: #475569;">Sys-Ticket</p>
+              <p style="margin: 5px 0 0 0;">Este é um email automático. Por favor, não responda.</p>
             </div>
           </div>
         </body>
@@ -501,13 +538,12 @@ ${approvalPageUrl}?action=approve
 Para REJEITAR, acesse:
 ${approvalPageUrl}?action=reject
 
-Voce sera direcionado para uma pagina onde podera adicionar um comentario antes de confirmar.
+Você será direcionado para uma página onde poderá adicionar um comentário antes de confirmar.
 
 IMPORTANTE: Este link expira em 48 horas.
 
 ---
-Este é um email automático do sistema Sys-Ticket.
-Por favor, não responda este email.
+Sys-Ticket - Este é um email automático. Por favor, não responda.
     `.trim();
 
     return this.sendEmail({
