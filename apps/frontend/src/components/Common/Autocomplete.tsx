@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, ReactNode } from 'react';
+import { useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { Search, X } from 'lucide-react';
 
 export interface AutocompleteOption {
@@ -37,15 +37,22 @@ export function Autocomplete({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const autocompleteRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const onSearchChangeRef = useRef(onSearchChange);
+
+  // Manter referência atualizada sem causar re-renders
+  useEffect(() => {
+    onSearchChangeRef.current = onSearchChange;
+  }, [onSearchChange]);
 
   // Sync external value changes
   useEffect(() => {
     setSearchQuery(value);
   }, [value]);
 
-  // Debounced search
+  // Debounced search - usando ref para evitar loop infinito
   useEffect(() => {
-    if (searchQuery.trim().length < minChars) {
+    // Se minChars > 0 e query é menor, esconder sugestões
+    if (minChars > 0 && searchQuery.trim().length < minChars) {
       setShowSuggestions(false);
       return;
     }
@@ -55,8 +62,11 @@ export function Autocomplete({
     }
 
     searchTimeoutRef.current = setTimeout(() => {
-      onSearchChange?.(searchQuery);
-      setShowSuggestions(true);
+      onSearchChangeRef.current?.(searchQuery);
+      // Só mostra sugestões se atende o minChars
+      if (searchQuery.trim().length >= minChars || minChars === 0) {
+        setShowSuggestions(true);
+      }
     }, 300);
 
     return () => {
@@ -64,7 +74,7 @@ export function Autocomplete({
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchQuery, minChars, onSearchChange]);
+  }, [searchQuery, minChars]);
 
   // Close on outside click
   useEffect(() => {
@@ -107,7 +117,12 @@ export function Autocomplete({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onFocus={() => {
-            if (searchQuery.trim().length >= minChars && options.length > 0) {
+            // Mostrar sugestões ao focar se houver opções disponíveis
+            if (options.length > 0) {
+              setShowSuggestions(true);
+            } else if (minChars === 0) {
+              // Se minChars é 0, disparar busca imediatamente
+              onSearchChangeRef.current?.(searchQuery);
               setShowSuggestions(true);
             }
           }}

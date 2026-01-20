@@ -189,6 +189,7 @@ export default function TicketDetails() {
   // Autocomplete states
   const [clientOptions, setClientOptions] = useState<AutocompleteOption[]>([]);
   const [technicianOptions, setTechnicianOptions] = useState<AutocompleteOption[]>([]);
+  const [requesterOptions, setRequesterOptions] = useState<AutocompleteOption[]>([]);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
   const [isLoadingTechnicians, setIsLoadingTechnicians] = useState(false);
 
@@ -498,6 +499,47 @@ export default function TicketDetails() {
     } finally {
       setIsLoadingTechnicians(false);
     }
+  };
+
+  // Filtrar contatos do cliente para autocomplete de solicitante
+  const handleRequesterSearch = (query: string) => {
+    if (!clientContacts || clientContacts.length === 0) {
+      // Se não há contatos, permitir texto livre
+      setRequesterOptions([]);
+      return;
+    }
+
+    const queryLower = query.toLowerCase();
+    const filteredOptions: AutocompleteOption[] = clientContacts
+      .filter((contact: any) =>
+        contact.name?.toLowerCase().includes(queryLower) ||
+        contact.email?.toLowerCase().includes(queryLower)
+      )
+      .map((contact: any) => ({
+        id: contact.id,
+        label: contact.name,
+        sublabel: contact.email || contact.phone || '',
+        metadata: contact,
+      }));
+
+    setRequesterOptions(filteredOptions);
+  };
+
+  // Inicializar opções de solicitante quando contatos carregam ou quando começar a editar
+  const initRequesterOptions = () => {
+    if (!clientContacts || clientContacts.length === 0) {
+      setRequesterOptions([]);
+      return;
+    }
+
+    const options: AutocompleteOption[] = clientContacts.map((contact: any) => ({
+      id: contact.id,
+      label: contact.name,
+      sublabel: contact.email || contact.phone || '',
+      metadata: contact,
+    }));
+
+    setRequesterOptions(options);
   };
 
   // Handlers de upload de anexos
@@ -847,40 +889,34 @@ export default function TicketDetails() {
                   </div>
                 </div>
 
-                {/* Solicitante - Edição inline */}
+                {/* Solicitante - Autocomplete com contatos do cliente */}
                 <div className="flex items-start gap-2 text-sm">
                   <User className="w-4 h-4 text-gray-400 mt-0.5" />
                   <div className="flex-1">
                     <p className="text-gray-600 dark:text-gray-400">Solicitante</p>
                     {isEditingRequester ? (
                       <div className="flex items-center gap-1">
-                        <input
-                          type="text"
+                        <Autocomplete
                           value={requesterDisplayValue}
-                          onChange={(e) => setRequesterDisplayValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              updateRequesterMutation.mutate(requesterDisplayValue);
-                            } else if (e.key === 'Escape') {
-                              setIsEditingRequester(false);
-                              setRequesterDisplayValue(ticket.requester_name || '');
+                          onChange={(option) => {
+                            if (option) {
+                              setRequesterDisplayValue(option.label);
+                              setRequesterOptions([]);
+                              // Salvar automaticamente o nome do contato selecionado
+                              updateRequesterMutation.mutate(option.label);
                             }
                           }}
-                          className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          autoFocus
-                          placeholder="Nome do solicitante"
+                          onSearchChange={handleRequesterSearch}
+                          options={requesterOptions}
+                          placeholder="Digite o nome do solicitante..."
+                          minChars={0}
+                          className="flex-1"
                         />
-                        <button
-                          onClick={() => updateRequesterMutation.mutate(requesterDisplayValue)}
-                          className="p-1 text-green-600 hover:text-green-700"
-                          title="Salvar"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
                         <button
                           onClick={() => {
                             setIsEditingRequester(false);
                             setRequesterDisplayValue(ticket.requester_name || '');
+                            setRequesterOptions([]);
                           }}
                           className="p-1 text-gray-400 hover:text-gray-600"
                         >
@@ -892,6 +928,7 @@ export default function TicketDetails() {
                         onClick={() => {
                           if (isTicketLocked) return;
                           setRequesterDisplayValue(ticket.requester_name || '');
+                          initRequesterOptions();
                           setIsEditingRequester(true);
                         }}
                         className={`font-medium text-gray-900 dark:text-white ${
