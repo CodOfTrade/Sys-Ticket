@@ -462,7 +462,7 @@ export default function TicketDetails() {
     try {
       const response = await clientService.searchByName(query);
       const options: AutocompleteOption[] = response.data.map((client: Client) => ({
-        id: client.id,
+        id: client.localId || client.id, // Usar localId (UUID) para manter consistência com os contatos
         label: client.nome || client.nome_fantasia || client.razao_social || '',
         sublabel: client.cpf_cnpj || client.cidade || '',
         metadata: client,
