@@ -189,6 +189,7 @@ export default function TicketDetails() {
   // Autocomplete states
   const [clientOptions, setClientOptions] = useState<AutocompleteOption[]>([]);
   const [technicianOptions, setTechnicianOptions] = useState<AutocompleteOption[]>([]);
+  const [allTechnicians, setAllTechnicians] = useState<AutocompleteOption[]>([]);
   const [requesterOptions, setRequesterOptions] = useState<AutocompleteOption[]>([]);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
   const [isLoadingTechnicians, setIsLoadingTechnicians] = useState(false);
@@ -477,22 +478,40 @@ export default function TicketDetails() {
     }
   };
 
-  const handleTechnicianSearch = async (query: string) => {
+  // Filtrar técnicos localmente (usa allTechnicians já carregado)
+  const handleTechnicianSearch = (query: string) => {
+    if (allTechnicians.length === 0) {
+      // Se ainda não carregou, não filtra
+      return;
+    }
+
+    const queryLower = query.toLowerCase();
+    const filteredOptions = allTechnicians.filter((tech) =>
+      tech.label.toLowerCase().includes(queryLower) ||
+      (tech.sublabel && tech.sublabel.toLowerCase().includes(queryLower))
+    );
+    setTechnicianOptions(filteredOptions);
+  };
+
+  // Carregar todos os técnicos ao abrir o campo
+  const initTechnicianOptions = async () => {
+    // Se já carregou, apenas mostrar
+    if (allTechnicians.length > 0) {
+      setTechnicianOptions(allTechnicians);
+      return;
+    }
+
     setIsLoadingTechnicians(true);
     try {
       const technicians = await userService.getAllTechnicians();
-      const filteredOptions: AutocompleteOption[] = technicians
-        .filter((tech: UserType) =>
-          tech.name.toLowerCase().includes(query.toLowerCase()) ||
-          tech.email.toLowerCase().includes(query.toLowerCase())
-        )
-        .map((tech: UserType) => ({
-          id: tech.id,
-          label: tech.name,
-          sublabel: tech.email,
-          metadata: tech,
-        }));
-      setTechnicianOptions(filteredOptions);
+      const options: AutocompleteOption[] = technicians.map((tech: UserType) => ({
+        id: tech.id,
+        label: tech.name,
+        sublabel: tech.email,
+        metadata: tech,
+      }));
+      setAllTechnicians(options);
+      setTechnicianOptions(options);
     } catch (error) {
       console.error('Erro ao buscar técnicos:', error);
       setTechnicianOptions([]);
@@ -944,7 +963,7 @@ export default function TicketDetails() {
                   </div>
                 </div>
 
-                {/* Responsável */}
+                {/* Responsável - Autocomplete com lista de técnicos */}
                 <div className="flex items-start gap-2 text-sm">
                   <User className="w-4 h-4 text-gray-400 mt-0.5" />
                   <div className="flex-1">
@@ -967,13 +986,14 @@ export default function TicketDetails() {
                           options={technicianOptions}
                           placeholder="Digite o nome do técnico..."
                           isLoading={isLoadingTechnicians}
-                          minChars={2}
+                          minChars={0}
                           className="flex-1"
                         />
                         <button
                           onClick={() => {
                             setIsEditingFields(false);
                             setAssigneeDisplayValue(ticket.assigned_to?.name || '');
+                            setTechnicianOptions([]);
                           }}
                           className="p-1 text-gray-400 hover:text-gray-600"
                         >
@@ -982,7 +1002,12 @@ export default function TicketDetails() {
                       </div>
                     ) : (
                       <p
-                        onClick={() => !isTicketLocked && setIsEditingFields(true)}
+                        onClick={() => {
+                          if (isTicketLocked) return;
+                          setAssigneeDisplayValue(ticket.assigned_to?.name || '');
+                          initTechnicianOptions();
+                          setIsEditingFields(true);
+                        }}
                         className={`font-medium text-gray-900 dark:text-white ${
                           isTicketLocked
                             ? 'cursor-default'
