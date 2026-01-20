@@ -5,6 +5,7 @@ export enum TicketStatus {
   WAITING_THIRD_PARTY = 'waiting_third_party',
   PAUSED = 'paused',
   WAITING_APPROVAL = 'waiting_approval',
+  REJECTED_BY_APPROVER = 'rejected_by_approver', // Reprovado pelo aprovador
   WAITING_EVALUATION = 'waiting_evaluation', // Fechado - Em Avaliação
   APPROVED = 'approved',                      // Aprovado - Enviado para Faturamento
   REOPENED = 'reopened',                      // Reaberto

@@ -26,8 +26,12 @@ const statusConfig: Record<string, { label: string; className: string }> = {
     className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
   },
   [TicketStatus.WAITING_APPROVAL]: {
-    label: 'Aguardando Aprovação',
+    label: 'Aguardando Aprovacao',
     className: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
+  },
+  [TicketStatus.REJECTED_BY_APPROVER]: {
+    label: 'Reprovado',
+    className: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
   },
   [TicketStatus.WAITING_EVALUATION]: {
     label: 'Em Avaliação',
