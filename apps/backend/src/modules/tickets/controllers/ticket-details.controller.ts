@@ -105,6 +105,7 @@ export class TicketDetailsController {
   }
 
   @Get(':ticketId/comments')
+  @Public()
   @ApiOperation({ summary: 'Listar comentários do ticket' })
   @ApiParam({ name: 'ticketId', description: 'ID do ticket' })
   async getComments(
