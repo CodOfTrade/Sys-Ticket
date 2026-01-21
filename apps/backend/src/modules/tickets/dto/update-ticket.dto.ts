@@ -118,6 +118,22 @@ export class UpdateTicketDto {
   category?: string;
 
   @ApiPropertyOptional({
+    description: 'ID do catálogo de serviço',
+    example: 'uuid-do-catalogo',
+  })
+  @IsUUID()
+  @IsOptional()
+  service_catalog_id?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'ID da categoria de serviço',
+    example: 'uuid-da-categoria',
+  })
+  @IsUUID()
+  @IsOptional()
+  service_category_id?: string | null;
+
+  @ApiPropertyOptional({
     description: 'Tags para categorização',
     example: ['impressora', 'hardware', 'urgente'],
     type: [String],

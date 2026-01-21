@@ -288,6 +288,8 @@ export class TicketsService {
           'followers',
           'followers.user',
           'contact',
+          'service_catalog',
+          'service_category',
         ],
       });
 
@@ -339,6 +341,8 @@ export class TicketsService {
           'parent_ticket',
           'children',
           'timesheets',
+          'service_catalog',
+          'service_category',
         ],
       });
 

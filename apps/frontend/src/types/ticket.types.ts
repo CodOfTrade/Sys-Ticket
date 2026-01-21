@@ -61,6 +61,19 @@ export interface Ticket {
     name: string;
     description?: string;
   };
+  // Catalogo de Servico
+  service_catalog_id?: string;
+  service_catalog?: {
+    id: string;
+    name: string;
+    description?: string;
+  };
+  service_category_id?: string;
+  service_category?: {
+    id: string;
+    name: string;
+    description?: string;
+  };
   created_at: string;
   updated_at: string;
   resolved_at?: string;
@@ -112,6 +125,8 @@ export interface UpdateTicketDto {
   client_name?: string;
   requester_name?: string;
   assigned_to_id?: string;
+  service_catalog_id?: string | null;
+  service_category_id?: string | null;
 }
 
 // ========================================

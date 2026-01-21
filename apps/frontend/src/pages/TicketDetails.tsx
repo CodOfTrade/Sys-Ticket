@@ -49,6 +49,7 @@ import { Autocomplete, AutocompleteOption } from '@/components/Common/Autocomple
 import { clientService, Client, ClientContract } from '@/services/client.service';
 import { userService, User as UserType } from '@/services/user.service';
 import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
+import { serviceCatalogService, ServiceCatalog, ServiceCategory } from '@/services/service-catalog.service';
 
 type TabType = 'appointments' | 'communication' | 'valuation' | 'checklists' | 'approval' | 'history';
 
@@ -207,6 +208,11 @@ export default function TicketDetails() {
   // Estado para dropdown de contratos
   const [showContractsDropdown, setShowContractsDropdown] = useState(false);
 
+  // Estado para modal de catálogo de serviço
+  const [showServiceCatalogModal, setShowServiceCatalogModal] = useState(false);
+  const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
   // Buscar detalhes do ticket
   const { data: ticket, isLoading, error } = useQuery({
     queryKey: ['ticket', id],
@@ -245,6 +251,20 @@ export default function TicketDetails() {
     queryKey: ['client-contacts', ticket?.client_id],
     queryFn: () => clientService.getContacts(ticket!.client_id!),
     enabled: !!ticket?.client_id,
+  });
+
+  // Query para buscar catálogos de serviço
+  const { data: serviceCatalogs = [] } = useQuery({
+    queryKey: ['service-catalogs'],
+    queryFn: () => serviceCatalogService.getAll(),
+    enabled: showServiceCatalogModal,
+  });
+
+  // Query para buscar categorias do catálogo selecionado
+  const { data: serviceCategories = [] } = useQuery({
+    queryKey: ['service-categories', selectedCatalogId],
+    queryFn: () => serviceCatalogService.getCategoriesByCatalog(selectedCatalogId!),
+    enabled: !!selectedCatalogId && showServiceCatalogModal,
   });
 
   // Buscar comentários para verificar mensagens não lidas
@@ -397,6 +417,21 @@ export default function TicketDetails() {
     },
   });
 
+  // Mutation para atualizar catálogo de serviço
+  const updateServiceCatalogMutation = useMutation({
+    mutationFn: (data: { service_catalog_id: string | null; service_category_id: string | null }) =>
+      ticketService.update(id!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      setShowServiceCatalogModal(false);
+    },
+    onError: (error: any) => {
+      console.error('Erro ao atualizar catalogo de servico:', error);
+      alert('Erro ao atualizar catalogo de servico: ' + (error.response?.data?.message || error.message));
+    },
+  });
+
   // Mutation para adicionar seguidor
   const addFollowerMutation = useMutation({
     mutationFn: (data: { email: string; name?: string }) => ticketService.addFollower(id!, data),
@@ -436,6 +471,14 @@ export default function TicketDetails() {
       setAssigneeDisplayValue(ticket.assigned_to?.name || '');
     }
   }, [ticket]);
+
+  // Inicializar valores do modal de catálogo quando abrir
+  useEffect(() => {
+    if (showServiceCatalogModal && ticket) {
+      setSelectedCatalogId(ticket.service_catalog_id || null);
+      setSelectedCategoryId(ticket.service_category_id || null);
+    }
+  }, [showServiceCatalogModal, ticket]);
 
   // Fechar dropdowns ao clicar fora
   useEffect(() => {
@@ -1032,17 +1075,27 @@ export default function TicketDetails() {
                   </div>
                 </div>
 
-                {ticket.category && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Tag className="w-4 h-4 text-gray-400" />
-                    <div>
-                      <p className="text-gray-600 dark:text-gray-400">Categoria</p>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {ticket.category}
-                      </p>
-                    </div>
+                {/* Catálogo de Serviço */}
+                <div className="flex items-center gap-2 text-sm">
+                  <Tag className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-gray-600 dark:text-gray-400">Catalogo de Servico</p>
+                    <p
+                      onClick={() => !isTicketLocked && setShowServiceCatalogModal(true)}
+                      className={`font-medium text-gray-900 dark:text-white ${
+                        isTicketLocked
+                          ? 'cursor-default'
+                          : 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400'
+                      }`}
+                      title={isTicketLocked ? 'Ticket bloqueado para edicao' : 'Clique para editar'}
+                    >
+                      {ticket.service_catalog?.name || ticket.category || 'Nao informado'}
+                      {ticket.service_category?.name && (
+                        <span className="text-gray-500 dark:text-gray-400"> / {ticket.service_category.name}</span>
+                      )}
+                    </p>
                   </div>
-                )}
+                </div>
 
                 {/* Anexos do Ticket */}
                 <div className="flex items-center gap-2 text-sm">
@@ -1456,6 +1509,113 @@ export default function TicketDetails() {
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {updateDescriptionMutation.isPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Seleção de Catálogo de Serviço */}
+      {showServiceCatalogModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
+              <Tag className="w-6 h-6 text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Catalogo de Servico
+              </h3>
+            </div>
+
+            <div className="p-4 space-y-4 overflow-y-auto flex-1">
+              {/* Seleção de Catálogo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Catalogo
+                </label>
+                <select
+                  value={selectedCatalogId || ''}
+                  onChange={(e) => {
+                    const newCatalogId = e.target.value || null;
+                    setSelectedCatalogId(newCatalogId);
+                    setSelectedCategoryId(null); // Reset categoria ao trocar catálogo
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Selecione um catalogo...</option>
+                  {serviceCatalogs.map((catalog: ServiceCatalog) => (
+                    <option key={catalog.id} value={catalog.id}>
+                      {catalog.name}
+                    </option>
+                  ))}
+                </select>
+                {selectedCatalogId && serviceCatalogs.find((c: ServiceCatalog) => c.id === selectedCatalogId)?.description && (
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {serviceCatalogs.find((c: ServiceCatalog) => c.id === selectedCatalogId)?.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Seleção de Categoria */}
+              {selectedCatalogId && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Categoria
+                  </label>
+                  <select
+                    value={selectedCategoryId || ''}
+                    onChange={(e) => setSelectedCategoryId(e.target.value || null)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Selecione uma categoria...</option>
+                    {serviceCategories.map((category: ServiceCategory) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedCategoryId && serviceCategories.find((c: ServiceCategory) => c.id === selectedCategoryId)?.description && (
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {serviceCategories.find((c: ServiceCategory) => c.id === selectedCategoryId)?.description}
+                    </p>
+                  )}
+                  {serviceCategories.length === 0 && (
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Nenhuma categoria disponivel para este catalogo
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowServiceCatalogModal(false);
+                  setSelectedCatalogId(ticket?.service_catalog_id || null);
+                  setSelectedCategoryId(ticket?.service_category_id || null);
+                }}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  updateServiceCatalogMutation.mutate({
+                    service_catalog_id: selectedCatalogId,
+                    service_category_id: selectedCategoryId,
+                  });
+                }}
+                disabled={updateServiceCatalogMutation.isPending}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {updateServiceCatalogMutation.isPending ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     Salvando...
