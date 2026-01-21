@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { commentsService } from '@/services/ticket-details.service';
 
 interface UnreadIndicatorProps {
@@ -14,33 +14,61 @@ const getLastViewedTimestamp = (ticketId: string): number => {
 };
 
 export function UnreadIndicator({ ticketId }: UnreadIndicatorProps) {
-  // Buscar comentários do ticket
-  const { data: comments, isLoading, isError } = useQuery({
-    queryKey: ['ticket-comments-unread', ticketId],
-    queryFn: async () => {
-      const result = await commentsService.getComments(ticketId);
-      return result;
-    },
-    enabled: !!ticketId,
-    staleTime: 60000, // Cache por 1 minuto
-    refetchOnWindowFocus: false,
-    retry: false,
-  });
+  const [hasUnread, setHasUnread] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Verificar se há mensagens não lidas
-  const hasUnread = (): boolean => {
-    if (isLoading || isError) return false;
-    if (!comments || comments.length === 0) return false;
-    const lastViewed = getLastViewedTimestamp(ticketId);
-    if (lastViewed === 0) return true; // Nunca visualizou
+  useEffect(() => {
+    if (!ticketId) return;
 
-    return comments.some((comment: any) => {
-      const commentDate = new Date(comment.created_at).getTime();
-      return commentDate > lastViewed;
-    });
-  };
+    let isMounted = true;
 
-  if (!hasUnread()) {
+    const checkUnread = async () => {
+      try {
+        const comments = await commentsService.getComments(ticketId);
+
+        if (!isMounted) return;
+
+        if (!comments || comments.length === 0) {
+          setHasUnread(false);
+          setIsLoaded(true);
+          return;
+        }
+
+        const lastViewed = getLastViewedTimestamp(ticketId);
+
+        // Se nunca visualizou e tem comentários, tem não lidos
+        if (lastViewed === 0) {
+          setHasUnread(true);
+          setIsLoaded(true);
+          return;
+        }
+
+        // Verificar se algum comentário é mais recente que a última visualização
+        const hasNew = comments.some((comment: any) => {
+          const commentDate = new Date(comment.created_at).getTime();
+          return commentDate > lastViewed;
+        });
+
+        setHasUnread(hasNew);
+        setIsLoaded(true);
+      } catch (error) {
+        // Em caso de erro, não mostra indicador
+        if (isMounted) {
+          setHasUnread(false);
+          setIsLoaded(true);
+        }
+      }
+    };
+
+    checkUnread();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [ticketId]);
+
+  // Não renderiza nada até carregar ou se não tem não lidos
+  if (!isLoaded || !hasUnread) {
     return null;
   }
 
