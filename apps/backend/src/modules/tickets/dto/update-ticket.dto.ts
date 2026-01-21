@@ -11,6 +11,7 @@ import {
   IsDateString,
   MaxLength,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 import {
   TicketStatus,
@@ -121,6 +122,7 @@ export class UpdateTicketDto {
     description: 'ID do catálogo de serviço',
     example: 'uuid-do-catalogo',
   })
+  @ValidateIf((o) => o.service_catalog_id !== null && o.service_catalog_id !== undefined)
   @IsUUID()
   @IsOptional()
   service_catalog_id?: string | null;
@@ -129,6 +131,7 @@ export class UpdateTicketDto {
     description: 'ID da categoria de serviço',
     example: 'uuid-da-categoria',
   })
+  @ValidateIf((o) => o.service_category_id !== null && o.service_category_id !== undefined)
   @IsUUID()
   @IsOptional()
   service_category_id?: string | null;
