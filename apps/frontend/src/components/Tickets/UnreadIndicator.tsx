@@ -16,21 +16,20 @@ const getLastViewedTimestamp = (ticketId: string): number => {
 export function UnreadIndicator({ ticketId }: UnreadIndicatorProps) {
   // Buscar comentários do ticket
   const { data: comments, isLoading, isError } = useQuery({
-    queryKey: ['comments', ticketId, undefined],
-    queryFn: () => commentsService.getComments(ticketId),
+    queryKey: ['ticket-comments-unread', ticketId],
+    queryFn: async () => {
+      const result = await commentsService.getComments(ticketId);
+      return result;
+    },
     enabled: !!ticketId,
-    staleTime: 30000, // Cache por 30 segundos
-    refetchInterval: 60000, // Refetch a cada 60 segundos
-    retry: 1,
+    staleTime: 60000, // Cache por 1 minuto
+    refetchOnWindowFocus: false,
+    retry: false,
   });
-
-  // Se está carregando ou houve erro, não mostra nada
-  if (isLoading || isError) {
-    return null;
-  }
 
   // Verificar se há mensagens não lidas
   const hasUnread = (): boolean => {
+    if (isLoading || isError) return false;
     if (!comments || comments.length === 0) return false;
     const lastViewed = getLastViewedTimestamp(ticketId);
     if (lastViewed === 0) return true; // Nunca visualizou
