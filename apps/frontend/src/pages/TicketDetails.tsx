@@ -43,6 +43,7 @@ import { TicketValuation } from '@/components/Tickets/TicketValuation';
 import { TicketChecklists } from '@/components/Tickets/TicketChecklists';
 import { TicketHistory } from '@/components/Tickets/TicketHistory';
 import { TicketActions } from '@/components/Tickets/TicketActions';
+import { AppointmentTimer } from '@/components/Tickets/AppointmentTimer';
 import { TicketApprovalRequest } from '@/components/Tickets/TicketApprovalRequest';
 import { commentsService } from '@/services/ticket-details.service';
 import { Autocomplete, AutocompleteOption } from '@/components/Common/Autocomplete';
@@ -715,6 +716,7 @@ export default function TicketDetails() {
                   <span className="text-sm font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap">
                     #{ticket.ticket_number}
                   </span>
+                  <AppointmentTimer ticketId={ticket.id} clientId={ticket.client_id} />
                   <TicketActions ticket={ticket} onNavigateToApproval={() => setActiveTab('approval')} />
                 </div>
               </div>
