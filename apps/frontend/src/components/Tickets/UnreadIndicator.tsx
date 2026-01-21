@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { MessageSquare } from 'lucide-react';
 import { commentsService } from '@/services/ticket-details.service';
 
 interface UnreadIndicatorProps {
@@ -16,13 +15,19 @@ const getLastViewedTimestamp = (ticketId: string): number => {
 
 export function UnreadIndicator({ ticketId }: UnreadIndicatorProps) {
   // Buscar comentários do ticket
-  const { data: comments = [] } = useQuery({
+  const { data: comments, isLoading, isError } = useQuery({
     queryKey: ['comments', ticketId, undefined],
     queryFn: () => commentsService.getComments(ticketId),
     enabled: !!ticketId,
     staleTime: 30000, // Cache por 30 segundos
     refetchInterval: 60000, // Refetch a cada 60 segundos
+    retry: 1,
   });
+
+  // Se está carregando ou houve erro, não mostra nada
+  if (isLoading || isError) {
+    return null;
+  }
 
   // Verificar se há mensagens não lidas
   const hasUnread = (): boolean => {
@@ -40,13 +45,11 @@ export function UnreadIndicator({ ticketId }: UnreadIndicatorProps) {
     return null;
   }
 
+  // Bolinha amarela igual à da aba de comunicação
   return (
     <span
-      className="relative inline-flex"
+      className="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"
       title="Novas comunicacoes"
-    >
-      <MessageSquare size={14} className="text-gray-400" />
-      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse" />
-    </span>
+    />
   );
 }
