@@ -367,11 +367,6 @@ export class TicketsService {
     try {
       const ticket = await this.findOne(id);
 
-      this.logger.log(`=== DEBUG UPDATE TICKET ===`);
-      this.logger.log(`ID: ${id}`);
-      this.logger.log(`DTO recebido: ${JSON.stringify(updateTicketDto)}`);
-      this.logger.log(`Ticket antes: service_catalog_id=${ticket.service_catalog_id}, service_category_id=${ticket.service_category_id}`);
-
       // Guardar valores antigos para histórico
       const oldStatus = ticket.status;
       const oldPriority = ticket.priority;
@@ -394,11 +389,7 @@ export class TicketsService {
         ticket.service_category = null as any;
       }
 
-      this.logger.log(`Ticket depois do assign: service_catalog_id=${ticket.service_catalog_id}, service_category_id=${ticket.service_category_id}`);
-
       await this.ticketsRepository.save(ticket);
-
-      this.logger.log(`Ticket salvo com sucesso`);
 
       // Registrar mudanças no histórico
       await this.recordTicketChanges(

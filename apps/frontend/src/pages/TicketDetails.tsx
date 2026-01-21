@@ -422,10 +422,6 @@ export default function TicketDetails() {
   // Mutation para atualizar catálogo de serviço
   const updateServiceCatalogMutation = useMutation({
     mutationFn: (data: { service_catalog_id: string | null; service_category_id: string | null }) => {
-      console.log('=== DEBUG updateServiceCatalogMutation ===');
-      console.log('Dados recebidos:', data);
-      console.log('Ticket ID:', id);
-      // Construir objeto apenas com campos que têm valor
       const updateData: any = {};
       if (data.service_catalog_id !== undefined) {
         updateData.service_catalog_id = data.service_catalog_id;
@@ -433,20 +429,15 @@ export default function TicketDetails() {
       if (data.service_category_id !== undefined) {
         updateData.service_category_id = data.service_category_id;
       }
-      console.log('Dados a enviar para API:', updateData);
       return ticketService.update(id!, updateData);
     },
-    onSuccess: (result) => {
-      console.log('=== SUCCESS updateServiceCatalogMutation ===');
-      console.log('Resultado:', result);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', id] });
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
       setShowServiceCatalogModal(false);
     },
     onError: (error: any) => {
-      console.error('=== ERROR updateServiceCatalogMutation ===');
       console.error('Erro ao atualizar catalogo de servico:', error);
-      console.error('Response:', error.response);
       alert('Erro ao atualizar catalogo de servico: ' + (error.response?.data?.message || error.message));
     },
   });
