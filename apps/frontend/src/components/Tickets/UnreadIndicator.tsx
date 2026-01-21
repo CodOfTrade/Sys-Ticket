@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { commentsService } from '@/services/ticket-details.service';
 
 interface UnreadIndicatorProps {
@@ -17,55 +17,71 @@ export function UnreadIndicator({ ticketId }: UnreadIndicatorProps) {
   const [hasUnread, setHasUnread] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  const checkUnread = useCallback(async () => {
+    if (!ticketId) return;
+
+    try {
+      const comments = await commentsService.getComments(ticketId);
+
+      if (!comments || comments.length === 0) {
+        setHasUnread(false);
+        setIsLoaded(true);
+        return;
+      }
+
+      const lastViewed = getLastViewedTimestamp(ticketId);
+
+      // Se nunca visualizou e tem comentários, tem não lidos
+      if (lastViewed === 0) {
+        setHasUnread(true);
+        setIsLoaded(true);
+        return;
+      }
+
+      // Verificar se algum comentário é mais recente que a última visualização
+      const hasNew = comments.some((comment: any) => {
+        const commentDate = new Date(comment.created_at).getTime();
+        return commentDate > lastViewed;
+      });
+
+      setHasUnread(hasNew);
+      setIsLoaded(true);
+    } catch (error) {
+      // Em caso de erro, não mostra indicador
+      setHasUnread(false);
+      setIsLoaded(true);
+    }
+  }, [ticketId]);
+
   useEffect(() => {
     if (!ticketId) return;
 
-    let isMounted = true;
+    // Verificar imediatamente
+    checkUnread();
 
-    const checkUnread = async () => {
-      try {
-        const comments = await commentsService.getComments(ticketId);
-
-        if (!isMounted) return;
-
-        if (!comments || comments.length === 0) {
-          setHasUnread(false);
-          setIsLoaded(true);
-          return;
-        }
-
-        const lastViewed = getLastViewedTimestamp(ticketId);
-
-        // Se nunca visualizou e tem comentários, tem não lidos
-        if (lastViewed === 0) {
-          setHasUnread(true);
-          setIsLoaded(true);
-          return;
-        }
-
-        // Verificar se algum comentário é mais recente que a última visualização
-        const hasNew = comments.some((comment: any) => {
-          const commentDate = new Date(comment.created_at).getTime();
-          return commentDate > lastViewed;
-        });
-
-        setHasUnread(hasNew);
-        setIsLoaded(true);
-      } catch (error) {
-        // Em caso de erro, não mostra indicador
-        if (isMounted) {
-          setHasUnread(false);
-          setIsLoaded(true);
-        }
+    // Escutar evento customizado quando o usuário visualiza as comunicações
+    const handleCommunicationViewed = (e: CustomEvent) => {
+      if (e.detail?.ticketId === ticketId) {
+        // Aguardar um pouco para garantir que o localStorage foi atualizado
+        setTimeout(() => {
+          checkUnread();
+        }, 100);
       }
     };
 
-    checkUnread();
+    // Também verificar quando a janela ganha foco (usuário volta da página de detalhes)
+    const handleFocus = () => {
+      checkUnread();
+    };
+
+    window.addEventListener('communication-viewed', handleCommunicationViewed as EventListener);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
-      isMounted = false;
+      window.removeEventListener('communication-viewed', handleCommunicationViewed as EventListener);
+      window.removeEventListener('focus', handleFocus);
     };
-  }, [ticketId]);
+  }, [ticketId, checkUnread]);
 
   // Não renderiza nada até carregar ou se não tem não lidos
   if (!isLoaded || !hasUnread) {

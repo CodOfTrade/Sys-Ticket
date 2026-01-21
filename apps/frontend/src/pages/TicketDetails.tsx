@@ -288,6 +288,8 @@ export default function TicketDetails() {
   const markAsViewed = () => {
     if (!id) return;
     localStorage.setItem(getLastViewedKey(id), Date.now().toString());
+    // Disparar evento customizado para notificar outros componentes
+    window.dispatchEvent(new CustomEvent('communication-viewed', { detail: { ticketId: id } }));
   };
 
   // Verificar se há mensagens não lidas (criadas após a última visualização)
