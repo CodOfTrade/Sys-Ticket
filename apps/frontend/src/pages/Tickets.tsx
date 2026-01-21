@@ -7,6 +7,7 @@ import { TicketStatus, TicketPriority } from '@/types/ticket.types';
 import { StatusBadge } from '@/components/Tickets/StatusBadge';
 import { PriorityBadge } from '@/components/Tickets/PriorityBadge';
 import { UnreadIndicator } from '@/components/Tickets/UnreadIndicator';
+import { ActiveTimerIndicator } from '@/components/Tickets/ActiveTimerIndicator';
 import { CreateTicketModal } from '@/components/Tickets/CreateTicketModal';
 import { useTicketsSocket } from '@/hooks/useTicketsSocket';
 import { format } from 'date-fns';
@@ -237,11 +238,7 @@ export default function Tickets() {
                             #{ticket.ticket_number}
                           </p>
                           <UnreadIndicator ticketId={ticket.id} />
-                          {ticket.priority === TicketPriority.URGENT && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-red-500 text-white font-bold animate-pulse">
-                              🔥 URGENTE
-                            </span>
-                          )}
+                          <ActiveTimerIndicator ticketId={ticket.id} />
                         </div>
                         <p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">
                           {ticket.title}

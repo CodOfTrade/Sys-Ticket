@@ -1,5 +1,5 @@
 import { TicketPriority } from '@/types/ticket.types';
-import { AlertCircle, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { Flame, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 interface PriorityBadgeProps {
   priority: TicketPriority;
@@ -23,7 +23,7 @@ const priorityConfig = {
   },
   [TicketPriority.URGENT]: {
     label: 'Urgente',
-    icon: AlertCircle,
+    icon: Flame,
     className: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
   },
 };
@@ -31,12 +31,13 @@ const priorityConfig = {
 export function PriorityBadge({ priority }: PriorityBadgeProps) {
   const config = priorityConfig[priority];
   const Icon = config.icon;
+  const isUrgent = priority === TicketPriority.URGENT;
 
   return (
     <span
       className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${config.className}`}
     >
-      <Icon size={12} />
+      <Icon size={12} className={isUrgent ? 'animate-pulse' : ''} />
       {config.label}
     </span>
   );
