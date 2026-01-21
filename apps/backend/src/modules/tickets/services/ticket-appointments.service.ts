@@ -342,7 +342,7 @@ export class TicketAppointmentsService {
       where: {
         user_id: userId,
         is_timer_based: true,
-        timer_stopped_at: null as any,
+        timer_stopped_at: IsNull(),
       },
       relations: ['ticket'],
     });
