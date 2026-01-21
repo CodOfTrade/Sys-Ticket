@@ -100,6 +100,7 @@ export function TicketActions({ ticket, onNavigateToApproval }: TicketActionsPro
     mutationFn: () => ticketService.update(ticket.id, { status: 'waiting_evaluation' as any }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       setShowCloseModal(false);
     },
     onError: (error: any) => {
@@ -115,6 +116,7 @@ export function TicketActions({ ticket, onNavigateToApproval }: TicketActionsPro
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       setShowCancelModal(false);
       setCancelReason('');
     },
@@ -128,6 +130,7 @@ export function TicketActions({ ticket, onNavigateToApproval }: TicketActionsPro
     mutationFn: () => ticketService.update(ticket.id, { status: 'reopened' as any }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       setShowReopenModal(false);
       setReopenReason('');
     },

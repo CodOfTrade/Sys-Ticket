@@ -375,6 +375,7 @@ export default function TicketDetails() {
     mutationFn: (status: string) => ticketService.update(id!, { status: status as any }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       setShowStatusDropdown(false);
     },
     onError: (error: any) => {
