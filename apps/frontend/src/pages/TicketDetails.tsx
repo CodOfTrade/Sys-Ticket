@@ -1082,16 +1082,16 @@ export default function TicketDetails() {
                     <p className="text-gray-600 dark:text-gray-400">Catalogo de Servico</p>
                     <p
                       onClick={() => !isTicketLocked && setShowServiceCatalogModal(true)}
-                      className={`font-medium text-gray-900 dark:text-white ${
+                      className={`font-medium ${
                         isTicketLocked
-                          ? 'cursor-default'
-                          : 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400'
+                          ? 'text-gray-900 dark:text-white cursor-default'
+                          : 'text-blue-600 dark:text-blue-400 cursor-pointer hover:underline'
                       }`}
                       title={isTicketLocked ? 'Ticket bloqueado para edicao' : 'Clique para editar'}
                     >
                       {ticket.service_catalog?.name || ticket.category || 'Nao informado'}
                       {ticket.service_category?.name && (
-                        <span className="text-gray-500 dark:text-gray-400"> / {ticket.service_category.name}</span>
+                        <span className={isTicketLocked ? 'text-gray-500 dark:text-gray-400' : ''}> / {ticket.service_category.name}</span>
                       )}
                     </p>
                   </div>
