@@ -380,11 +380,11 @@ export class TicketsService {
       // Atualizar ticket
       Object.assign(ticket, updateTicketDto);
 
-      const updatedTicket = await this.ticketsRepository.save(ticket);
+      await this.ticketsRepository.save(ticket);
 
       // Registrar mudanças no histórico
       await this.recordTicketChanges(
-        updatedTicket.id,
+        ticket.id,
         userId || null,
         oldStatus,
         oldPriority,
@@ -392,14 +392,17 @@ export class TicketsService {
         updateTicketDto,
       );
 
+      // Invalidar cache
+      await this.invalidateTicketCache();
+
+      // Recarregar o ticket com todas as relações
+      const updatedTicket = await this.findOne(id);
+
       // Emitir evento de atualização
       this.eventEmitter.emit('ticket.updated', {
         before: ticket,
         after: updatedTicket,
       });
-
-      // Invalidar cache
-      await this.invalidateTicketCache();
 
       this.logger.log(`Ticket atualizado: ${ticket.ticket_number}`);
 
