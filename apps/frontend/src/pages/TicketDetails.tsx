@@ -419,8 +419,17 @@ export default function TicketDetails() {
 
   // Mutation para atualizar catálogo de serviço
   const updateServiceCatalogMutation = useMutation({
-    mutationFn: (data: { service_catalog_id: string | null; service_category_id: string | null }) =>
-      ticketService.update(id!, data),
+    mutationFn: (data: { service_catalog_id: string | null; service_category_id: string | null }) => {
+      // Construir objeto apenas com campos que têm valor
+      const updateData: any = {};
+      if (data.service_catalog_id !== undefined) {
+        updateData.service_catalog_id = data.service_catalog_id;
+      }
+      if (data.service_category_id !== undefined) {
+        updateData.service_category_id = data.service_category_id;
+      }
+      return ticketService.update(id!, updateData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', id] });
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
