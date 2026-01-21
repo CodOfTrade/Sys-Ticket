@@ -385,6 +385,15 @@ export class TicketsService {
       // Atualizar ticket
       Object.assign(ticket, updateTicketDto);
 
+      // IMPORTANTE: Quando atualizamos os IDs das relações, precisamos limpar os objetos de relação
+      // para que o TypeORM use os novos IDs ao invés dos objetos carregados anteriormente
+      if (updateTicketDto.service_catalog_id !== undefined) {
+        ticket.service_catalog = null as any;
+      }
+      if (updateTicketDto.service_category_id !== undefined) {
+        ticket.service_category = null as any;
+      }
+
       this.logger.log(`Ticket depois do assign: service_catalog_id=${ticket.service_catalog_id}, service_category_id=${ticket.service_category_id}`);
 
       await this.ticketsRepository.save(ticket);
