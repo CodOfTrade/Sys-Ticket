@@ -20,6 +20,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { Request } from 'express';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -170,9 +171,13 @@ export class TicketDetailsController {
   }
 
   @Get('appointments/timer/active')
-  @ApiOperation({ summary: 'Obter timer ativo do usuário' })
-  async getActiveTimer(@CurrentUser('id') userId: string) {
-    const timer = await this.appointmentsService.getActiveTimer(userId);
+  @ApiOperation({ summary: 'Obter timer ativo do usuário (opcionalmente filtrado por ticket)' })
+  @ApiQuery({ name: 'ticketId', required: false, description: 'ID do ticket para filtrar' })
+  async getActiveTimer(
+    @CurrentUser('id') userId: string,
+    @Query('ticketId') ticketId?: string,
+  ) {
+    const timer = await this.appointmentsService.getActiveTimer(userId, ticketId);
     return { success: true, data: timer };
   }
 

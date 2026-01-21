@@ -123,9 +123,11 @@ export const appointmentsService = {
     return response.data.data;
   },
 
-  async getActiveTimer(): Promise<TicketAppointment | null> {
+  async getActiveTimer(ticketId?: string): Promise<TicketAppointment | null> {
+    const params = ticketId ? { ticketId } : {};
     const response = await api.get<ApiResponse<TicketAppointment | null>>(
-      '/v1/tickets/appointments/timer/active'
+      '/v1/tickets/appointments/timer/active',
+      { params }
     );
     return response.data.data;
   },

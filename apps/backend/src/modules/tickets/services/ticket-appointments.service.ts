@@ -80,22 +80,23 @@ export class TicketAppointmentsService {
    * Iniciar timer de apontamento
    */
   async startTimer(userId: string, dto: StartTimerDto) {
-    this.logger.log(`Tentando iniciar timer para userId: ${userId}`);
+    this.logger.log(`Tentando iniciar timer para userId: ${userId}, ticketId: ${dto.ticket_id}`);
 
-    // Verificar se já existe timer ativo para este usuário
-    const activeTimer = await this.appointmentRepository.findOne({
+    // Verificar se já existe timer ativo para este usuário NESTE TICKET
+    const activeTimerInTicket = await this.appointmentRepository.findOne({
       where: {
         user_id: userId,
+        ticket_id: dto.ticket_id,
         is_timer_based: true,
         timer_stopped_at: IsNull(),
       },
     });
 
-    this.logger.log(`Timer ativo encontrado: ${activeTimer ? 'SIM (ID: ' + activeTimer.id + ')' : 'NÃO'}`);
+    this.logger.log(`Timer ativo neste ticket: ${activeTimerInTicket ? 'SIM (ID: ' + activeTimerInTicket.id + ')' : 'NÃO'}`);
 
-    if (activeTimer) {
+    if (activeTimerInTicket) {
       throw new BadRequestException(
-        'Você já possui um timer ativo. Pare o timer atual antes de iniciar um novo.',
+        'Você já possui um timer ativo neste ticket. Pare o timer atual antes de iniciar um novo.',
       );
     }
 
@@ -335,15 +336,22 @@ export class TicketAppointmentsService {
   }
 
   /**
-   * Buscar timer ativo do usuário
+   * Buscar timer ativo do usuário (opcionalmente filtrado por ticket)
    */
-  async getActiveTimer(userId: string) {
+  async getActiveTimer(userId: string, ticketId?: string) {
+    const whereCondition: any = {
+      user_id: userId,
+      is_timer_based: true,
+      timer_stopped_at: IsNull(),
+    };
+
+    // Se ticketId fornecido, filtrar por ticket específico
+    if (ticketId) {
+      whereCondition.ticket_id = ticketId;
+    }
+
     return this.appointmentRepository.findOne({
-      where: {
-        user_id: userId,
-        is_timer_based: true,
-        timer_stopped_at: IsNull(),
-      },
+      where: whereCondition,
       relations: ['ticket'],
     });
   }

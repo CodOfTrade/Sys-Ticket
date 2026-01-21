@@ -41,10 +41,10 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
   } | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 
-  // Buscar timer ativo (declarar antes do useEffect que usa)
+  // Buscar timer ativo para ESTE ticket específico
   const { data: activeTimer } = useQuery({
-    queryKey: ['active-timer'],
-    queryFn: () => appointmentsService.getActiveTimer(),
+    queryKey: ['active-timer', ticketId],
+    queryFn: () => appointmentsService.getActiveTimer(ticketId),
     refetchInterval: 5000, // Atualizar a cada 5 segundos
   });
 
@@ -182,22 +182,16 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
     stopTimerMutation.mutate();
   };
 
+  // Timer é específico deste ticket
   const isTimerActive =
     activeTimer &&
     activeTimer.timer_started_at &&
-    !activeTimer.timer_stopped_at &&
-    activeTimer.ticket_id === ticketId;
-
-  const isAnotherTicketTimer =
-    activeTimer &&
-    activeTimer.timer_started_at &&
-    !activeTimer.timer_stopped_at &&
-    activeTimer.ticket_id !== ticketId;
+    !activeTimer.timer_stopped_at;
 
   return (
     <>
       <div className="flex items-center gap-3">
-        {!isTimerActive && !isAnotherTicketTimer && (
+        {!isTimerActive && (
           <button
             onClick={() => startTimerMutation.mutate()}
             disabled={startTimerMutation.isPending}
@@ -221,20 +215,6 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
               <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
             </span>
           </button>
-        )}
-
-        {isAnotherTicketTimer && activeTimer && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-orange-600 dark:text-orange-400">
-              Timer ativo em outro ticket
-            </span>
-            <a
-              href={`/tickets/${activeTimer.ticket_id}`}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
-            >
-              Ir para o ticket
-            </a>
-          </div>
         )}
       </div>
 
