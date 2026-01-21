@@ -36,12 +36,12 @@ Este arquivo contém informações críticas que o Claude deve lembrar em TODAS 
 | **Host** | localhost (no servidor) |
 | **Porta** | 5432 |
 | **Usuario** | sys_ticket |
-| **Senha** | 123321 |
+| **Senha** | sys_ticket_dev_password |
 | **Database** | sys_ticket_db |
 
 ```bash
 # Acesso ao banco no servidor
-PGPASSWORD='123321' psql -U sys_ticket -d sys_ticket_db -h localhost
+PGPASSWORD='sys_ticket_dev_password' psql -U sys_ticket -d sys_ticket_db -h localhost
 ```
 
 ---
@@ -50,7 +50,7 @@ PGPASSWORD='123321' psql -U sys_ticket -d sys_ticket_db -h localhost
 
 **Backend:**
 ```bash
-ssh root@172.31.255.26 "cd /root/Sys-Ticket && git pull && cd apps/backend && npm run build && pm2 restart backend"
+ssh root@172.31.255.26 "cd /root/Sys-Ticket && git pull && cd apps/backend && npm run build && pm2 restart sys-ticket-api"
 ```
 
 **Frontend:**
@@ -72,7 +72,7 @@ ssh root@172.31.255.26 "cd /root/Sys-Ticket && git pull && cd apps/frontend && n
 
 | Serviço | Gerenciador | Comandos |
 |---------|-------------|----------|
-| Backend | PM2 | `pm2 logs backend`, `pm2 restart backend` |
+| Backend | PM2 | `pm2 logs sys-ticket-api`, `pm2 restart sys-ticket-api` |
 | Frontend | nginx | `systemctl reload nginx` |
 | Banco | PostgreSQL | Serviço do sistema |
 
