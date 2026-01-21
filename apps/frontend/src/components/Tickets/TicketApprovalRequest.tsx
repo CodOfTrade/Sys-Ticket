@@ -91,6 +91,7 @@ export function TicketApprovalRequest({ ticketId, clientId, readOnly = false }: 
       queryClient.invalidateQueries({ queryKey: ['ticket-approval-pending', ticketId] });
       queryClient.invalidateQueries({ queryKey: ['ticket-approval-history', ticketId] });
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       setShowRequestModal(false);
       resetForm();
     },
@@ -106,6 +107,7 @@ export function TicketApprovalRequest({ ticketId, clientId, readOnly = false }: 
       queryClient.invalidateQueries({ queryKey: ['ticket-approval-pending', ticketId] });
       queryClient.invalidateQueries({ queryKey: ['ticket-approval-history', ticketId] });
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
     },
     onError: (error: any) => {
       alert('Erro ao cancelar solicitacao: ' + (error.response?.data?.message || error.message));
