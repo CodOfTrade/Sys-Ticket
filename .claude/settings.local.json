@@ -104,7 +104,12 @@
       "Bash(cd:*)",
       "Bash(timeout 60 ssh:*)",
       "Bash(timeout 90 ssh:*)",
-      "Bash(timeout 180 ssh:*)"
+      "Bash(timeout 180 ssh:*)",
+      "Bash(/c/Program Files/nodejs/npm.cmd run build --workspace=apps/backend)",
+      "Bash(cmd /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\"\" && npm run build --workspace=apps/backend\")",
+      "Bash(tree:*)",
+      "Read(//d//**)",
+      "Bash(git log:*)"
     ]
   }
 }
