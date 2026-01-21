@@ -18,13 +18,19 @@ export function UnreadIndicator({ ticketId }: UnreadIndicatorProps) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    if (!ticketId) return;
+    console.log('[UnreadIndicator] Montado para ticket:', ticketId);
+    if (!ticketId) {
+      console.log('[UnreadIndicator] ticketId vazio, saindo');
+      return;
+    }
 
     let isMounted = true;
 
     const checkUnread = async () => {
+      console.log('[UnreadIndicator] Buscando comentarios para:', ticketId);
       try {
         const comments = await commentsService.getComments(ticketId);
+        console.log('[UnreadIndicator] Comentarios recebidos:', comments?.length || 0);
 
         if (!isMounted) return;
 
