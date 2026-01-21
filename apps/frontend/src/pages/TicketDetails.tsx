@@ -693,17 +693,8 @@ export default function TicketDetails() {
           {/* Informações do ticket */}
           <div className="flex items-start justify-between">
             <div className="flex-1">
-            </div>
-            {/* Botao de Acoes */}
-            <div className="flex-shrink-0 ml-4">
-              <TicketActions ticket={ticket} onNavigateToApproval={() => setActiveTab('approval')} />
-            </div>
-          </div>
-
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              {/* Título e Código do Ticket */}
-              <div className="flex items-start justify-between mb-2">
+              {/* Título, Código do Ticket e Ações */}
+              <div className="flex items-start justify-between gap-4 mb-2">
                 <h1
                   onClick={() => {
                     if (isTicketLocked) return;
@@ -719,9 +710,12 @@ export default function TicketDetails() {
                 >
                   {ticket.title}
                 </h1>
-                <span className="text-sm font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap mt-1">
-                  #{ticket.ticket_number}
-                </span>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <span className="text-sm font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    #{ticket.ticket_number}
+                  </span>
+                  <TicketActions ticket={ticket} onNavigateToApproval={() => setActiveTab('approval')} />
+                </div>
               </div>
               {/* Status e Prioridade */}
               <div className="flex items-center gap-3 mb-3">
