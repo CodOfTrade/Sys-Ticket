@@ -168,6 +168,7 @@ export default function TicketDetails() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('appointments');
   const [showAttachments, setShowAttachments] = useState(false);
+  const [showFollowers, setShowFollowers] = useState(false);
   const [isEditingFields, setIsEditingFields] = useState(false);
 
   // Estados para modais de edição
@@ -1114,17 +1115,27 @@ export default function TicketDetails() {
                     </button>
                   </div>
                 </div>
+
+                {/* Seguidores do Ticket */}
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-gray-600 dark:text-gray-400">Seguidores</p>
+                    <button
+                      onClick={() => setShowFollowers(!showFollowers)}
+                      className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      {(ticket as any).followers?.length || 0} pessoa(s)
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              {/* Seção de Seguidores */}
+              {/* Seção de Seguidores (expansível) */}
+              {showFollowers && (
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-gray-400" />
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                      Seguidores ({(ticket as any).followers?.length || 0})
-                    </h4>
-                  </div>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white">Seguidores do Ticket</h4>
                   {!isTicketLocked && (
                     <button
                       onClick={() => setShowFollowerInput(!showFollowerInput)}
@@ -1262,6 +1273,7 @@ export default function TicketDetails() {
                   </p>
                 )}
               </div>
+              )}
 
               {/* Lista de anexos (expansível) */}
               {showAttachments && (
