@@ -65,10 +65,7 @@ function createWindow() {
  * Cria ícone na bandeja do sistema
  */
 function createTray() {
-  // Create a simple default icon (16x16 blue square as placeholder)
-  const icon = nativeImage.createEmpty();
-
-  // Try to use app icon if available, otherwise use empty icon
+  // Use app icon with base64 encoded PNG (16x16 blue/purple icon)
   const appIcon = nativeImage.createFromDataURL(
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAdgAAAHYBTnsmCAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAE3SURBVDiNpZKxSsNQFIa/m7RaFRycFBfdXESHDk4K4gtIN+ni4CM4+AYOvoGDg4OIi5M4iIuDQ4cODjoodRIRqV5J7k0uDWlTqxf84Z/OuX/Od84PF1QqlUqRSCQqhmFULMsqaa2lUIxlWdI0TXU8Hs9UKpW7v4FerzcDqAFzwAxgAgLoBnaBp0KhcPnlwXa7fQWsf8KyiqLoJo7jKI7jOI7jbDqOszk3NzcDZNPp9N1fwN8ul0sp5aYQ4lxKeQ5sABvAtZTyzLIsvQ+c7PP5/KXv+y/7+/sXUsoT4Gh3d/cRmB4MBo/ABrAAzAPzwCKwBKwATaABXACP7Xb7bWxgEASPvV5vHzgEVoA1oA48AE/ADbAN1D4P2LZt0zTN0+FweJI2kE6nk0TRaHTiuu6pYRi1sbFpmqbruu7/wB+gXXLuUa2gUwAAAABJRU5ErkJggg=='
   );
