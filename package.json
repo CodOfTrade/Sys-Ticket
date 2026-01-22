@@ -4,7 +4,9 @@
   "description": "Sistema completo de gestão de tickets e atendimento ao cliente com integração SIGE Cloud",
   "private": true,
   "workspaces": [
-    "apps/*",
+    "apps/backend",
+    "apps/frontend",
+    "apps/mobile",
     "packages/*"
   ],
   "scripts": {
