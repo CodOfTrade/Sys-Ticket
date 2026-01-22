@@ -57,7 +57,7 @@ export class ResourceLicense {
   resource: Resource;
 
   @Column({ nullable: true })
-  resource_id: string;
+  resource_id: string | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   assigned_to_user: string;
