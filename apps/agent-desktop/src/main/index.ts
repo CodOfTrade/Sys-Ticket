@@ -5,13 +5,6 @@ import { ApiService } from './services/ApiService';
 import { SystemInfoService } from './services/SystemInfo';
 import { HeartbeatService } from './services/HeartbeatService';
 
-// Declaração de tipo para propriedade customizada
-declare module 'electron' {
-  interface App {
-    isQuitting?: boolean;
-  }
-}
-
 // Variáveis globais
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -19,6 +12,7 @@ let storageService: StorageService;
 let apiService: ApiService;
 let systemInfoService: SystemInfoService;
 let heartbeatService: HeartbeatService | null = null;
+let isQuitting = false;
 
 // Constantes
 const isDev = process.env.NODE_ENV === 'development';
@@ -56,7 +50,7 @@ function createWindow() {
 
   mainWindow.on('close', (event) => {
     // Não fechar, apenas minimizar para tray
-    if (!app.isQuitting) {
+    if (!isQuitting) {
       event.preventDefault();
       mainWindow?.hide();
     }
@@ -142,7 +136,7 @@ function updateTrayMenu() {
     {
       label: 'Sair',
       click: () => {
-        app.isQuitting = true;
+        isQuitting = true;
         app.quit();
       },
     },
