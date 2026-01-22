@@ -17,7 +17,7 @@ interface Ticket {
   category?: string;
 }
 
-export function Tickets({ config }: TicketsProps) {
+export function Tickets({ config: _config }: TicketsProps) {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
