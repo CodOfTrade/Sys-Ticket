@@ -138,13 +138,8 @@ export function Setup({ onComplete }: SetupProps) {
     setError(null);
 
     try {
-      // Buscar o nome do cliente selecionado
-      const selectedClient = clients.find(c => c.id === selectedClientId);
-      const clientName = selectedClient?.nome || selectedClient?.name || selectedClient?.razao_social || '';
-
       const registrationData: RegistrationData = {
         clientId: selectedClientId,
-        clientName,
         contractId: selectedContractId || undefined,
         machineName,
         location: location || undefined,
