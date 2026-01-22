@@ -1,0 +1,96 @@
+╔════════════════════════════════════════════════════════════════╗
+║                                                                ║
+║            SYS-TICKET AGENT DESKTOP - INSTALADOR              ║
+║                         Versão 1.0.0                          ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+
+📋 ORDEM DE EXECUÇÃO (duplo clique nos arquivos):
+
+   ┌─────────────────────────────────────────────────────────┐
+   │  PASSO 1: 0-verificar-ambiente.bat                      │
+   │  ✓ Verifica se Node.js está instalado                   │
+   │  ✓ Mostra versões de node e npm                         │
+   │  ✓ Verifica se dependências já foram instaladas         │
+   └─────────────────────────────────────────────────────────┘
+              ↓
+   ┌─────────────────────────────────────────────────────────┐
+   │  PASSO 2: 1-instalar-dependencias.bat                   │
+   │  ✓ Instala todas as dependências do projeto             │
+   │  ⏱  Tempo: 2-3 minutos                                   │
+   │  📦 Baixa: Electron, React, systeminformation, etc       │
+   └─────────────────────────────────────────────────────────┘
+              ↓
+   ┌─────────────────────────────────────────────────────────┐
+   │  PASSO 3: 2-build-instalador.bat                        │
+   │  ✓ Compila TypeScript                                   │
+   │  ✓ Builda React                                         │
+   │  ✓ Gera instaladores .exe                               │
+   │  ⏱  Tempo: 1-2 minutos                                   │
+   │  📂 Resultado: release/Sys-Ticket-Agent-Setup.exe        │
+   └─────────────────────────────────────────────────────────┘
+
+   (OPCIONAL) 3-testar-dev.bat
+   ✓ Testa o agente em modo desenvolvimento antes de buildar
+
+
+════════════════════════════════════════════════════════════════
+
+📦 PRÉ-REQUISITOS:
+
+   ✓ Node.js versão 18 ou superior
+     Download: https://nodejs.org/
+
+   ✓ Windows 10/11
+
+   ✓ ~500MB de espaço livre
+
+════════════════════════════════════════════════════════════════
+
+📂 RESULTADO FINAL:
+
+   Após executar, você terá em release/:
+
+   ✅ Sys-Ticket-Agent-Setup-1.0.0.exe
+      → Instalador completo com wizard
+      → Recomendado para distribuição
+
+   ✅ Sys-Ticket-Agent-Portable-1.0.0.exe
+      → Versão portátil (sem instalação)
+      → Útil para testes rápidos
+
+════════════════════════════════════════════════════════════════
+
+📖 DOCUMENTAÇÃO:
+
+   • INICIO-RAPIDO.md  → Guia simplificado
+   • BUILD.md          → Documentação completa
+   • README.md         → Sobre o projeto
+
+════════════════════════════════════════════════════════════════
+
+❓ AJUDA:
+
+   Se tiver problemas:
+
+   1. Verifique se Node.js está instalado
+      → node --version
+
+   2. Tente deletar node_modules e reinstalar
+      → rmdir /s /q node_modules
+      → Execute: 1-instalar-dependencias.bat
+
+   3. Consulte BUILD.md para troubleshooting completo
+
+════════════════════════════════════════════════════════════════
+
+💡 DICA: Se é a primeira vez, comece executando:
+
+   0-verificar-ambiente.bat
+
+   Isso vai te dizer se está tudo pronto ou se falta algo!
+
+════════════════════════════════════════════════════════════════
+
+Desenvolvido por: Claude Sonnet 4.5
+Data: 21 de Janeiro de 2026
