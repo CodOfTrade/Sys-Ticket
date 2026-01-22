@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import https from 'https';
 import {
   RegistrationData,
   RegistrationResponse,
@@ -17,6 +18,10 @@ export class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
+      // Allow self-signed certificates (for development)
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false,
+      }),
     });
 
     // Interceptor para adicionar token em todas as requisições

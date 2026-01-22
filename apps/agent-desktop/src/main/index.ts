@@ -260,6 +260,16 @@ function registerIpcHandlers() {
   });
 }
 
+// Ignore certificate errors (for development with self-signed certificates)
+app.commandLine.appendSwitch('ignore-certificate-errors');
+
+// Handle certificate errors
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+  // Allow all certificates in development (self-signed, expired, etc)
+  event.preventDefault();
+  callback(true);
+});
+
 // Evento: App pronto
 app.whenReady().then(() => {
   initializeServices();
