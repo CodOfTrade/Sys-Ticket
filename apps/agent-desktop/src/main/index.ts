@@ -15,10 +15,19 @@ let heartbeatService: HeartbeatService | null = null;
 let isQuitting = false;
 
 // Constantes
-const isDev = process.env.NODE_ENV === 'development';
-const RENDERER_URL = isDev
-  ? 'http://localhost:5173'
-  : `file://${path.join(__dirname, '../renderer/index.html')}`;
+const isDev = !app.isPackaged;
+
+function getRendererPath() {
+  if (isDev) {
+    return 'http://localhost:5173';
+  }
+  // Em produção, o index.html está em dist/
+  // __dirname em produção aponta para resources/app.asar/dist-electron/main
+  // então precisamos voltar 2 níveis e entrar em dist/
+  return `file://${path.resolve(__dirname, '../../dist/index.html')}`;
+}
+
+const RENDERER_URL = getRendererPath();
 
 /**
  * Cria a janela principal
@@ -37,7 +46,14 @@ function createWindow() {
     },
   });
 
+  console.log('Loading renderer from:', RENDERER_URL);
+  console.log('__dirname:', __dirname);
+  console.log('app.isPackaged:', app.isPackaged);
+
   mainWindow.loadURL(RENDERER_URL);
+
+  // Open DevTools in production to debug
+  mainWindow.webContents.openDevTools();
 
   mainWindow.on('ready-to-show', () => {
     const config = storageService.loadConfig();
@@ -55,10 +71,6 @@ function createWindow() {
       mainWindow?.hide();
     }
   });
-
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
-  }
 }
 
 /**
