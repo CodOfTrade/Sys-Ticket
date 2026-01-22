@@ -58,13 +58,54 @@ ssh root@172.31.255.26 "cd /root/Sys-Ticket && git pull && cd apps/backend && np
 ssh root@172.31.255.26 "cd /root/Sys-Ticket && git pull && cd apps/frontend && npm run build && rm -rf /var/www/sys-ticket/* && cp -r dist/* /var/www/sys-ticket/"
 ```
 
+**Agent Desktop (Build no Servidor Linux com Wine):**
+```bash
+ssh root@172.31.255.26 "cd /root/Sys-Ticket && git pull && cd apps/agent-desktop && npm install && npm run build:win"
+```
+
+**Baixar EXEs gerados:**
+```bash
+# Via SCP do servidor para o Windows local
+scp root@172.31.255.26:/root/Sys-Ticket/apps/agent-desktop/release/*.exe "c:\Users\josed\Downloads\"
+```
+
+**Arquivos gerados no servidor:**
+- `/root/Sys-Ticket/apps/agent-desktop/release/Sys-Ticket Agent-Setup-1.0.0.exe` (Instalador)
+- `/root/Sys-Ticket/apps/agent-desktop/release/Sys-Ticket Agent-Portable-1.0.0.exe` (Portátil)
+
 ---
 
 ## Estrutura do Projeto
 
 - **Backend**: NestJS + TypeScript + PostgreSQL + TypeORM
 - **Frontend**: React 18 + Vite + TailwindCSS + Zustand
+- **Agent Desktop**: Electron 28 + React 18 + TypeScript (Aplicação Windows)
 - **Mobile**: React Native + Expo (em desenvolvimento)
+
+---
+
+## Agent Desktop Windows
+
+### Características
+- Aplicação Electron para monitoramento de recursos Windows
+- Geração de instaladores Windows via electron-builder
+- Build pode ser feito no Linux usando Wine
+
+### Dependências no Servidor Linux
+- **Wine**: Já instalado (wine-6.0.3)
+- Permite gerar .exe sem precisar de Windows
+
+### Workflow de Build
+1. **Desenvolvimento**: Windows (testar com `npm run electron:dev`)
+2. **Commit**: `git push` para o repositório
+3. **Build no Servidor**: SSH para o servidor Linux → `npm run build:win`
+4. **Distribuição**: Baixar .exe do servidor e distribuir para clientes
+
+### Localização dos Builds
+- **No Servidor**: `/root/Sys-Ticket/apps/agent-desktop/release/`
+- **Arquivos**:
+  - `Sys-Ticket Agent-Setup-1.0.0.exe` (Instalador NSIS ~76MB)
+  - `Sys-Ticket Agent-Portable-1.0.0.exe` (Versão portátil ~76MB)
 
 ---
 
