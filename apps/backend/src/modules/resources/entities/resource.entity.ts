@@ -110,6 +110,9 @@ export class Resource {
   @Column({ type: 'varchar', length: 100, unique: true, nullable: true })
   agent_id: string;
 
+  @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
+  agent_token: string;
+
   @Column({ type: 'varchar', length: 50, nullable: true })
   agent_version: string;
 

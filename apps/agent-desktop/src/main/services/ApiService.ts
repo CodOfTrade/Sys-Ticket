@@ -94,7 +94,7 @@ export class ApiService {
    * Busca contratos de um cliente
    */
   async getClientContracts(clientId: string): Promise<any[]> {
-    const response = await this.api.get(`/v1/clients/${clientId}/contracts`);
+    const response = await this.api.get(`/v1/clients/contract/client/${clientId}`);
     return response.data.data || [];
   }
 
