@@ -209,6 +209,7 @@ function registerIpcHandlers() {
       config.resourceId = response.resourceId;
       config.resourceCode = response.resourceCode;
       config.clientId = registrationData.clientId;
+      config.clientName = registrationData.clientName || null;
       config.contractId = registrationData.contractId;
       config.configured = true;
 
