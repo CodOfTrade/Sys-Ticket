@@ -132,9 +132,17 @@ export class ApiService {
    */
   async testConnection(): Promise<boolean> {
     try {
-      await this.api.get('/health');
+      console.log('Testing connection to:', this.api.defaults.baseURL);
+      const response = await this.api.get('/health');
+      console.log('Connection test successful:', response.status);
       return true;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Connection test failed:', error.message);
+      console.error('Error details:', {
+        code: error.code,
+        response: error.response?.status,
+        message: error.message,
+      });
       return false;
     }
   }

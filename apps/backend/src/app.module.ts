@@ -29,6 +29,9 @@ import { ResourcesModule } from './modules/resources/resources.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 
+// Controllers
+import { HealthController } from './health/health.controller';
+
 @Module({
   imports: [
     // Configuração global
@@ -90,6 +93,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     SettingsModule,
     ResourcesModule,
   ],
+  controllers: [HealthController],
   providers: [
     {
       provide: APP_GUARD,
