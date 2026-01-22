@@ -25,8 +25,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Navegação
   onNavigate: (callback: (route: string) => void) => {
-    ipcRenderer.on('navigate-to', (_, route) => callback(route));
+    const listener = (_: any, route: string) => callback(route);
+    ipcRenderer.on('navigate-to', listener);
+    // Retornar função de cleanup
+    return () => ipcRenderer.removeListener('navigate-to', listener);
   },
+
+  // Tickets (TODO: Implementar no main process)
+  createTicket: (data: any) => ipcRenderer.invoke('create-ticket', data),
+  getTickets: (agentId: string) => ipcRenderer.invoke('get-tickets', agentId),
+
+  // Settings
+  updateAgentSettings: (data: any) => ipcRenderer.invoke('update-agent-settings', data),
 });
 
 // Definir tipo global para TypeScript
@@ -41,7 +51,10 @@ declare global {
       testConnection: (apiUrl: string) => Promise<boolean>;
       getClients: () => Promise<any[]>;
       getClientContracts: (clientId: string) => Promise<any[]>;
-      onNavigate: (callback: (route: string) => void) => void;
+      onNavigate: (callback: (route: string) => void) => (() => void) | undefined;
+      createTicket: (data: any) => Promise<any>;
+      getTickets: (agentId: string) => Promise<any[]>;
+      updateAgentSettings: (data: any) => Promise<boolean>;
     };
   }
 }

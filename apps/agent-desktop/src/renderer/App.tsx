@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Setup } from './pages/Setup';
 import { Dashboard } from './pages/Dashboard';
+import { Settings } from './pages/Settings';
+import { Status } from './pages/Status';
+import { CreateTicket } from './pages/CreateTicket';
+import { Tickets } from './pages/Tickets';
+import { Layout } from './components/Layout';
 import { AgentConfig } from '@shared/types';
 
 function App() {
@@ -9,6 +15,15 @@ function App() {
 
   useEffect(() => {
     loadConfig();
+
+    // Listener para navegação via IPC do tray menu
+    const unsubscribe = window.electronAPI.onNavigate((path: string) => {
+      window.location.hash = path;
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   const loadConfig = async () => {
@@ -44,11 +59,25 @@ function App() {
     );
   }
 
+  // Se não está configurado, mostrar apenas o Setup
   if (!config?.configured) {
     return <Setup onComplete={handleConfigComplete} />;
   }
 
-  return <Dashboard config={config} />;
+  // Se está configurado, usar rotas normais com Layout
+  return (
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<Layout config={config}><Dashboard config={config} /></Layout>} />
+        <Route path="/dashboard" element={<Layout config={config}><Dashboard config={config} /></Layout>} />
+        <Route path="/create-ticket" element={<Layout config={config}><CreateTicket config={config} /></Layout>} />
+        <Route path="/tickets" element={<Layout config={config}><Tickets config={config} /></Layout>} />
+        <Route path="/status" element={<Layout config={config}><Status config={config} /></Layout>} />
+        <Route path="/settings" element={<Layout config={config}><Settings config={config} onUpdate={loadConfig} /></Layout>} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </HashRouter>
+  );
 }
 
 export default App;

@@ -110,12 +110,15 @@ export function Setup({ onComplete }: SetupProps) {
     setError(null);
 
     try {
+      console.log('Coletando informações do sistema...');
       const info = await window.electronAPI.getSystemInfo();
+      console.log('Informações coletadas:', info);
       setSystemInfo(info);
+      setLoading(false); // Garantir que loading seja false ANTES de mudar step
       setStep(3);
     } catch (err: any) {
+      console.error('Erro ao coletar informações:', err);
       setError(err.message || 'Erro ao coletar informações do sistema');
-    } finally {
       setLoading(false);
     }
   };
