@@ -215,7 +215,7 @@
   letter-spacing: 0.5px;
 }
 
-.info-item value {
+.info-item .value {
   display: block;
   font-size: 14px;
   color: #333;

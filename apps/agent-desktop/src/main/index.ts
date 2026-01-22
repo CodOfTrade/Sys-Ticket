@@ -5,6 +5,13 @@ import { ApiService } from './services/ApiService';
 import { SystemInfoService } from './services/SystemInfo';
 import { HeartbeatService } from './services/HeartbeatService';
 
+// Declaração de tipo para propriedade customizada
+declare module 'electron' {
+  interface App {
+    isQuitting?: boolean;
+  }
+}
+
 // Variáveis globais
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;

@@ -85,20 +85,20 @@ export function Dashboard({ config }: DashboardProps) {
           <div className="info-grid">
             <div className="info-item">
               <label>Código do Recurso:</label>
-              <value>{config.resourceCode}</value>
+              <span className="value">{config.resourceCode}</span>
             </div>
             <div className="info-item">
               <label>ID do Recurso:</label>
-              <value>{config.resourceId}</value>
+              <span className="value">{config.resourceId}</span>
             </div>
             <div className="info-item">
               <label>Cliente ID:</label>
-              <value>{config.clientId}</value>
+              <span className="value">{config.clientId}</span>
             </div>
             {config.contractId && (
               <div className="info-item">
                 <label>Contrato ID:</label>
-                <value>{config.contractId}</value>
+                <span className="value">{config.contractId}</span>
               </div>
             )}
           </div>
