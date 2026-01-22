@@ -232,8 +232,8 @@ export function Setup({ onComplete }: SetupProps) {
               >
                 <option value="">Selecione...</option>
                 {clients.map((client) => (
-                  <option key={client.id} value={client.sige_id}>
-                    {client.name}
+                  <option key={client.id || client.localId} value={client.id}>
+                    {client.nome || client.name || client.razao_social}
                   </option>
                 ))}
               </select>
@@ -247,8 +247,8 @@ export function Setup({ onComplete }: SetupProps) {
               >
                 <option value="">Nenhum contrato</option>
                 {contracts.map((contract) => (
-                  <option key={contract.id} value={contract.sige_id}>
-                    {contract.description || contract.sige_id}
+                  <option key={contract.id} value={contract.id}>
+                    {contract.descricao || contract.numero_contrato || contract.id}
                   </option>
                 ))}
               </select>

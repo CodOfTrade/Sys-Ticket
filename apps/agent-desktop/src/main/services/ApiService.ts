@@ -87,7 +87,16 @@ export class ApiService {
    */
   async getClients(): Promise<any[]> {
     const response = await this.api.get('/v1/clients');
-    return response.data.data || [];
+    // Backend retorna { data: { data: [...], meta: {...} } }
+    const result = response.data.data;
+    if (Array.isArray(result)) {
+      return result;
+    }
+    // Se data.data é outro objeto com data dentro (estrutura aninhada)
+    if (result && Array.isArray(result.data)) {
+      return result.data;
+    }
+    return [];
   }
 
   /**
