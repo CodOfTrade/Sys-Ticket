@@ -20,14 +20,20 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 REM Verificar se node_modules existe
+echo Verificando node_modules...
 if not exist "node_modules" (
     echo [ERRO] Dependencias nao instaladas!
+    echo.
+    echo A pasta node_modules nao foi encontrada em:
+    echo %CD%
     echo.
     echo Execute primeiro: 1-instalar-dependencias.bat
     echo.
     pause
     exit /b 1
 )
+echo   OK - node_modules encontrado
+echo.
 
 echo Limpando builds anteriores...
 if exist "dist" rmdir /s /q dist
