@@ -23,6 +23,7 @@ import { ServiceCatalogModule } from './modules/service-catalog/service-catalog.
 import { EmailModule } from './modules/email/email.module';
 import { ProductsModule } from './modules/products/products.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { ResourcesModule } from './modules/resources/resources.module';
 
 // Guards
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -87,6 +88,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     EmailModule,
     ProductsModule,
     SettingsModule,
+    ResourcesModule,
   ],
   providers: [
     {

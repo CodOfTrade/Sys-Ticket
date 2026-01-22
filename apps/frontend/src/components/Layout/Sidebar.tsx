@@ -10,6 +10,7 @@ import {
   DollarSign,
   Building2,
   ClipboardCheck,
+  HardDrive,
 } from 'lucide-react';
 import { settingsService } from '@/services/settings.service';
 
@@ -40,6 +41,11 @@ const menuItems: MenuItem[] = [
     title: 'Clientes',
     icon: <Users size={20} />,
     path: '/clients',
+  },
+  {
+    title: 'Recursos',
+    icon: <HardDrive size={20} />,
+    path: '/resources',
   },
   {
     title: 'Apontamentos',

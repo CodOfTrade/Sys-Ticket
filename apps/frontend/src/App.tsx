@@ -9,6 +9,10 @@ import TicketDetails from '@pages/TicketDetails';
 import TicketApproval from '@pages/TicketApproval';
 import Clients from '@pages/Clients';
 import { Settings } from '@pages/Settings';
+import Resources from '@pages/Resources';
+import ResourceDetails from '@pages/ResourceDetails';
+import ResourceLicenses from '@pages/ResourceLicenses';
+import ContractQuotas from '@pages/ContractQuotas';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +47,10 @@ function App() {
             <Route path="tickets/:id" element={<TicketDetails />} />
             <Route path="ticket-approval" element={<TicketApproval />} />
             <Route path="clients" element={<Clients />} />
+            <Route path="resources" element={<Resources />} />
+            <Route path="resources/:id" element={<ResourceDetails />} />
+            <Route path="licenses" element={<ResourceLicenses />} />
+            <Route path="quotas" element={<ContractQuotas />} />
             <Route path="timesheets" element={
               <div className="text-gray-600 dark:text-gray-400">Página em desenvolvimento...</div>
             } />
