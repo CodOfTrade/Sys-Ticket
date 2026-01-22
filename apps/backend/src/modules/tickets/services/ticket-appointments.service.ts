@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, In } from 'typeorm';
 import { TicketAppointment, ServiceCoverageType } from '../entities/ticket-appointment.entity';
 import { TicketComment, CommentType, CommentVisibility } from '../entities/ticket-comment.entity';
-import { Ticket } from '../entities/ticket.entity';
+import { Ticket, TicketStatus } from '../entities/ticket.entity';
 import { TicketAttachment } from '../entities/ticket-attachment.entity';
 import {
   CreateAppointmentDto,
@@ -117,7 +117,14 @@ export class TicketAppointmentsService {
       total_amount: 0,
     });
 
-    return this.appointmentRepository.save(appointment);
+    const savedAppointment = await this.appointmentRepository.save(appointment);
+
+    // Atualizar status do ticket para "Em Andamento" quando timer iniciar
+    await this.ticketsRepository.update(dto.ticket_id, {
+      status: TicketStatus.IN_PROGRESS,
+    });
+
+    return savedAppointment;
   }
 
   /**

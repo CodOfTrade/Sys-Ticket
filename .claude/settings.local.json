@@ -109,7 +109,10 @@
       "Bash(cmd /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\"\" && npm run build --workspace=apps/backend\")",
       "Bash(tree:*)",
       "Read(//d//**)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(git config:*)",
+      "Bash(cmd.exe /c \"where node\")",
+      "Bash(echo:*)"
     ]
   }
 }
