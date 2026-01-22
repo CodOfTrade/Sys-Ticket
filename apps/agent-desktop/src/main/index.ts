@@ -264,7 +264,7 @@ function registerIpcHandlers() {
 app.commandLine.appendSwitch('ignore-certificate-errors');
 
 // Handle certificate errors
-app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+app.on('certificate-error', (event, _webContents, _url, _error, _certificate, callback) => {
   // Allow all certificates in development (self-signed, expired, etc)
   event.preventDefault();
   callback(true);
