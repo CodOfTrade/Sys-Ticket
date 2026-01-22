@@ -1,8 +1,14 @@
 @echo off
+
+REM Mudar para o diretorio onde o script esta localizado
+cd /d "%~dp0"
+
 echo ========================================
 echo  Sys-Ticket Agent Desktop
 echo  Executando em modo DESENVOLVIMENTO
 echo ========================================
+echo.
+echo Diretorio atual: %CD%
 echo.
 
 REM Verificar se npm esta instalado

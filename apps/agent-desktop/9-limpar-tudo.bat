@@ -1,4 +1,8 @@
 @echo off
+
+REM Mudar para o diretorio onde o script esta localizado
+cd /d "%~dp0"
+
 echo ========================================
 echo  Sys-Ticket Agent Desktop
 echo  LIMPAR TUDO (Reset Completo)
