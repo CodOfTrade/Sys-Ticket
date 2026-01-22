@@ -133,7 +133,7 @@ export class ApiService {
   async testConnection(): Promise<boolean> {
     try {
       console.log('Testing connection to:', this.api.defaults.baseURL);
-      const response = await this.api.get('/health');
+      const response = await this.api.get('/v1/health');
       console.log('Connection test successful:', response.status);
       return true;
     } catch (error: any) {
