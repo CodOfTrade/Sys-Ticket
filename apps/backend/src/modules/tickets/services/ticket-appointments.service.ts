@@ -118,18 +118,11 @@ export class TicketAppointmentsService {
     });
 
     const savedAppointment = await this.appointmentRepository.save(appointment);
-    this.logger.log(`Timer salvo com sucesso: ${savedAppointment.id}`);
 
     // Atualizar status do ticket para "Em Andamento" quando timer iniciar
-    try {
-      this.logger.log(`Atualizando status do ticket ${dto.ticket_id} para IN_PROGRESS...`);
-      const updateResult = await this.ticketsRepository.update(dto.ticket_id, {
-        status: TicketStatus.IN_PROGRESS,
-      });
-      this.logger.log(`Resultado da atualização: ${JSON.stringify(updateResult)}`);
-    } catch (error) {
-      this.logger.error(`Erro ao atualizar status do ticket: ${error.message}`, error.stack);
-    }
+    await this.ticketsRepository.update(dto.ticket_id, {
+      status: TicketStatus.IN_PROGRESS,
+    });
 
     return savedAppointment;
   }
