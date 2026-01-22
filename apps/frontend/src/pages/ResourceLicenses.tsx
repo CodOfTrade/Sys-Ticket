@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Plus, Search, Filter, Key, AlertTriangle, Check, X } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
-import { LicenseType, LicenseStatus } from '@/types/resource.types';
+import { LicenseStatus } from '@/types/resource.types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 

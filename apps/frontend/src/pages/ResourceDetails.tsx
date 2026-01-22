@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -14,7 +14,6 @@ import {
   User,
   Key,
   History,
-  Settings,
 } from 'lucide-react';
 import { resourceService } from '@/services/resource.service';
 import { format } from 'date-fns';
