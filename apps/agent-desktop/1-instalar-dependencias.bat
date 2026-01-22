@@ -36,18 +36,32 @@ echo.
 echo Instalando dependencias...
 echo Isso pode levar alguns minutos...
 echo.
+echo NOTA: Usando --legacy-peer-deps para resolver conflitos
+echo       de dependencias do workspace do monorepo.
+echo.
 
-call npm install
+call npm install --legacy-peer-deps
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [ERRO] Falha ao instalar dependencias!
     echo.
-    echo Tente executar manualmente:
-    echo   npm install
+    echo Tentando novamente com --force...
     echo.
-    pause
-    exit /b 1
+    call npm install --force
+
+    if %ERRORLEVEL% NEQ 0 (
+        echo.
+        echo [ERRO] Ainda com falha!
+        echo.
+        echo Tente executar manualmente:
+        echo   npm install --legacy-peer-deps
+        echo   ou
+        echo   npm install --force
+        echo.
+        pause
+        exit /b 1
+    )
 )
 
 echo.
