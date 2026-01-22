@@ -103,8 +103,9 @@ const statusLabels: Record<string, string> = {
 };
 
 // Status que podem ser alterados manualmente pelo usuário
-// Excluídos: new (automático), in_progress (automático), cancelled (via botão), resolved (via botão Fechar)
+// Excluídos: new (automático), cancelled (via botão), resolved (via botão Fechar)
 const manualStatusOptions: string[] = [
+  'in_progress',
   'waiting_client',
   'waiting_third_party',
   'paused',
