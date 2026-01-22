@@ -33,40 +33,24 @@ export function Tickets({ config: _config }: TicketsProps) {
     setError(null);
 
     try {
-      // TODO: Implementar busca de tickets via API
-      // const response = await window.electronAPI.getTickets(config.agentId);
-      // setTickets(response);
+      if (!_config.agentId) {
+        throw new Error('Agent ID não encontrado');
+      }
 
-      // Dados simulados para demonstração
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setTickets([
-        {
-          id: '1',
-          code: 'TKT-001',
-          title: 'Computador lento',
-          status: 'open',
-          priority: 'medium',
-          createdAt: new Date().toISOString(),
-          category: 'Performance',
-        },
-        {
-          id: '2',
-          code: 'TKT-002',
-          title: 'Impressora não funciona',
-          status: 'in_progress',
-          priority: 'high',
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-          category: 'Hardware',
-        },
-        {
-          id: '3',
-          code: 'TKT-003',
-          title: 'Senha expirada',
-          status: 'resolved',
-          priority: 'low',
-          createdAt: new Date(Date.now() - 172800000).toISOString(),
-        },
-      ]);
+      const data = await window.electronAPI.getTickets(_config.agentId);
+
+      // Mapear ticketNumber → code
+      const mappedTickets: Ticket[] = data.map((t: any) => ({
+        id: t.id,
+        code: t.ticketNumber,
+        title: t.title,
+        status: t.status,
+        priority: t.priority,
+        createdAt: t.createdAt,
+        category: 'Suporte via Agente',
+      }));
+
+      setTickets(mappedTickets);
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar tickets');
     } finally {
@@ -76,6 +60,7 @@ export function Tickets({ config: _config }: TicketsProps) {
 
   const getStatusLabel = (status: string): string => {
     const labels: Record<string, string> = {
+      new: 'Novo',
       open: 'Aberto',
       in_progress: 'Em Andamento',
       resolved: 'Resolvido',

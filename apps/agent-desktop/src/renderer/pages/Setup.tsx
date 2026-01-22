@@ -27,6 +27,7 @@ export function Setup({ onComplete }: SetupProps) {
   const [department, setDepartment] = useState('');
   const [assignedUserName, setAssignedUserName] = useState('');
   const [assignedUserEmail, setAssignedUserEmail] = useState('');
+  const [resourceCode, setResourceCode] = useState('');
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
 
   useEffect(() => {
@@ -146,6 +147,7 @@ export function Setup({ onComplete }: SetupProps) {
         department: department || undefined,
         assignedUserName: assignedUserName || undefined,
         assignedUserEmail: assignedUserEmail || undefined,
+        resourceCode: resourceCode || undefined,
         systemInfo,
       };
 
@@ -323,6 +325,21 @@ export function Setup({ onComplete }: SetupProps) {
                 placeholder="email@exemplo.com"
                 disabled={loading}
               />
+            </div>
+            <div className="form-group">
+              <label>Código do Recurso (Opcional)</label>
+              <input
+                type="text"
+                value={resourceCode}
+                onChange={(e) => setResourceCode(e.target.value.toUpperCase())}
+                placeholder="Ex: SALA-10-PC-001 (vazio = gerar automaticamente)"
+                disabled={loading}
+                maxLength={50}
+                style={{ fontFamily: 'monospace' }}
+              />
+              <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '13px' }}>
+                Deixe vazio para gerar automaticamente (RES-2026-XXXXXX)
+              </small>
             </div>
 
             {systemInfo && (

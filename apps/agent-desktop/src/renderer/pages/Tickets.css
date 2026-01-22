@@ -13,7 +13,7 @@
 
 .btn-new-ticket {
   padding: 10px 20px;
-  background: #4F46E5;
+  background: #0ea5e9;
   color: white;
   border: none;
   border-radius: 8px;
@@ -25,7 +25,7 @@
 }
 
 .btn-new-ticket:hover {
-  background: #4338CA;
+  background: #0284c7;
 }
 
 .tickets-content {
@@ -62,9 +62,9 @@
 }
 
 .filter-btn.active {
-  background: #4F46E5;
+  background: #0ea5e9;
   color: white;
-  border-color: #4F46E5;
+  border-color: #0ea5e9;
 }
 
 .tickets-list {
@@ -84,7 +84,7 @@
 }
 
 .ticket-card:hover {
-  border-color: #4F46E5;
+  border-color: #0ea5e9;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -98,7 +98,7 @@
 .ticket-code {
   font-size: 13px;
   font-weight: 600;
-  color: #4F46E5;
+  color: #0ea5e9;
   font-family: 'Courier New', monospace;
 }
 
@@ -218,7 +218,7 @@
 
 .btn-primary {
   padding: 10px 24px;
-  background: #4F46E5;
+  background: #0ea5e9;
   color: white;
   border: none;
   border-radius: 8px;
@@ -230,7 +230,7 @@
 }
 
 .btn-primary:hover {
-  background: #4338CA;
+  background: #0284c7;
 }
 
 .loading {
@@ -245,7 +245,7 @@
   width: 40px;
   height: 40px;
   border: 3px solid #e5e7eb;
-  border-top-color: #4F46E5;
+  border-top-color: #0ea5e9;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -276,7 +276,7 @@
 
 .btn-retry {
   padding: 10px 24px;
-  background: #4F46E5;
+  background: #0ea5e9;
   color: white;
   border: none;
   border-radius: 8px;
@@ -286,5 +286,5 @@
 }
 
 .btn-retry:hover {
-  background: #4338CA;
+  background: #0284c7;
 }

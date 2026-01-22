@@ -110,7 +110,26 @@ export class AgentService {
       // Criar novo recurso
       this.logger.log(`Registrando novo agente para cliente: ${dto.clientId}`);
 
-      const resourceCode = await this.generateResourceCode();
+      let resourceCode: string;
+
+      // Se código customizado foi fornecido, validar unicidade
+      if (dto.resourceCode) {
+        const existing = await this.resourceRepository.findOne({
+          where: { resource_code: dto.resourceCode }
+        });
+
+        if (existing) {
+          throw new BadRequestException(
+            `Código do recurso '${dto.resourceCode}' já está em uso`
+          );
+        }
+
+        resourceCode = dto.resourceCode;
+      } else {
+        // Gerar automaticamente
+        resourceCode = await this.generateResourceCode();
+      }
+
       const agentId = randomUUID();
       const agentToken = this.generateAgentToken();
 

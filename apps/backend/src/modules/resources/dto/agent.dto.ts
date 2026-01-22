@@ -181,6 +181,16 @@ export class RegisterAgentDto {
   @IsString()
   assignedUserEmail?: string;
 
+  @ApiPropertyOptional({
+    description: 'Código do recurso (etiqueta). Se não fornecido, será gerado automaticamente'
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Z0-9\-]+$/, {
+    message: 'Código do recurso deve conter apenas letras maiúsculas, números e hífens'
+  })
+  resourceCode?: string;
+
   @ApiProperty({ description: 'Informações do sistema', type: SystemInfoDto })
   @ValidateNested()
   @Type(() => SystemInfoDto)

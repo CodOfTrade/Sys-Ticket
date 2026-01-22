@@ -35,21 +35,14 @@ export function CreateTicket({ config }: CreateTicketProps) {
     setError(null);
 
     try {
-      // TODO: Implementar criação de ticket via API
-      // const response = await window.electronAPI.createTicket({
-      //   title,
-      //   description,
-      //   priority,
-      //   category: category || undefined,
-      // });
+      const response = await window.electronAPI.createTicket({
+        title,
+        description,
+        priority,
+        category: category || undefined,
+      });
 
-      // Simulação temporária
-      console.log('Criando ticket:', { title, description, priority, category });
-
-      // Aguardar 1s para simular requisição
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      alert('Ticket criado com sucesso!');
+      console.log('Ticket criado:', response.ticketNumber);
       navigate('/tickets');
     } catch (err: any) {
       setError(err.message || 'Erro ao criar ticket');

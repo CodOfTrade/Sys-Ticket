@@ -23,8 +23,11 @@ export function Settings({ config, onUpdate }: SettingsProps) {
   useEffect(() => {
     // Carregar valores atuais
     setApiUrl(config.apiUrl || 'https://172.31.255.26/api');
-    // Nota: estes dados precisam ser salvos no config quando o agente é registrado
-    // Por enquanto, deixamos vazios para o usuário preencher
+    setMachineName(config.machineName || '');
+    setLocation(config.location || '');
+    setDepartment(config.department || '');
+    setAssignedUserName(config.assignedUserName || '');
+    setAssignedUserEmail(config.assignedUserEmail || '');
   }, [config]);
 
   const handleSave = async () => {
@@ -37,7 +40,11 @@ export function Settings({ config, onUpdate }: SettingsProps) {
       const updatedConfig: AgentConfig = {
         ...config,
         apiUrl,
-        // Adicionar outros campos conforme necessário
+        machineName,
+        location,
+        department,
+        assignedUserName,
+        assignedUserEmail,
       };
 
       await window.electronAPI.saveConfig(updatedConfig);

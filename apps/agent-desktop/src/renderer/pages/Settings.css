@@ -89,7 +89,7 @@
 
 .setting-item input:focus {
   outline: none;
-  border-color: #4F46E5;
+  border-color: #0ea5e9;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
@@ -132,12 +132,12 @@
 }
 
 .btn-primary {
-  background: #4F46E5;
+  background: #0ea5e9;
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #4338CA;
+  background: #0284c7;
 }
 
 .btn-primary:disabled {
@@ -164,7 +164,7 @@
   margin-top: 24px;
   padding: 16px;
   background: #f8f9ff;
-  border-left: 4px solid #4F46E5;
+  border-left: 4px solid #0ea5e9;
   border-radius: 8px;
 }
 

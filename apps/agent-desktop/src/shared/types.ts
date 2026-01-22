@@ -8,6 +8,12 @@ export interface AgentConfig {
   contractId: string | null;
   apiUrl: string;
   configured: boolean;
+  // Dados da máquina
+  machineName?: string;
+  location?: string;
+  department?: string;
+  assignedUserName?: string;
+  assignedUserEmail?: string;
 }
 
 export interface SystemInfo {
@@ -67,6 +73,7 @@ export interface RegistrationData {
   department?: string;
   assignedUserName?: string;
   assignedUserEmail?: string;
+  resourceCode?: string;
   systemInfo: SystemInfo;
 }
 

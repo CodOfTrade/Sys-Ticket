@@ -30,14 +30,6 @@ function getRendererPath() {
 const RENDERER_URL = getRendererPath();
 
 /**
- * Mostra e maximiza a janela principal
- */
-function showAndMaximize() {
-  showAndMaximize();
-  mainWindow?.maximize();
-}
-
-/**
  * Cria a janela principal
  */
 function createWindow() {
@@ -68,7 +60,7 @@ function createWindow() {
 
     // Se não está configurado, mostrar janela de setup
     if (!config.configured) {
-      showAndMaximize();
+      mainWindow?.show();
     }
   });
 
@@ -97,7 +89,7 @@ function createTray() {
   tray.setToolTip('Sys-Ticket Agent');
 
   tray.on('click', () => {
-    showAndMaximize();
+    mainWindow?.show();
   });
 }
 
@@ -125,7 +117,7 @@ function updateTrayMenu() {
     {
       label: 'Abrir Ticket de Suporte',
       click: () => {
-        showAndMaximize();
+        mainWindow?.show();
         mainWindow?.webContents.send('navigate-to', '/create-ticket');
       },
       enabled: config.configured,
@@ -133,7 +125,7 @@ function updateTrayMenu() {
     {
       label: 'Meus Tickets',
       click: () => {
-        showAndMaximize();
+        mainWindow?.show();
         mainWindow?.webContents.send('navigate-to', '/tickets');
       },
       enabled: config.configured,
@@ -142,7 +134,7 @@ function updateTrayMenu() {
     {
       label: 'Status do Sistema',
       click: () => {
-        showAndMaximize();
+        mainWindow?.show();
         mainWindow?.webContents.send('navigate-to', '/status');
       },
       enabled: config.configured,
@@ -151,7 +143,7 @@ function updateTrayMenu() {
     {
       label: 'Configurações',
       click: () => {
-        showAndMaximize();
+        mainWindow?.show();
         mainWindow?.webContents.send('navigate-to', '/settings');
       },
     },
@@ -217,15 +209,8 @@ function registerIpcHandlers() {
       config.resourceId = response.resourceId;
       config.resourceCode = response.resourceCode;
       config.clientId = registrationData.clientId;
-      config.clientName = registrationData.clientName || null;
       config.contractId = registrationData.contractId;
       config.configured = true;
-      // Salvar dados da máquina
-      config.machineName = registrationData.machineName;
-      config.location = registrationData.location;
-      config.department = registrationData.department;
-      config.assignedUserName = registrationData.assignedUserName;
-      config.assignedUserEmail = registrationData.assignedUserEmail;
 
       storageService.saveConfig(config);
 
@@ -272,38 +257,6 @@ function registerIpcHandlers() {
   // Buscar contratos de um cliente
   ipcMain.handle('get-client-contracts', async (_, clientId) => {
     return await apiService.getClientContracts(clientId);
-  });
-
-  // Criar ticket
-  ipcMain.handle('create-ticket', async (_, ticketData) => {
-    try {
-      const config = storageService.loadConfig();
-      const systemInfo = await systemInfoService.collect();
-
-      const response = await apiService.createTicket({
-        agentId: config.agentId!,
-        title: ticketData.title,
-        description: ticketData.description,
-        priority: ticketData.priority,
-        category: ticketData.category,
-        hasScreenshot: false,
-        systemInfo,
-      });
-
-      return response;
-    } catch (error: any) {
-      throw new Error(error.message || 'Erro ao criar ticket');
-    }
-  });
-
-  // Buscar tickets
-  ipcMain.handle('get-tickets', async (_, agentId) => {
-    try {
-      const tickets = await apiService.getTickets(agentId);
-      return tickets;
-    } catch (error: any) {
-      throw new Error(error.message || 'Erro ao buscar tickets');
-    }
   });
 }
 
