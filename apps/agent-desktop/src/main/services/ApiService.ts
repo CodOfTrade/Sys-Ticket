@@ -56,7 +56,7 @@ export class ApiService {
     const response = await this.api.post<{
       success: boolean;
       data: RegistrationResponse;
-    }>('/agent/register', data);
+    }>('/v1/agent/register', data);
 
     if (response.data.success && response.data.data.agentToken) {
       this.setAgentToken(response.data.data.agentToken);
@@ -69,14 +69,14 @@ export class ApiService {
    * Envia heartbeat para o backend
    */
   async sendHeartbeat(data: HeartbeatData): Promise<void> {
-    await this.api.post('/agent/heartbeat', data);
+    await this.api.post('/v1/agent/heartbeat', data);
   }
 
   /**
    * Atualiza inventário completo do sistema
    */
   async updateInventory(agentId: string, systemInfo: any): Promise<void> {
-    await this.api.post('/agent/update-inventory', {
+    await this.api.post('/v1/agent/update-inventory', {
       agentId,
       systemInfo,
     });
@@ -86,7 +86,7 @@ export class ApiService {
    * Busca lista de clientes (para tela de setup)
    */
   async getClients(): Promise<any[]> {
-    const response = await this.api.get('/clients');
+    const response = await this.api.get('/v1/clients');
     return response.data.data || [];
   }
 
@@ -94,7 +94,7 @@ export class ApiService {
    * Busca contratos de um cliente
    */
   async getClientContracts(clientId: string): Promise<any[]> {
-    const response = await this.api.get(`/clients/${clientId}/contracts`);
+    const response = await this.api.get(`/v1/clients/${clientId}/contracts`);
     return response.data.data || [];
   }
 
@@ -115,7 +115,7 @@ export class ApiService {
     ticketNumber: string;
     chatWebSocketUrl: string;
   }> {
-    const response = await this.api.post('/agent/tickets', ticketData);
+    const response = await this.api.post('/v1/agent/tickets', ticketData);
     return response.data.data;
   }
 
@@ -123,7 +123,7 @@ export class ApiService {
    * Busca tickets do agente
    */
   async getTickets(agentId: string): Promise<any[]> {
-    const response = await this.api.get(`/agent/tickets/${agentId}`);
+    const response = await this.api.get(`/v1/agent/tickets/${agentId}`);
     return response.data.data || [];
   }
 
