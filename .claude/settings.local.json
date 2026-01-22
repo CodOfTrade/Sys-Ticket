@@ -112,7 +112,9 @@
       "Bash(git log:*)",
       "Bash(git config:*)",
       "Bash(cmd.exe /c \"where node\")",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)"
     ]
   }
 }
