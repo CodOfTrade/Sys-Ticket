@@ -134,6 +134,7 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['active-timer'] });
       queryClient.invalidateQueries({ queryKey: ['appointments', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] }); // Atualizar status do ticket
     },
   });
 
