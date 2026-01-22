@@ -50,6 +50,7 @@ export class AgentController {
   }
 
   @Post('heartbeat')
+  @Public()
   @UseGuards(AgentTokenGuard)
   @ApiOperation({ summary: 'Enviar heartbeat do agente' })
   @ApiHeader({ name: 'X-Agent-Token', description: 'Token do agente', required: true })
@@ -63,6 +64,7 @@ export class AgentController {
   }
 
   @Post('update-inventory')
+  @Public()
   @UseGuards(AgentTokenGuard)
   @ApiOperation({ summary: 'Atualizar inventário completo do sistema' })
   @ApiHeader({ name: 'X-Agent-Token', description: 'Token do agente', required: true })
@@ -76,6 +78,7 @@ export class AgentController {
   }
 
   @Post('tickets')
+  @Public()
   @UseGuards(AgentTokenGuard)
   @ApiOperation({ summary: 'Criar ticket via agente' })
   @ApiHeader({ name: 'X-Agent-Token', description: 'Token do agente', required: true })
@@ -102,6 +105,7 @@ export class AgentController {
   }
 
   @Get('tickets/:agentId')
+  @Public()
   @UseGuards(AgentTokenGuard)
   @ApiOperation({ summary: 'Listar tickets do agente' })
   @ApiHeader({ name: 'X-Agent-Token', description: 'Token do agente', required: true })
