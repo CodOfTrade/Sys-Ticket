@@ -67,6 +67,7 @@ export interface HeartbeatData {
 
 export interface RegistrationData {
   clientId: string;
+  clientName: string;
   contractId?: string;
   machineName: string;
   location?: string;

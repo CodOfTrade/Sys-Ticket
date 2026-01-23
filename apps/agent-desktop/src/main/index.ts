@@ -60,8 +60,10 @@ function createWindow() {
 
   mainWindow.loadURL(RENDERER_URL);
 
-  // Open DevTools in production to debug
-  mainWindow.webContents.openDevTools();
+  // Open DevTools apenas em desenvolvimento
+  if (isDev) {
+    mainWindow.webContents.openDevTools();
+  }
 
   mainWindow.on('ready-to-show', () => {
     const config = storageService.loadConfig();
@@ -217,7 +219,7 @@ function registerIpcHandlers() {
       config.resourceId = response.resourceId;
       config.resourceCode = response.resourceCode;
       config.clientId = registrationData.clientId;
-      config.clientName = registrationData.clientName || null;
+      config.clientName = registrationData.clientName;
       config.contractId = registrationData.contractId;
       config.configured = true;
       // Salvar dados da máquina

@@ -19,7 +19,11 @@ export function Setup({ onComplete }: SetupProps) {
   const [clients, setClients] = useState<any[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
   const [selectedClientId, setSelectedClientId] = useState('');
+  const [selectedClientName, setSelectedClientName] = useState('');
   const [selectedContractId, setSelectedContractId] = useState('');
+  const [clientSearch, setClientSearch] = useState('');
+  const [filteredClients, setFilteredClients] = useState<any[]>([]);
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
 
   // Step 3: Informações da máquina
   const [machineName, setMachineName] = useState('');
@@ -33,6 +37,22 @@ export function Setup({ onComplete }: SetupProps) {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Filtrar clientes conforme busca
+  useEffect(() => {
+    if (clientSearch.trim() === '') {
+      setFilteredClients([]);
+      return;
+    }
+
+    const searchLower = clientSearch.toLowerCase();
+    const filtered = clients.filter(client => {
+      const name = (client.nome || client.name || client.razao_social || '').toLowerCase();
+      return name.includes(searchLower);
+    }).slice(0, 10); // Mostrar apenas top 10
+
+    setFilteredClients(filtered);
+  }, [clientSearch, clients]);
 
   const loadInitialData = async () => {
     try {
@@ -86,6 +106,10 @@ export function Setup({ onComplete }: SetupProps) {
     setSelectedClientId(clientId);
     setSelectedContractId('');
 
+    // Capturar o nome do cliente selecionado
+    const client = clients.find(c => c.id === clientId);
+    setSelectedClientName(client?.nome || client?.name || client?.razao_social || '');
+
     if (clientId) {
       setLoading(true);
       try {
@@ -99,6 +123,12 @@ export function Setup({ onComplete }: SetupProps) {
     } else {
       setContracts([]);
     }
+  };
+
+  const handleSelectClient = (client: any) => {
+    setClientSearch(client.nome || client.name || client.razao_social);
+    setShowClientDropdown(false);
+    handleClientChange(client.id);
   };
 
   const handleNextToStep3 = async () => {
@@ -141,6 +171,7 @@ export function Setup({ onComplete }: SetupProps) {
     try {
       const registrationData: RegistrationData = {
         clientId: selectedClientId,
+        clientName: selectedClientName,
         contractId: selectedContractId || undefined,
         machineName,
         location: location || undefined,
@@ -230,18 +261,59 @@ export function Setup({ onComplete }: SetupProps) {
             <h2>Selecione o Cliente</h2>
             <div className="form-group">
               <label>Cliente *</label>
-              <select
-                value={selectedClientId}
-                onChange={(e) => handleClientChange(e.target.value)}
-                disabled={loading}
-              >
-                <option value="">Selecione...</option>
-                {clients.map((client) => (
-                  <option key={client.id || client.localId} value={client.id}>
-                    {client.nome || client.name || client.razao_social}
-                  </option>
-                ))}
-              </select>
+              <div className="autocomplete-container" style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  value={clientSearch}
+                  onChange={(e) => {
+                    setClientSearch(e.target.value);
+                    setShowClientDropdown(true);
+                  }}
+                  onFocus={() => setShowClientDropdown(true)}
+                  placeholder="Digite para buscar cliente..."
+                  disabled={loading}
+                />
+
+                {showClientDropdown && filteredClients.length > 0 && (
+                  <ul className="autocomplete-dropdown" style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    background: 'white',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    zIndex: 1000,
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: '4px 0 0 0',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                  }}>
+                    {filteredClients.map(client => (
+                      <li
+                        key={client.id}
+                        onClick={() => handleSelectClient(client)}
+                        style={{
+                          padding: '10px',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid #f0f0f0'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f5f5f5'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                      >
+                        {client.nome || client.name || client.razao_social}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              {selectedClientId && (
+                <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
+                  Selecionado: {selectedClientName}
+                </small>
+              )}
             </div>
             <div className="form-group">
               <label>Contrato (Opcional)</label>

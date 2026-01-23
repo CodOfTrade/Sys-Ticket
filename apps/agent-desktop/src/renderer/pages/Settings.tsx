@@ -21,14 +21,15 @@ export function Settings({ config, onUpdate }: SettingsProps) {
   const [apiUrl, setApiUrl] = useState('');
 
   useEffect(() => {
-    // Carregar valores atuais
+    // Carregar valores atuais apenas na montagem
     setApiUrl(config.apiUrl || 'https://172.31.255.26/api');
     setMachineName(config.machineName || '');
     setLocation(config.location || '');
     setDepartment(config.department || '');
     setAssignedUserName(config.assignedUserName || '');
     setAssignedUserEmail(config.assignedUserEmail || '');
-  }, [config]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSave = async () => {
     setLoading(true);
