@@ -8,6 +8,7 @@ import { AgentTicket } from './entities/agent-ticket.entity';
 import { AgentChatMessage } from './entities/agent-chat-message.entity';
 import { Ticket } from '../tickets/entities/ticket.entity';
 import { ServiceDesk } from '../service-desks/entities/service-desk.entity';
+import { SigeClient } from '../clients/entities/sige-client.entity';
 import { ClientsModule } from '../clients/clients.module';
 import { ResourcesService } from './services/resources.service';
 import { ResourceLicensesService } from './services/resource-licenses.service';
@@ -29,6 +30,7 @@ import { AgentController } from './controllers/agent.controller';
       AgentChatMessage,
       Ticket,
       ServiceDesk,
+      SigeClient,
     ]),
     forwardRef(() => ClientsModule),
   ],

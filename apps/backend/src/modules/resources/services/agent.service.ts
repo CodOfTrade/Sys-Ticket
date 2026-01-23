@@ -6,6 +6,7 @@ import { Resource, ResourceType, ResourceStatus } from '../entities/resource.ent
 import { AgentTicket } from '../entities/agent-ticket.entity';
 import { Ticket, TicketStatus, TicketPriority, TicketType } from '../../tickets/entities/ticket.entity';
 import { ServiceDesk } from '../../service-desks/entities/service-desk.entity';
+import { SigeClient } from '../../clients/entities/sige-client.entity';
 import { ClientsService } from '../../clients/clients.service';
 import {
   RegisterAgentDto,
@@ -27,6 +28,8 @@ export class AgentService {
     private ticketRepository: Repository<Ticket>,
     @InjectRepository(ServiceDesk)
     private serviceDeskRepository: Repository<ServiceDesk>,
+    @InjectRepository(SigeClient)
+    private sigeClientRepository: Repository<SigeClient>,
     @Inject(forwardRef(() => ClientsService))
     private clientsService: ClientsService,
   ) {}
@@ -164,17 +167,27 @@ export class AgentService {
     // Criar/vincular contato se email fornecido
     if (dto.assignedUserEmail && dto.clientId) {
       try {
-        const contact = await this.clientsService.findOrCreateContactByEmail(
-          dto.clientId,
-          dto.assignedUserEmail,
-          dto.assignedUserName,
-          dto.department,
-          dto.assignedUserPhone
-        );
+        // Buscar UUID local do cliente (dto.clientId é o SIGE ID)
+        const sigeClient = await this.sigeClientRepository.findOne({
+          where: { sigeId: dto.clientId }
+        });
 
-        resource.assigned_contact_id = contact.id;
-        await this.resourceRepository.save(resource);
-        this.logger.log(`Contato vinculado ao recurso: ${contact.id}`);
+        if (sigeClient) {
+          // Usar UUID local (id) do cliente, NÃO o SIGE ID
+          const contact = await this.clientsService.findOrCreateContactByEmail(
+            sigeClient.id,  // UUID local
+            dto.assignedUserEmail,
+            dto.assignedUserName,
+            dto.department,
+            dto.assignedUserPhone
+          );
+
+          resource.assigned_contact_id = contact.id;
+          await this.resourceRepository.save(resource);
+          this.logger.log(`Contato vinculado ao recurso: ${contact.id} (client UUID: ${sigeClient.id})`);
+        } else {
+          this.logger.warn(`Cliente com SIGE ID ${dto.clientId} não encontrado no banco local`);
+        }
       } catch (error) {
         this.logger.error('Erro ao criar/vincular contato', error);
         // Não lançar erro - registro do agente deve continuar
