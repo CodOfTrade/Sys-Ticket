@@ -29,8 +29,9 @@ export class ClientsController {
   async findAll(
     @Query('page') page = 1,
     @Query('per_page') perPage = 50,
+    @Query('includeInactive') includeInactive = 'false',
   ) {
-    return this.clientsService.findAll(page, perPage);
+    return this.clientsService.findAll(page, perPage, includeInactive === 'true');
   }
 
   @Get('search')

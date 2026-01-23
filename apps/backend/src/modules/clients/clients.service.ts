@@ -32,10 +32,13 @@ export class ClientsService {
   /**
    * Lista todos os clientes do banco local (sincronizados do SIGE Cloud)
    */
-  async findAll(page = 1, perPage = 50): Promise<SigeClientResponse> {
+  async findAll(page = 1, perPage = 50, includeInactive = false): Promise<SigeClientResponse> {
     try {
+      // Se includeInactive=true, não filtrar por ativo. Caso contrário, apenas ativos.
+      const whereClause = includeInactive ? {} : { ativo: true };
+
       const [clients, total] = await this.clientRepository.findAndCount({
-        where: { ativo: true },
+        where: whereClause,
         skip: (page - 1) * perPage,
         take: perPage,
         order: { nome: 'ASC' },

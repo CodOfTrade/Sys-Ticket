@@ -86,8 +86,8 @@ export class ApiService {
    * Busca lista de clientes (para tela de setup)
    */
   async getClients(): Promise<any[]> {
-    // Solicitar todos os clientes de uma vez (API tem 2937 clientes)
-    const response = await this.api.get('/v1/clients?perPage=5000');
+    // Solicitar todos os clientes (incluindo inativos) para Setup
+    const response = await this.api.get('/v1/clients?perPage=5000&includeInactive=true');
     // Backend retorna { data: { data: [...], meta: {...} } }
     const result = response.data.data;
     if (Array.isArray(result)) {

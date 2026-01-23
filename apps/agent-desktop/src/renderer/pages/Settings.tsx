@@ -12,26 +12,14 @@ export function Settings({ config, onUpdate }: SettingsProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Estados editáveis
-  const [machineName, setMachineName] = useState('');
-  const [location, setLocation] = useState('');
-  const [department, setDepartment] = useState('');
-  const [assignedUserName, setAssignedUserName] = useState('');
-  const [assignedUserEmail, setAssignedUserEmail] = useState('');
-  const [assignedUserPhone, setAssignedUserPhone] = useState('');
-  const [apiUrl, setApiUrl] = useState('');
-
-  useEffect(() => {
-    // Carregar valores atuais apenas na montagem
-    setApiUrl(config.apiUrl || 'https://172.31.255.26/api');
-    setMachineName(config.machineName || '');
-    setLocation(config.location || '');
-    setDepartment(config.department || '');
-    setAssignedUserName(config.assignedUserName || '');
-    setAssignedUserEmail(config.assignedUserEmail || '');
-    setAssignedUserPhone(config.assignedUserPhone || '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Estados editáveis - Inicializar COM valores do config para evitar bug de edição
+  const [machineName, setMachineName] = useState(config.machineName || '');
+  const [location, setLocation] = useState(config.location || '');
+  const [department, setDepartment] = useState(config.department || '');
+  const [assignedUserName, setAssignedUserName] = useState(config.assignedUserName || '');
+  const [assignedUserEmail, setAssignedUserEmail] = useState(config.assignedUserEmail || '');
+  const [assignedUserPhone, setAssignedUserPhone] = useState(config.assignedUserPhone || '');
+  const [apiUrl, setApiUrl] = useState(config.apiUrl || 'https://172.31.255.26/api');
 
   const handleSave = async () => {
     setLoading(true);

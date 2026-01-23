@@ -113,20 +113,9 @@
       "Bash(git config:*)",
       "Bash(cmd.exe /c \"where node\")",
       "Bash(echo:*)",
-      "Bash(git pull:*)",
-      "Bash(git stash:*)",
-      "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" log --oneline --all)",
-      "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" show 5497cf1 --stat)",
-      "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" show dec13ce --stat)",
-      "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" show 40d995e --stat)",
-      "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" log --all --grep=\"agent\" --oneline)",
-      "Bash(git -C \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\" log --all --oneline)",
-      "Bash(cmd /c \"cd /d d:\\\\Arquivos^ do^ Usu�rio\\\\OneDrive\\\\3^ -^ Pessoal^ Jos�\\\\Programa�ao\\\\Sys-Ticket\\\\apps\\\\backend && npm run build\")",
-      "Bash(cmd /c \"cd /d \"\"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\backend\"\" && npm run build\")",
-      "Bash(ls -la \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\agent-desktop\\\\release\"\" 2>&1 || dir \"d:Arquivos do UsuárioOneDrive3 - Pessoal JoséProgramaçaoSys-Ticketappsagent-desktoprelease \")",
-      "Bash(grep:*)",
+      "Bash(ls:*)",
       "Bash(npm run build:win:*)",
-      "Bash(ls:*)"
+      "Bash(if exist release rmdir /s /q release)"
     ]
   }
 }
