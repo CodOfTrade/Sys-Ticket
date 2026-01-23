@@ -33,7 +33,7 @@ const RENDERER_URL = getRendererPath();
  * Mostra e maximiza a janela principal
  */
 function showAndMaximize() {
-  showAndMaximize();
+  mainWindow?.show();
   mainWindow?.maximize();
 }
 
@@ -278,7 +278,7 @@ function registerIpcHandlers() {
   ipcMain.handle('create-ticket', async (_, ticketData) => {
     try {
       const config = storageService.loadConfig();
-      const systemInfo = await systemInfoService.collect();
+      const systemInfo = await systemInfoService.collectFullSystemInfo();
 
       const response = await apiService.createTicket({
         agentId: config.agentId!,
