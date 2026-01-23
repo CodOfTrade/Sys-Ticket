@@ -131,6 +131,15 @@ export function Setup({ onComplete }: SetupProps) {
     handleClientChange(client.id);
   };
 
+  const handleClearClient = () => {
+    setClientSearch('');
+    setSelectedClientId('');
+    setSelectedClientName('');
+    setSelectedContractId('');
+    setContracts([]);
+    setShowClientDropdown(false);
+  };
+
   const handleNextToStep3 = async () => {
     if (!selectedClientId) {
       setError('Selecione um cliente');
@@ -261,18 +270,43 @@ export function Setup({ onComplete }: SetupProps) {
             <h2>Selecione o Cliente</h2>
             <div className="form-group">
               <label>Cliente *</label>
-              <div className="autocomplete-container" style={{ position: 'relative' }}>
+              <div className="autocomplete-container" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input
                   type="text"
                   value={clientSearch}
                   onChange={(e) => {
                     setClientSearch(e.target.value);
                     setShowClientDropdown(true);
+                    // Se está limpando, resetar seleção
+                    if (e.target.value === '') {
+                      setSelectedClientId('');
+                      setSelectedClientName('');
+                    }
                   }}
                   onFocus={() => setShowClientDropdown(true)}
                   placeholder="Digite para buscar cliente..."
                   disabled={loading}
+                  style={{ flex: 1 }}
                 />
+                {selectedClientId && (
+                  <button
+                    type="button"
+                    onClick={handleClearClient}
+                    style={{
+                      padding: '8px 12px',
+                      background: '#ef4444',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: 'bold'
+                    }}
+                    title="Limpar seleção"
+                  >
+                    ✕
+                  </button>
+                )}
 
                 {showClientDropdown && filteredClients.length > 0 && (
                   <ul className="autocomplete-dropdown" style={{
