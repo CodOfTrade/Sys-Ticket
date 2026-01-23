@@ -228,6 +228,7 @@ function registerIpcHandlers() {
       config.department = registrationData.department;
       config.assignedUserName = registrationData.assignedUserName;
       config.assignedUserEmail = registrationData.assignedUserEmail;
+      config.assignedUserPhone = registrationData.assignedUserPhone;
 
       storageService.saveConfig(config);
 

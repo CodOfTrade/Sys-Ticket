@@ -18,6 +18,7 @@ export function Settings({ config, onUpdate }: SettingsProps) {
   const [department, setDepartment] = useState('');
   const [assignedUserName, setAssignedUserName] = useState('');
   const [assignedUserEmail, setAssignedUserEmail] = useState('');
+  const [assignedUserPhone, setAssignedUserPhone] = useState('');
   const [apiUrl, setApiUrl] = useState('');
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export function Settings({ config, onUpdate }: SettingsProps) {
     setDepartment(config.department || '');
     setAssignedUserName(config.assignedUserName || '');
     setAssignedUserEmail(config.assignedUserEmail || '');
+    setAssignedUserPhone(config.assignedUserPhone || '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -46,6 +48,7 @@ export function Settings({ config, onUpdate }: SettingsProps) {
         department,
         assignedUserName,
         assignedUserEmail,
+        assignedUserPhone,
       };
 
       await window.electronAPI.saveConfig(updatedConfig);
@@ -190,6 +193,17 @@ export function Settings({ config, onUpdate }: SettingsProps) {
                 value={assignedUserEmail}
                 onChange={(e) => setAssignedUserEmail(e.target.value)}
                 placeholder="email@exemplo.com"
+                disabled={loading}
+              />
+            </div>
+
+            <div className="setting-item">
+              <label>Telefone do Responsável</label>
+              <input
+                type="tel"
+                value={assignedUserPhone}
+                onChange={(e) => setAssignedUserPhone(e.target.value)}
+                placeholder="(00) 00000-0000"
                 disabled={loading}
               />
             </div>

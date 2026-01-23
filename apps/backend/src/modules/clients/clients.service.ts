@@ -442,7 +442,8 @@ export class ClientsService {
     clientId: string,
     email: string,
     name?: string,
-    department?: string
+    department?: string,
+    phone?: string
   ): Promise<ClientContact> {
     try {
       // Buscar contato existente por email E clientId
@@ -457,6 +458,7 @@ export class ClientsService {
           client_id: clientId,
           name: name || email,
           email,
+          phone,
           department,
           can_request_tickets: true,
           is_primary: false,

@@ -168,7 +168,8 @@ export class AgentService {
           dto.clientId,
           dto.assignedUserEmail,
           dto.assignedUserName,
-          dto.department
+          dto.department,
+          dto.assignedUserPhone
         );
 
         resource.assigned_contact_id = contact.id;

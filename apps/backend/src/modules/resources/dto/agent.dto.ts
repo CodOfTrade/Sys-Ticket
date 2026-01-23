@@ -152,6 +152,11 @@ export class RegisterAgentDto {
   @IsString()
   clientId: string;
 
+  @ApiPropertyOptional({ description: 'Nome do cliente' })
+  @IsOptional()
+  @IsString()
+  clientName?: string;
+
   @ApiPropertyOptional({ description: 'ID do contrato' })
   @IsOptional()
   @IsString()
@@ -180,6 +185,11 @@ export class RegisterAgentDto {
   @IsOptional()
   @IsString()
   assignedUserEmail?: string;
+
+  @ApiPropertyOptional({ description: 'Telefone do usuário responsável' })
+  @IsOptional()
+  @IsString()
+  assignedUserPhone?: string;
 
   @ApiPropertyOptional({
     description: 'Código do recurso (etiqueta). Se não fornecido, será gerado automaticamente'

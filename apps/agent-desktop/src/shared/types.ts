@@ -14,6 +14,7 @@ export interface AgentConfig {
   department?: string;
   assignedUserName?: string;
   assignedUserEmail?: string;
+  assignedUserPhone?: string;
 }
 
 export interface SystemInfo {
@@ -74,6 +75,7 @@ export interface RegistrationData {
   department?: string;
   assignedUserName?: string;
   assignedUserEmail?: string;
+  assignedUserPhone?: string;
   resourceCode?: string;
   systemInfo: SystemInfo;
 }
