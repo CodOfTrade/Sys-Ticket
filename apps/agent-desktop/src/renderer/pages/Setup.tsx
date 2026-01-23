@@ -275,18 +275,26 @@ export function Setup({ onComplete }: SetupProps) {
                   type="text"
                   value={clientSearch}
                   onChange={(e) => {
-                    setClientSearch(e.target.value);
+                    const newValue = e.target.value;
+                    console.log('Campo cliente onChange:', newValue);
+                    setClientSearch(newValue);
                     setShowClientDropdown(true);
                     // Se está limpando, resetar seleção
-                    if (e.target.value === '') {
+                    if (newValue === '') {
                       setSelectedClientId('');
                       setSelectedClientName('');
                     }
                   }}
-                  onFocus={() => setShowClientDropdown(true)}
+                  onFocus={() => {
+                    console.log('Campo cliente focado');
+                    setShowClientDropdown(true);
+                  }}
+                  onKeyDown={(e) => {
+                    console.log('Tecla pressionada:', e.key);
+                  }}
                   placeholder="Digite para buscar cliente..."
-                  disabled={loading}
-                  style={{ flex: 1 }}
+                  autoComplete="off"
+                  style={{ flex: 1, pointerEvents: 'auto' }}
                 />
                 {selectedClientId && (
                   <button
