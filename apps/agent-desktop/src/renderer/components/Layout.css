@@ -8,11 +8,11 @@
 
 .layout-sidebar {
   width: 240px;
-  background: linear-gradient(180deg, #0ea5e9 0%, #38bdf8 100%);
+  background: #111827;
   color: white;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
 }
 
 .sidebar-header {
@@ -43,8 +43,9 @@
 }
 
 .status-badge.online {
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.2);
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.2);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
 }
 
 .sidebar-nav {
@@ -74,9 +75,9 @@
 }
 
 .nav-item.active {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(14, 165, 233, 0.2);
   font-weight: 600;
-  border-left: 3px solid white;
+  border-left: 3px solid #0ea5e9;
 }
 
 .nav-icon {
