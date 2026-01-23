@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Resource } from './entities/resource.entity';
 import { ResourceLicense } from './entities/resource-license.entity';
@@ -8,6 +8,7 @@ import { AgentTicket } from './entities/agent-ticket.entity';
 import { AgentChatMessage } from './entities/agent-chat-message.entity';
 import { Ticket } from '../tickets/entities/ticket.entity';
 import { ServiceDesk } from '../service-desks/entities/service-desk.entity';
+import { ClientsModule } from '../clients/clients.module';
 import { ResourcesService } from './services/resources.service';
 import { ResourceLicensesService } from './services/resource-licenses.service';
 import { ContractQuotasService } from './services/contract-quotas.service';
@@ -29,6 +30,7 @@ import { AgentController } from './controllers/agent.controller';
       Ticket,
       ServiceDesk,
     ]),
+    forwardRef(() => ClientsModule),
   ],
   controllers: [
     ResourcesController,

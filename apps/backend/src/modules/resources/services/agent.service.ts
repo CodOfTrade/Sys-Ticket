@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
@@ -6,6 +6,7 @@ import { Resource, ResourceType, ResourceStatus } from '../entities/resource.ent
 import { AgentTicket } from '../entities/agent-ticket.entity';
 import { Ticket, TicketStatus, TicketPriority, TicketType } from '../../tickets/entities/ticket.entity';
 import { ServiceDesk } from '../../service-desks/entities/service-desk.entity';
+import { ClientsService } from '../../clients/clients.service';
 import {
   RegisterAgentDto,
   HeartbeatDto,
@@ -26,6 +27,8 @@ export class AgentService {
     private ticketRepository: Repository<Ticket>,
     @InjectRepository(ServiceDesk)
     private serviceDeskRepository: Repository<ServiceDesk>,
+    @Inject(forwardRef(() => ClientsService))
+    private clientsService: ClientsService,
   ) {}
 
   /**
@@ -156,6 +159,25 @@ export class AgentService {
       this.updateResourceFromSystemInfo(resource, systemInfo);
 
       await this.resourceRepository.save(resource);
+    }
+
+    // Criar/vincular contato se email fornecido
+    if (dto.assignedUserEmail && dto.clientId) {
+      try {
+        const contact = await this.clientsService.findOrCreateContactByEmail(
+          dto.clientId,
+          dto.assignedUserEmail,
+          dto.assignedUserName,
+          dto.department
+        );
+
+        resource.assigned_contact_id = contact.id;
+        await this.resourceRepository.save(resource);
+        this.logger.log(`Contato vinculado ao recurso: ${contact.id}`);
+      } catch (error) {
+        this.logger.error('Erro ao criar/vincular contato', error);
+        // Não lançar erro - registro do agente deve continuar
+      }
     }
 
     return {
@@ -290,13 +312,23 @@ export class AgentService {
     // Gerar número do ticket
     const ticketNumber = await this.generateTicketNumber();
 
+    // Buscar dados do cliente para nome correto
+    let clientData: any = null;
+    try {
+      clientData = await this.clientsService.findOne(resource.client_id);
+    } catch (error) {
+      this.logger.warn(`Não foi possível buscar dados do cliente ${resource.client_id}`, error);
+    }
+
     // Criar o ticket
     const ticket = this.ticketRepository.create({
       ticket_number: ticketNumber,
       client_id: resource.client_id,
-      client_name: resource.assigned_user_name || resource.name,
+      client_name: clientData?.nome || clientData?.razao_social || resource.client_id,
       requester_name: resource.assigned_user_name || `Usuário de ${resource.hostname}`,
       requester_email: resource.assigned_user_email,
+      contact_id: resource.assigned_contact_id, // Vincular contato
+      resource_id: resource.id, // Vincular recurso/dispositivo
       title: dto.title,
       description: dto.description,
       priority: priority,

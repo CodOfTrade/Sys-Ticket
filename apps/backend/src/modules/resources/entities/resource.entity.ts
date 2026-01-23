@@ -5,10 +5,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { ResourceLicense } from './resource-license.entity';
 import { ResourceHistory } from './resource-history.entity';
 import { AgentTicket } from './agent-ticket.entity';
+import { ClientContact } from '../../clients/entities/client-contact.entity';
 
 export enum ResourceType {
   COMPUTER = 'computer',
@@ -86,6 +89,20 @@ export class Resource {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   assigned_user_email: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  assigned_contact_id: string;
+
+  @ManyToOne(() => ClientContact, { nullable: true })
+  @JoinColumn({ name: 'assigned_contact_id' })
+  assigned_contact: ClientContact;
+
+  // Comandos remotos (para desinstalação, etc)
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  pending_command: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  pending_command_at: Date;
 
   // Informações básicas
   @Column({ type: 'varchar', length: 100, nullable: true })

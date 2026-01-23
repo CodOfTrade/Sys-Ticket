@@ -433,4 +433,44 @@ export class ClientsService {
       throw error;
     }
   }
+
+  /**
+   * Busca ou cria contato por email
+   * Usado pelo sistema de agentes para vincular solicitante automaticamente
+   */
+  async findOrCreateContactByEmail(
+    clientId: string,
+    email: string,
+    name?: string,
+    department?: string
+  ): Promise<ClientContact> {
+    try {
+      // Buscar contato existente por email E clientId
+      let contact = await this.contactRepository.findOne({
+        where: { client_id: clientId, email }
+      });
+
+      // Se não existe, criar
+      if (!contact) {
+        this.logger.log(`Criando novo contato para cliente ${clientId}: ${email}`);
+        contact = this.contactRepository.create({
+          client_id: clientId,
+          name: name || email,
+          email,
+          department,
+          can_request_tickets: true,
+          is_primary: false,
+          is_active: true,
+        });
+        await this.contactRepository.save(contact);
+      } else {
+        this.logger.log(`Contato existente encontrado: ${contact.id}`);
+      }
+
+      return contact;
+    } catch (error) {
+      this.logger.error(`Erro ao buscar/criar contato por email ${email}`, error);
+      throw error;
+    }
+  }
 }

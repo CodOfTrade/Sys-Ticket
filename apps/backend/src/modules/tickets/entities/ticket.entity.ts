@@ -14,6 +14,7 @@ import { Timesheet } from '../../timesheets/entities/timesheet.entity';
 import { ServiceCatalog } from '../../service-catalog/entities/service-catalog.entity';
 import { ServiceCategory } from '../../service-catalog/entities/service-category.entity';
 import { ClientContact } from '../../clients/entities/client-contact.entity';
+import { Resource } from '../../resources/entities/resource.entity';
 import { TicketFollower } from './ticket-follower.entity';
 import { TicketAttachment } from './ticket-attachment.entity';
 import { TicketComment } from './ticket-comment.entity';
@@ -139,6 +140,14 @@ export class Ticket {
 
   @Column({ nullable: true })
   contact_id: string;
+
+  // Recurso (dispositivo/agente que criou o ticket)
+  @ManyToOne(() => Resource, { nullable: true })
+  @JoinColumn({ name: 'resource_id' })
+  resource: Resource;
+
+  @Column({ nullable: true })
+  resource_id: string;
 
   // Mesa de serviço
   @ManyToOne(() => ServiceDesk, { nullable: false })
