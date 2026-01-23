@@ -35,14 +35,6 @@ export function Layout({ children, config }: LayoutProps) {
           </button>
 
           <button
-            className={`nav-item ${isActive('/create-ticket') ? 'active' : ''}`}
-            onClick={() => navigate('/create-ticket')}
-          >
-            <span className="nav-icon">➕</span>
-            <span>Abrir Ticket</span>
-          </button>
-
-          <button
             className={`nav-item ${isActive('/tickets') ? 'active' : ''}`}
             onClick={() => navigate('/tickets')}
           >
