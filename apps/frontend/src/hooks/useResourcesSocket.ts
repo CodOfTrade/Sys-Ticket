@@ -46,7 +46,8 @@ interface ResourceCommandEvent {
   timestamp: string;
 }
 
-type ResourceEvent =
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type _ResourceEvent =
   | ResourceHeartbeatEvent
   | ResourceStatusEvent
   | ResourceRegisteredEvent
