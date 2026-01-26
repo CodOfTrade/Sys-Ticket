@@ -82,6 +82,18 @@ export default function ResourceDetails() {
     },
   });
 
+  // Mutation para cancelar comando pendente
+  const cancelCommandMutation = useMutation({
+    mutationFn: (resourceId: string) => resourceService.cancelCommand(resourceId),
+    onSuccess: (data) => {
+      toast.success(data.message);
+      queryClient.invalidateQueries({ queryKey: ['resource', id] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Erro ao cancelar comando');
+    },
+  });
+
   // WebSocket para atualizações em tempo real
   useResourcesSocket({
     enabled: true,
@@ -380,10 +392,19 @@ export default function ResourceDetails() {
                   {/* Comando Pendente */}
                   {resource.pending_command && (
                     <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                      <p className="text-sm text-yellow-800 dark:text-yellow-300 flex items-center gap-2">
-                        <Loader2 size={16} className="animate-spin" />
-                        Comando pendente: <strong>{resource.pending_command}</strong>
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-yellow-800 dark:text-yellow-300 flex items-center gap-2">
+                          <Loader2 size={16} className="animate-spin" />
+                          Comando pendente: <strong>{resource.pending_command}</strong>
+                        </p>
+                        <button
+                          onClick={() => cancelCommandMutation.mutate(resource.id)}
+                          disabled={cancelCommandMutation.isPending}
+                          className="text-xs px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
+                        >
+                          {cancelCommandMutation.isPending ? 'Cancelando...' : 'Cancelar'}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </dl>

@@ -406,4 +406,44 @@ export class ResourcesService {
       `Comando '${executedCommand}' ${success ? 'executado' : 'falhou'} no recurso ${resource.resource_code}`,
     );
   }
+
+  /**
+   * Cancela um comando pendente
+   */
+  async cancelPendingCommand(
+    resourceId: string,
+    userId?: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const resource = await this.findOne(resourceId);
+
+    if (!resource.pending_command) {
+      throw new BadRequestException('Não há comando pendente para cancelar');
+    }
+
+    const cancelledCommand = resource.pending_command;
+
+    // Limpar comando pendente
+    resource.pending_command = undefined;
+    resource.pending_command_at = undefined;
+    await this.resourceRepository.save(resource);
+
+    // Registrar no histórico
+    await this.createHistory(
+      resourceId,
+      ResourceEventType.COMMAND_EXECUTED,
+      `Comando '${cancelledCommand}' cancelado pelo usuário`,
+      undefined,
+      { command: cancelledCommand, cancelled: true },
+      userId,
+    );
+
+    this.logger.log(
+      `Comando '${cancelledCommand}' cancelado no recurso ${resource.resource_code}`,
+    );
+
+    return {
+      success: true,
+      message: `Comando '${cancelledCommand}' cancelado com sucesso`,
+    };
+  }
 }

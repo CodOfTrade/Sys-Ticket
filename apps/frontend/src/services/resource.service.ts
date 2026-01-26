@@ -88,6 +88,13 @@ export const resourceService = {
     return response.data.data;
   },
 
+  async cancelCommand(resourceId: string): Promise<{ success: boolean; message: string }> {
+    const response = await api.post<ApiResponse<{ success: boolean; message: string }>>(
+      `/v1/resources/${resourceId}/command/cancel`
+    );
+    return response.data.data;
+  },
+
   async getStats(clientId?: string): Promise<ResourceStats> {
     const response = await api.get<ApiResponse<ResourceStats>>('/v1/resources/stats/overview', {
       params: clientId ? { clientId } : undefined,

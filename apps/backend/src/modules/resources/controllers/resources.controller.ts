@@ -83,6 +83,12 @@ export class ResourcesController {
     return this.resourcesService.sendCommand(id, command, userId);
   }
 
+  @Post(':id/command/cancel')
+  async cancelCommand(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user?.id;
+    return this.resourcesService.cancelPendingCommand(id, userId);
+  }
+
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return this.resourcesService.remove(id);

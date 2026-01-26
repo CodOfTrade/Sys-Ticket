@@ -19,6 +19,7 @@ import { ResourceLicensesController } from './controllers/resource-licenses.cont
 import { ContractQuotasController } from './controllers/contract-quotas.controller';
 import { AgentController } from './controllers/agent.controller';
 import { ResourcesGateway } from './gateways/resources.gateway';
+import { OfflineDetectionTask } from './tasks/offline-detection.task';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ResourcesGateway } from './gateways/resources.gateway';
     ContractQuotasService,
     AgentService,
     ResourcesGateway,
+    OfflineDetectionTask,
   ],
   exports: [
     ResourcesService,
