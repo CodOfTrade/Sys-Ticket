@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Resource } from './entities/resource.entity';
 import { ResourceLicense } from './entities/resource-license.entity';
+import { LicenseDeviceAssignment } from './entities/license-device-assignment.entity';
 import { ContractResourceQuota } from './entities/contract-resource-quota.entity';
 import { ResourceHistory } from './entities/resource-history.entity';
 import { AgentTicket } from './entities/agent-ticket.entity';
@@ -26,6 +27,7 @@ import { OfflineDetectionTask } from './tasks/offline-detection.task';
     TypeOrmModule.forFeature([
       Resource,
       ResourceLicense,
+      LicenseDeviceAssignment,
       ContractResourceQuota,
       ResourceHistory,
       AgentTicket,

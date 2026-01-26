@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, LessThanOrEqual, MoreThan } from 'typeorm';
+import { Repository, FindOptionsWhere, LessThanOrEqual, In } from 'typeorm';
 import { ResourceLicense, LicenseStatus } from '../entities/resource-license.entity';
+import { LicenseDeviceAssignment } from '../entities/license-device-assignment.entity';
 import { CreateLicenseDto } from '../dto/create-license.dto';
 import { UpdateLicenseDto } from '../dto/update-license.dto';
 
@@ -10,6 +11,8 @@ export class ResourceLicensesService {
   constructor(
     @InjectRepository(ResourceLicense)
     private readonly licenseRepository: Repository<ResourceLicense>,
+    @InjectRepository(LicenseDeviceAssignment)
+    private readonly assignmentRepository: Repository<LicenseDeviceAssignment>,
   ) {}
 
   async create(createLicenseDto: CreateLicenseDto): Promise<ResourceLicense> {
@@ -32,7 +35,7 @@ export class ResourceLicensesService {
 
     return this.licenseRepository.find({
       where,
-      relations: ['resource'],
+      relations: ['resource', 'device_assignments', 'device_assignments.resource'],
       order: { created_at: 'DESC' },
     });
   }
@@ -40,11 +43,11 @@ export class ResourceLicensesService {
   async findOne(id: string): Promise<ResourceLicense> {
     const license = await this.licenseRepository.findOne({
       where: { id },
-      relations: ['resource'],
+      relations: ['resource', 'device_assignments', 'device_assignments.resource'],
     });
 
     if (!license) {
-      throw new NotFoundException(`License with ID ${id} not found`);
+      throw new NotFoundException(`Licenca com ID ${id} nao encontrada`);
     }
 
     return license;
@@ -61,47 +64,131 @@ export class ResourceLicensesService {
     await this.licenseRepository.remove(license);
   }
 
-  async assignToResource(licenseId: string, resourceId: string): Promise<ResourceLicense> {
+  /**
+   * Atribui licenca a um dispositivo (suporta multi-dispositivo)
+   */
+  async assignToResource(licenseId: string, resourceId: string, userId?: string): Promise<ResourceLicense> {
     const license = await this.findOne(licenseId);
 
-    if (license.resource_id) {
-      throw new BadRequestException('License is already assigned to a resource');
+    // Verificar se ja esta atribuida a este dispositivo
+    const existingAssignment = await this.assignmentRepository.findOne({
+      where: { license_id: licenseId, resource_id: resourceId },
+    });
+
+    if (existingAssignment) {
+      throw new BadRequestException('Licenca ja esta atribuida a este dispositivo');
     }
 
+    // Verificar limite de ativacoes
     if (license.max_activations && license.current_activations >= license.max_activations) {
-      throw new BadRequestException('License activation limit reached');
+      throw new BadRequestException(`Limite de ativacoes atingido (${license.max_activations})`);
     }
 
-    license.resource_id = resourceId;
-    license.license_status = LicenseStatus.ASSIGNED;
-    license.activated_at = new Date();
+    // Criar assignment
+    const assignment = this.assignmentRepository.create({
+      license_id: licenseId,
+      resource_id: resourceId,
+      assigned_by: userId,
+    });
+    await this.assignmentRepository.save(assignment);
+
+    // Atualizar licenca
     license.current_activations += 1;
+    license.license_status = LicenseStatus.ASSIGNED;
+    if (!license.activated_at) {
+      license.activated_at = new Date();
+    }
+
+    // Manter compatibilidade: Se e a primeira atribuicao, definir resource_id
+    if (!license.resource_id) {
+      license.resource_id = resourceId;
+    }
 
     return this.licenseRepository.save(license);
   }
 
-  async unassignFromResource(licenseId: string): Promise<ResourceLicense> {
+  /**
+   * Remove licenca de um dispositivo
+   */
+  async unassignFromResource(licenseId: string, resourceId: string): Promise<ResourceLicense> {
     const license = await this.findOne(licenseId);
 
-    if (!license.resource_id) {
-      throw new BadRequestException('License is not assigned to any resource');
+    // Encontrar o assignment
+    const assignment = await this.assignmentRepository.findOne({
+      where: { license_id: licenseId, resource_id: resourceId },
+    });
+
+    if (!assignment) {
+      throw new BadRequestException('Licenca nao esta atribuida a este dispositivo');
     }
 
-    license.resource_id = null;
-    license.license_status = LicenseStatus.AVAILABLE;
-    license.deactivated_at = new Date();
+    // Remover assignment
+    await this.assignmentRepository.remove(assignment);
+
+    // Atualizar licenca
     license.current_activations = Math.max(0, license.current_activations - 1);
 
+    // Se nao tem mais dispositivos, marcar como disponivel
+    if (license.current_activations === 0) {
+      license.license_status = LicenseStatus.AVAILABLE;
+      license.resource_id = null;
+      license.deactivated_at = new Date();
+    } else if (license.resource_id === resourceId) {
+      // Se era o resource_id principal, pegar outro
+      const remainingAssignment = await this.assignmentRepository.findOne({
+        where: { license_id: licenseId },
+      });
+      license.resource_id = remainingAssignment?.resource_id || null;
+    }
+
     return this.licenseRepository.save(license);
   }
 
-  async findAvailableByContract(contractId: string): Promise<ResourceLicense[]> {
+  /**
+   * Lista dispositivos atribuidos a uma licenca
+   */
+  async getAssignedDevices(licenseId: string): Promise<LicenseDeviceAssignment[]> {
+    return this.assignmentRepository.find({
+      where: { license_id: licenseId },
+      relations: ['resource'],
+      order: { assigned_at: 'DESC' },
+    });
+  }
+
+  /**
+   * Lista licencas atribuidas a um dispositivo
+   */
+  async getLicensesByResource(resourceId: string): Promise<ResourceLicense[]> {
+    const assignments = await this.assignmentRepository.find({
+      where: { resource_id: resourceId },
+      select: ['license_id'],
+    });
+
+    if (assignments.length === 0) {
+      return [];
+    }
+
+    const licenseIds = assignments.map(a => a.license_id);
     return this.licenseRepository.find({
-      where: {
-        contract_id: contractId,
-        license_status: LicenseStatus.AVAILABLE,
-      },
+      where: { id: In(licenseIds) },
       order: { created_at: 'DESC' },
+    });
+  }
+
+  /**
+   * Licencas disponiveis do contrato que podem ser atribuidas
+   */
+  async findAvailableByContract(contractId: string): Promise<ResourceLicense[]> {
+    // Retornar licencas com ativacoes disponiveis
+    const licenses = await this.licenseRepository.find({
+      where: { contract_id: contractId },
+      order: { created_at: 'DESC' },
+    });
+
+    // Filtrar: licencas sem limite OU com ativacoes restantes
+    return licenses.filter(l => {
+      if (!l.max_activations) return true; // Sem limite
+      return l.current_activations < l.max_activations;
     });
   }
 
@@ -121,27 +208,35 @@ export class ResourceLicensesService {
   }
 
   async getStatsByContract(contractId: string): Promise<any> {
-    const total = await this.licenseRepository.count({
+    const licenses = await this.licenseRepository.find({
       where: { contract_id: contractId },
     });
 
-    const assigned = await this.licenseRepository.count({
-      where: { contract_id: contractId, license_status: LicenseStatus.ASSIGNED },
-    });
+    let totalCapacity = 0;
+    let totalUsed = 0;
 
-    const available = await this.licenseRepository.count({
-      where: { contract_id: contractId, license_status: LicenseStatus.AVAILABLE },
-    });
+    for (const license of licenses) {
+      totalCapacity += license.max_activations || 1;
+      totalUsed += license.current_activations;
+    }
 
-    const expired = await this.licenseRepository.count({
-      where: { contract_id: contractId, license_status: LicenseStatus.EXPIRED },
-    });
+    const total = licenses.length;
+    const assigned = licenses.filter(l => l.license_status === LicenseStatus.ASSIGNED).length;
+    const available = licenses.filter(l => {
+      if (l.license_status !== LicenseStatus.AVAILABLE && l.license_status !== LicenseStatus.ASSIGNED) return false;
+      if (!l.max_activations) return true;
+      return l.current_activations < l.max_activations;
+    }).length;
+    const expired = licenses.filter(l => l.license_status === LicenseStatus.EXPIRED).length;
 
     return {
       total,
       assigned,
       available,
       expired,
+      totalCapacity,
+      totalUsed,
+      utilizationPercent: totalCapacity > 0 ? Math.round((totalUsed / totalCapacity) * 100) : 0,
     };
   }
 }

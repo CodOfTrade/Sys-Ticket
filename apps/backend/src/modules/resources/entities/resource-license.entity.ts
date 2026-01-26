@@ -5,9 +5,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { Resource } from './resource.entity';
+import { LicenseDeviceAssignment } from './license-device-assignment.entity';
 
 export enum LicenseType {
   WINDOWS = 'windows',
@@ -115,4 +117,8 @@ export class ResourceLicense {
 
   @Column({ type: 'timestamp', nullable: true })
   deactivated_at: Date;
+
+  // Dispositivos atribuidos (para licencas multi-dispositivo)
+  @OneToMany(() => LicenseDeviceAssignment, assignment => assignment.license)
+  device_assignments: LicenseDeviceAssignment[];
 }

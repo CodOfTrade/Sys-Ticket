@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { ResourceLicensesService } from '../services/resource-licenses.service';
 import { CreateLicenseDto } from '../dto/create-license.dto';
@@ -55,9 +56,19 @@ export class ResourceLicensesController {
     return this.licensesService.getStatsByContract(contractId);
   }
 
+  @Get('by-resource/:resourceId')
+  async getLicensesByResource(@Param('resourceId') resourceId: string) {
+    return this.licensesService.getLicensesByResource(resourceId);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.licensesService.findOne(id);
+  }
+
+  @Get(':id/devices')
+  async getAssignedDevices(@Param('id') id: string) {
+    return this.licensesService.getAssignedDevices(id);
   }
 
   @Patch(':id')
@@ -72,13 +83,18 @@ export class ResourceLicensesController {
   async assignToResource(
     @Param('id') id: string,
     @Body('resourceId') resourceId: string,
+    @Req() req: any,
   ) {
-    return this.licensesService.assignToResource(id, resourceId);
+    const userId = req.user?.id;
+    return this.licensesService.assignToResource(id, resourceId, userId);
   }
 
   @Post(':id/unassign')
-  async unassignFromResource(@Param('id') id: string) {
-    return this.licensesService.unassignFromResource(id);
+  async unassignFromResource(
+    @Param('id') id: string,
+    @Body('resourceId') resourceId: string,
+  ) {
+    return this.licensesService.unassignFromResource(id, resourceId);
   }
 
   @Delete(':id')
