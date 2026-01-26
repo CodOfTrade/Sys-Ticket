@@ -197,7 +197,7 @@ export default function ResourceDetails() {
                     Online
                     {resource.agent_last_heartbeat && (
                       <span className="text-gray-400 dark:text-gray-500 ml-1">
-                        • {format(new Date(resource.agent_last_heartbeat), 'HH:mm', { locale: ptBR })}
+                        • {format(new Date(resource.agent_last_heartbeat), 'dd/MM HH:mm', { locale: ptBR })}
                       </span>
                     )}
                   </span>

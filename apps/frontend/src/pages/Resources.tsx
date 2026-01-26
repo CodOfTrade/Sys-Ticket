@@ -360,12 +360,12 @@ export default function Resources() {
                                 {resource.name}
                               </p>
                               {resource.is_online ? (
-                                <span className="flex items-center gap-1 text-xs text-green-600">
+                                <span className="flex items-center gap-1 text-xs text-green-600" title="Online">
                                   <Circle className="text-green-500 fill-green-500" size={8} />
-                                  {resource.agent_last_heartbeat && format(new Date(resource.agent_last_heartbeat), 'HH:mm', { locale: ptBR })}
+                                  {resource.agent_last_heartbeat && format(new Date(resource.agent_last_heartbeat), 'dd/MM HH:mm', { locale: ptBR })}
                                 </span>
                               ) : resource.agent_id && (
-                                <span className="flex items-center gap-1 text-xs text-gray-400">
+                                <span className="flex items-center gap-1 text-xs text-gray-400" title="Offline">
                                   <Circle className="fill-gray-400" size={8} />
                                   {resource.agent_last_heartbeat && format(new Date(resource.agent_last_heartbeat), 'dd/MM HH:mm', { locale: ptBR })}
                                 </span>

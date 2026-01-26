@@ -126,7 +126,8 @@
       "Bash(ls -la \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\agent-desktop\\\\release\"\" 2>&1 || dir \"d:Arquivos do UsuárioOneDrive3 - Pessoal JoséProgramaçaoSys-Ticketappsagent-desktoprelease \")",
       "Bash(grep:*)",
       "Bash(npm run build:win:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(ping:*)"
     ]
   }
 }
