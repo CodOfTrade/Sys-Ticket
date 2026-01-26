@@ -123,6 +123,18 @@ export interface ResourceLicense {
   activated_at?: string;
   deactivated_at?: string;
   resource?: Resource;
+  device_assignments?: LicenseDeviceAssignment[];
+}
+
+export interface LicenseDeviceAssignment {
+  id: string;
+  license_id: string;
+  resource_id: string;
+  assigned_by?: string;
+  notes?: string;
+  assigned_at: string;
+  license?: ResourceLicense;
+  resource?: Resource;
 }
 
 export interface ContractResourceQuota {

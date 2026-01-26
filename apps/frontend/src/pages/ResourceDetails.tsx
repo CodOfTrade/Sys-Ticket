@@ -128,6 +128,13 @@ export default function ResourceDetails() {
     enabled: !!id && activeTab === 'history',
   });
 
+  // Query para licenças atribuídas ao recurso
+  const { data: resourceLicenses, isLoading: isLoadingResourceLicenses } = useQuery({
+    queryKey: ['resource-licenses', id],
+    queryFn: () => resourceService.getLicensesByResource(id!),
+    enabled: !!id && activeTab === 'licenses',
+  });
+
   // Query para licenças disponíveis do contrato
   const { data: availableLicenses, isLoading: isLoadingLicenses } = useQuery({
     queryKey: ['available-licenses', resource?.contract_id],
@@ -142,6 +149,7 @@ export default function ResourceDetails() {
     onSuccess: () => {
       toast.success('Licença atribuída com sucesso');
       queryClient.invalidateQueries({ queryKey: ['resource', id] });
+      queryClient.invalidateQueries({ queryKey: ['resource-licenses', id] });
       queryClient.invalidateQueries({ queryKey: ['available-licenses'] });
       setShowLicenseModal(false);
     },
@@ -152,10 +160,11 @@ export default function ResourceDetails() {
 
   // Mutation para remover licença
   const unassignLicenseMutation = useMutation({
-    mutationFn: (licenseId: string) => resourceService.unassignLicense(licenseId),
+    mutationFn: (licenseId: string) => resourceService.unassignLicense(licenseId, id!),
     onSuccess: () => {
       toast.success('Licença removida com sucesso');
       queryClient.invalidateQueries({ queryKey: ['resource', id] });
+      queryClient.invalidateQueries({ queryKey: ['resource-licenses', id] });
       queryClient.invalidateQueries({ queryKey: ['available-licenses'] });
     },
     onError: (error: any) => {
@@ -737,9 +746,13 @@ export default function ResourceDetails() {
                   </button>
                 )}
               </div>
-              {resource.licenses && resource.licenses.length > 0 ? (
+              {isLoadingResourceLicenses ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="animate-spin text-blue-600" size={32} />
+                </div>
+              ) : resourceLicenses && resourceLicenses.length > 0 ? (
                 <div className="space-y-3">
-                  {resource.licenses.map((license) => (
+                  {resourceLicenses.map((license) => (
                     <div
                       key={license.id}
                       className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
@@ -754,9 +767,19 @@ export default function ResourceDetails() {
                             {license.license_type.toUpperCase()}
                             {license.product_version && ` • v${license.product_version}`}
                           </p>
+                          {license.max_activations && (
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                              Ativações: {license.current_activations}/{license.max_activations}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        {license.max_activations && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">
+                            {Math.round((license.current_activations / license.max_activations) * 100)}%
+                          </span>
+                        )}
                         <span
                           className={`px-2 py-1 text-xs font-medium rounded-full ${
                             license.license_status === 'assigned'
@@ -770,7 +793,7 @@ export default function ResourceDetails() {
                           onClick={() => unassignLicenseMutation.mutate(license.id)}
                           disabled={unassignLicenseMutation.isPending}
                           className="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg disabled:opacity-50"
-                          title="Remover licença"
+                          title="Remover licença deste dispositivo"
                         >
                           <X size={16} />
                         </button>
@@ -911,40 +934,55 @@ export default function ResourceDetails() {
                 </div>
               ) : availableLicenses && availableLicenses.length > 0 ? (
                 <div className="space-y-2">
-                  {availableLicenses.map((license) => (
-                    <div
-                      key={license.id}
-                      className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Key className="text-blue-500" size={20} />
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">
-                            {license.product_name}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {license.license_type.toUpperCase()}
-                            {license.product_version && ` • v${license.product_version}`}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => assignLicenseMutation.mutate({
-                          licenseId: license.id,
-                          resourceId: resource.id,
-                        })}
-                        disabled={assignLicenseMutation.isPending}
-                        className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 flex items-center gap-1"
+                  {availableLicenses.map((license) => {
+                    const remaining = license.max_activations
+                      ? license.max_activations - license.current_activations
+                      : null;
+                    return (
+                      <div
+                        key={license.id}
+                        className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
                       >
-                        {assignLicenseMutation.isPending ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          <Plus size={14} />
-                        )}
-                        Atribuir
-                      </button>
-                    </div>
-                  ))}
+                        <div className="flex items-center gap-3">
+                          <Key className="text-blue-500" size={20} />
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white">
+                              {license.product_name}
+                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {license.license_type.toUpperCase()}
+                              {license.product_version && ` • v${license.product_version}`}
+                            </p>
+                            {license.max_activations && (
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                {remaining} de {license.max_activations} ativações disponíveis
+                              </p>
+                            )}
+                            {!license.max_activations && (
+                              <p className="text-xs text-green-500 dark:text-green-400 mt-1">
+                                Ativações ilimitadas
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => assignLicenseMutation.mutate({
+                            licenseId: license.id,
+                            resourceId: resource.id,
+                          })}
+                          disabled={assignLicenseMutation.isPending}
+                          className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 flex items-center gap-1"
+                        >
+                          {assignLicenseMutation.isPending ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Plus size={14} />
+                          )}
+                          Atribuir
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -953,7 +991,7 @@ export default function ResourceDetails() {
                     Nenhuma licença disponível neste contrato
                   </p>
                   <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                    Todas as licenças já foram atribuídas ou não há licenças cadastradas.
+                    Todas as licenças atingiram o limite ou não há licenças cadastradas.
                   </p>
                 </div>
               )}

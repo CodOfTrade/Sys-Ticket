@@ -2,6 +2,7 @@ import { api } from './api';
 import {
   Resource,
   ResourceLicense,
+  LicenseDeviceAssignment,
   ContractResourceQuota,
   ResourceHistory,
   ResourceStats,
@@ -148,9 +149,24 @@ export const resourceService = {
     return response.data.data;
   },
 
-  async unassignLicense(licenseId: string): Promise<ResourceLicense> {
+  async unassignLicense(licenseId: string, resourceId: string): Promise<ResourceLicense> {
     const response = await api.post<ApiResponse<ResourceLicense>>(
-      `/v1/resources/licenses/${licenseId}/unassign`
+      `/v1/resources/licenses/${licenseId}/unassign`,
+      { resourceId }
+    );
+    return response.data.data;
+  },
+
+  async getAssignedDevices(licenseId: string): Promise<LicenseDeviceAssignment[]> {
+    const response = await api.get<ApiResponse<LicenseDeviceAssignment[]>>(
+      `/v1/resources/licenses/${licenseId}/devices`
+    );
+    return response.data.data;
+  },
+
+  async getLicensesByResource(resourceId: string): Promise<ResourceLicense[]> {
+    const response = await api.get<ApiResponse<ResourceLicense[]>>(
+      `/v1/resources/licenses/by-resource/${resourceId}`
     );
     return response.data.data;
   },
