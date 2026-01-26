@@ -99,10 +99,10 @@ export class Resource {
 
   // Comandos remotos (para desinstalação, etc)
   @Column({ type: 'varchar', length: 50, nullable: true })
-  pending_command: string;
+  pending_command?: string;
 
   @Column({ type: 'timestamp', nullable: true })
-  pending_command_at: Date;
+  pending_command_at?: Date;
 
   // Informações básicas
   @Column({ type: 'varchar', length: 100, nullable: true })
@@ -125,19 +125,19 @@ export class Resource {
 
   // Agente (para computadores)
   @Column({ type: 'varchar', length: 100, unique: true, nullable: true })
-  agent_id: string;
+  agent_id?: string;
 
   @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
-  agent_token: string;
+  agent_token?: string;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
-  agent_version: string;
+  agent_version?: string;
 
   @Column({ type: 'timestamp', nullable: true })
-  agent_installed_at: Date;
+  agent_installed_at?: Date;
 
   @Column({ type: 'timestamp', nullable: true })
-  agent_last_heartbeat: Date;
+  agent_last_heartbeat?: Date;
 
   // Dados técnicos (JSON flexível)
   @Column({ type: 'jsonb', nullable: true })
