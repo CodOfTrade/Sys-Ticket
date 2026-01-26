@@ -46,14 +46,6 @@ interface ResourceCommandEvent {
   timestamp: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type _ResourceEvent =
-  | ResourceHeartbeatEvent
-  | ResourceStatusEvent
-  | ResourceRegisteredEvent
-  | ResourceUpdatedEvent
-  | ResourceCommandEvent;
-
 interface UseResourcesSocketOptions {
   enabled?: boolean;
   onHeartbeat?: (event: ResourceHeartbeatEvent) => void;
