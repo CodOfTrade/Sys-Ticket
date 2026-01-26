@@ -205,8 +205,8 @@ export class AgentService {
     });
 
     return {
-      agentId: resource.agent_id,
-      agentToken: resource.agent_token,
+      agentId: resource.agent_id!,
+      agentToken: resource.agent_token!,
       resourceId: resource.id,
       resourceCode: resource.resource_code,
     };
@@ -442,8 +442,8 @@ export class AgentService {
    * Busca comando pendente para um agente
    */
   async getPendingCommand(agentId: string): Promise<{
-    command: string | null;
-    commandAt: Date | null;
+    command: string | undefined;
+    commandAt: Date | undefined;
   }> {
     const resource = await this.resourceRepository.findOne({
       where: { agent_id: agentId },

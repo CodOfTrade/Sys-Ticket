@@ -328,8 +328,8 @@ export class ResourcesService {
    * Busca comando pendente para um agente
    */
   async getPendingCommand(agentId: string): Promise<{
-    command: string | null;
-    commandAt: Date | null;
+    command: string | undefined;
+    commandAt: Date | undefined;
   }> {
     const resource = await this.resourceRepository.findOne({
       where: { agent_id: agentId },
