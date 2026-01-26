@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   ArrowLeft,
   HardDrive,
@@ -14,10 +14,19 @@ import {
   User,
   Key,
   History,
+  Trash2,
+  RefreshCw,
+  Download,
+  AlertTriangle,
+  Loader2,
+  Plus,
+  X,
 } from 'lucide-react';
 import { resourceService } from '@/services/resource.service';
+import { useResourcesSocket } from '@/hooks/useResourcesSocket';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import toast from 'react-hot-toast';
 
 const resourceTypeIcons = {
   computer: HardDrive,
@@ -54,7 +63,46 @@ type TabType = 'info' | 'specs' | 'licenses' | 'history';
 export default function ResourceDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>('info');
+  const [showUninstallConfirm, setShowUninstallConfirm] = useState(false);
+  const [showLicenseModal, setShowLicenseModal] = useState(false);
+
+  // Mutation para enviar comandos
+  const sendCommandMutation = useMutation({
+    mutationFn: ({ resourceId, command }: { resourceId: string; command: string }) =>
+      resourceService.sendCommand(resourceId, command),
+    onSuccess: (data) => {
+      toast.success(data.message);
+      queryClient.invalidateQueries({ queryKey: ['resource', id] });
+      setShowUninstallConfirm(false);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Erro ao enviar comando');
+    },
+  });
+
+  // WebSocket para atualizações em tempo real
+  useResourcesSocket({
+    enabled: true,
+    onHeartbeat: (event) => {
+      if (event.resourceId === id) {
+        // Atualizar recurso atual com novos dados de heartbeat
+        queryClient.setQueryData(['resource', id], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            is_online: true,
+            agent_last_heartbeat: event.timestamp,
+            metadata: {
+              ...old.metadata,
+              lastQuickStatus: event.quickStatus,
+            },
+          };
+        });
+      }
+    },
+  });
 
   const { data: resource, isLoading } = useQuery({
     queryKey: ['resource', id],
@@ -66,6 +114,41 @@ export default function ResourceDetails() {
     queryKey: ['resource-history', id],
     queryFn: () => resourceService.getHistory(id!),
     enabled: !!id && activeTab === 'history',
+  });
+
+  // Query para licenças disponíveis do contrato
+  const { data: availableLicenses, isLoading: isLoadingLicenses } = useQuery({
+    queryKey: ['available-licenses', resource?.contract_id],
+    queryFn: () => resourceService.getAvailableLicenses(resource!.contract_id!),
+    enabled: !!resource?.contract_id && showLicenseModal,
+  });
+
+  // Mutation para atribuir licença
+  const assignLicenseMutation = useMutation({
+    mutationFn: ({ licenseId, resourceId }: { licenseId: string; resourceId: string }) =>
+      resourceService.assignLicense(licenseId, resourceId),
+    onSuccess: () => {
+      toast.success('Licença atribuída com sucesso');
+      queryClient.invalidateQueries({ queryKey: ['resource', id] });
+      queryClient.invalidateQueries({ queryKey: ['available-licenses'] });
+      setShowLicenseModal(false);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Erro ao atribuir licença');
+    },
+  });
+
+  // Mutation para remover licença
+  const unassignLicenseMutation = useMutation({
+    mutationFn: (licenseId: string) => resourceService.unassignLicense(licenseId),
+    onSuccess: () => {
+      toast.success('Licença removida com sucesso');
+      queryClient.invalidateQueries({ queryKey: ['resource', id] });
+      queryClient.invalidateQueries({ queryKey: ['available-licenses'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Erro ao remover licença');
+    },
   });
 
   if (isLoading) {
@@ -278,7 +361,48 @@ export default function ResourceDetails() {
                         : '-'}
                     </dd>
                   </div>
+
+                  {/* Comando Pendente */}
+                  {resource.pending_command && (
+                    <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                      <p className="text-sm text-yellow-800 dark:text-yellow-300 flex items-center gap-2">
+                        <Loader2 size={16} className="animate-spin" />
+                        Comando pendente: <strong>{resource.pending_command}</strong>
+                      </p>
+                    </div>
+                  )}
                 </dl>
+
+                {/* Botões de Comando */}
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Comandos Remotos</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => sendCommandMutation.mutate({ resourceId: resource.id, command: 'collect_info' })}
+                      disabled={sendCommandMutation.isPending || !!resource.pending_command}
+                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Download size={16} />
+                      Coletar Info
+                    </button>
+                    <button
+                      onClick={() => sendCommandMutation.mutate({ resourceId: resource.id, command: 'restart' })}
+                      disabled={sendCommandMutation.isPending || !!resource.pending_command}
+                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 dark:text-amber-400 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <RefreshCw size={16} />
+                      Reiniciar Agente
+                    </button>
+                    <button
+                      onClick={() => setShowUninstallConfirm(true)}
+                      disabled={sendCommandMutation.isPending || !!resource.pending_command}
+                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 size={16} />
+                      Desinstalar
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -383,38 +507,177 @@ export default function ResourceDetails() {
                     {resource.hostname || '-'}
                   </dd>
                 </div>
-                <div>
-                  <dt className="text-sm text-gray-500 dark:text-gray-400">Endereço IP</dt>
-                  <dd className="text-sm font-medium text-gray-900 dark:text-white font-mono">
-                    {resource.ip_address || '-'}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-gray-500 dark:text-gray-400">MAC Address</dt>
-                  <dd className="text-sm font-medium text-gray-900 dark:text-white font-mono">
-                    {resource.mac_address || '-'}
-                  </dd>
-                </div>
+
+                {/* Múltiplas Interfaces de Rede */}
+                {resource.specifications?.network?.interfaces &&
+                 resource.specifications.network.interfaces.length > 0 ? (
+                  <div>
+                    <dt className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                      Interfaces de Rede ({resource.specifications.network.interfaces.length})
+                    </dt>
+                    <div className="space-y-2">
+                      {resource.specifications.network.interfaces.map((iface: { name?: string; ip4?: string; mac?: string }, index: number) => (
+                        <div
+                          key={index}
+                          className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                        >
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {iface.name || `Interface ${index + 1}`}
+                          </p>
+                          <div className="mt-1 grid grid-cols-2 gap-2 text-xs">
+                            <span className="text-gray-500 dark:text-gray-400">
+                              IP: <span className="font-mono text-gray-900 dark:text-white">
+                                {iface.ip4 || '-'}
+                              </span>
+                            </span>
+                            <span className="text-gray-500 dark:text-gray-400">
+                              MAC: <span className="font-mono text-gray-900 dark:text-white">
+                                {iface.mac || '-'}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <dt className="text-sm text-gray-500 dark:text-gray-400">Endereço IP</dt>
+                      <dd className="text-sm font-medium text-gray-900 dark:text-white font-mono">
+                        {resource.ip_address || '-'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-gray-500 dark:text-gray-400">MAC Address</dt>
+                      <dd className="text-sm font-medium text-gray-900 dark:text-white font-mono">
+                        {resource.mac_address || '-'}
+                      </dd>
+                    </div>
+                  </>
+                )}
               </dl>
             </div>
 
-            {resource.specifications && Object.keys(resource.specifications).length > 0 && (
+            {/* Processador */}
+            {resource.specifications?.cpu && (
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Hardware
+                  Processador
                 </h3>
                 <dl className="space-y-3">
-                  {Object.entries(resource.specifications).map(([key, value]) => (
-                    <div key={key}>
-                      <dt className="text-sm text-gray-500 dark:text-gray-400 capitalize">
-                        {key.replace(/_/g, ' ')}
-                      </dt>
+                  <div>
+                    <dt className="text-sm text-gray-500 dark:text-gray-400">Modelo</dt>
+                    <dd className="text-sm font-medium text-gray-900 dark:text-white">
+                      {resource.specifications.cpu.manufacturer} {resource.specifications.cpu.brand}
+                    </dd>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <dt className="text-sm text-gray-500 dark:text-gray-400">Núcleos</dt>
                       <dd className="text-sm font-medium text-gray-900 dark:text-white">
-                        {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                        {resource.specifications.cpu.cores || '-'}
                       </dd>
                     </div>
-                  ))}
+                    <div>
+                      <dt className="text-sm text-gray-500 dark:text-gray-400">Velocidade</dt>
+                      <dd className="text-sm font-medium text-gray-900 dark:text-white">
+                        {resource.specifications.cpu.speed ? `${resource.specifications.cpu.speed} GHz` : '-'}
+                      </dd>
+                    </div>
+                  </div>
                 </dl>
+              </div>
+            )}
+
+            {/* Memória RAM */}
+            {resource.specifications?.memory && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Memória RAM
+                </h3>
+                <dl className="space-y-3">
+                  <div>
+                    <dt className="text-sm text-gray-500 dark:text-gray-400">Total</dt>
+                    <dd className="text-sm font-medium text-gray-900 dark:text-white">
+                      {resource.specifications.memory.total
+                        ? `${(resource.specifications.memory.total / (1024 * 1024 * 1024)).toFixed(2)} GB`
+                        : '-'}
+                    </dd>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <dt className="text-sm text-gray-500 dark:text-gray-400">Usado</dt>
+                      <dd className="text-sm font-medium text-gray-900 dark:text-white">
+                        {resource.specifications.memory.used
+                          ? `${(resource.specifications.memory.used / (1024 * 1024 * 1024)).toFixed(2)} GB`
+                          : '-'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-gray-500 dark:text-gray-400">Livre</dt>
+                      <dd className="text-sm font-medium text-gray-900 dark:text-white">
+                        {resource.specifications.memory.free
+                          ? `${(resource.specifications.memory.free / (1024 * 1024 * 1024)).toFixed(2)} GB`
+                          : '-'}
+                      </dd>
+                    </div>
+                  </div>
+                  {resource.specifications.memory.total && resource.specifications.memory.used && (
+                    <div>
+                      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        <span>Uso de Memória</span>
+                        <span>{((resource.specifications.memory.used / resource.specifications.memory.total) * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full"
+                          style={{ width: `${Math.min((resource.specifications.memory.used / resource.specifications.memory.total) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </dl>
+              </div>
+            )}
+
+            {/* Armazenamento */}
+            {resource.specifications?.disks && resource.specifications.disks.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Armazenamento
+                </h3>
+                <div className="space-y-3">
+                  {resource.specifications.disks.map((disk: { name?: string; type?: string; size?: number; used?: number }, index: number) => {
+                    const usagePercent = disk.size && disk.size > 0 ? (disk.used || 0) / disk.size * 100 : 0;
+                    return (
+                      <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {disk.name || `Disco ${index + 1}`}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {disk.type || 'Desconhecido'}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mb-2">
+                          <div
+                            className={`h-2 rounded-full ${usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-yellow-500' : 'bg-blue-600'}`}
+                            style={{ width: `${Math.min(usagePercent, 100)}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                          <span>
+                            Usado: {disk.used ? `${(disk.used / (1024 * 1024 * 1024)).toFixed(2)} GB` : '-'}
+                          </span>
+                          <span>
+                            Total: {disk.size ? `${(disk.size / (1024 * 1024 * 1024)).toFixed(2)} GB` : '-'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -424,9 +687,20 @@ export default function ResourceDetails() {
         {activeTab === 'licenses' && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Licenças Atribuídas
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Licenças Atribuídas
+                </h3>
+                {resource.contract_id && (
+                  <button
+                    onClick={() => setShowLicenseModal(true)}
+                    className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
+                  >
+                    <Plus size={16} />
+                    Atribuir Licença
+                  </button>
+                )}
+              </div>
               {resource.licenses && resource.licenses.length > 0 ? (
                 <div className="space-y-3">
                   {resource.licenses.map((license) => (
@@ -446,22 +720,49 @@ export default function ResourceDetails() {
                           </p>
                         </div>
                       </div>
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          license.license_status === 'assigned'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
-                        }`}
-                      >
-                        {license.license_status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            license.license_status === 'assigned'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
+                          }`}
+                        >
+                          {license.license_status}
+                        </span>
+                        <button
+                          onClick={() => unassignLicenseMutation.mutate(license.id)}
+                          disabled={unassignLicenseMutation.isPending}
+                          className="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg disabled:opacity-50"
+                          title="Remover licença"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-8">
-                  Nenhuma licença atribuída a este recurso
-                </p>
+                <div className="text-center py-8">
+                  <Key className="mx-auto text-gray-300 dark:text-gray-600 mb-3" size={40} />
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Nenhuma licença atribuída a este recurso
+                  </p>
+                  {resource.contract_id && (
+                    <button
+                      onClick={() => setShowLicenseModal(true)}
+                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                    >
+                      <Plus size={16} />
+                      Atribuir primeira licença
+                    </button>
+                  )}
+                  {!resource.contract_id && (
+                    <p className="mt-2 text-sm text-yellow-600 dark:text-yellow-400">
+                      Este recurso não está vinculado a um contrato.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -507,6 +808,132 @@ export default function ResourceDetails() {
           </div>
         )}
       </div>
+
+      {/* Modal de Confirmação de Desinstalação */}
+      {showUninstallConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex items-center gap-3 text-red-600 dark:text-red-400 mb-4">
+              <AlertTriangle size={24} />
+              <h3 className="text-lg font-semibold">Confirmar Desinstalação</h3>
+            </div>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Tem certeza que deseja desinstalar o agente de <strong>{resource.name}</strong>?
+              Esta ação irá remover o agente do computador e não poderá ser desfeita remotamente.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowUninstallConfirm(false)}
+                disabled={sendCommandMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => sendCommandMutation.mutate({ resourceId: resource.id, command: 'uninstall' })}
+                disabled={sendCommandMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50 flex items-center gap-2"
+              >
+                {sendCommandMutation.isPending ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    Desinstalar
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Atribuição de Licença */}
+      {showLicenseModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Key size={20} />
+                Atribuir Licença
+              </h3>
+              <button
+                onClick={() => setShowLicenseModal(false)}
+                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {isLoadingLicenses ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="animate-spin text-blue-600" size={32} />
+                </div>
+              ) : availableLicenses && availableLicenses.length > 0 ? (
+                <div className="space-y-2">
+                  {availableLicenses.map((license) => (
+                    <div
+                      key={license.id}
+                      className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Key className="text-blue-500" size={20} />
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {license.product_name}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {license.license_type.toUpperCase()}
+                            {license.product_version && ` • v${license.product_version}`}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => assignLicenseMutation.mutate({
+                          licenseId: license.id,
+                          resourceId: resource.id,
+                        })}
+                        disabled={assignLicenseMutation.isPending}
+                        className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {assignLicenseMutation.isPending ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Plus size={14} />
+                        )}
+                        Atribuir
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Key className="mx-auto text-gray-300 dark:text-gray-600 mb-3" size={40} />
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Nenhuma licença disponível neste contrato
+                  </p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                    Todas as licenças já foram atribuídas ou não há licenças cadastradas.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              <button
+                onClick={() => setShowLicenseModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

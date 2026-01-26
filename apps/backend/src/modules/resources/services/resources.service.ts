@@ -1,19 +1,31 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere, Like, In } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Resource, ResourceType, ResourceStatus } from '../entities/resource.entity';
 import { ResourceHistory, ResourceEventType } from '../entities/resource-history.entity';
 import { CreateResourceDto } from '../dto/create-resource.dto';
 import { UpdateResourceDto } from '../dto/update-resource.dto';
 import { QueryResourceDto } from '../dto/query-resource.dto';
 
+// Comandos permitidos para envio remoto
+export enum RemoteCommand {
+  UNINSTALL = 'uninstall',
+  RESTART = 'restart',
+  UPDATE = 'update',
+  COLLECT_INFO = 'collect_info',
+}
+
 @Injectable()
 export class ResourcesService {
+  private readonly logger = new Logger(ResourcesService.name);
+
   constructor(
     @InjectRepository(Resource)
     private readonly resourceRepository: Repository<Resource>,
     @InjectRepository(ResourceHistory)
     private readonly historyRepository: Repository<ResourceHistory>,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(createResourceDto: CreateResourceDto, createdByUserId?: string): Promise<Resource> {
@@ -249,5 +261,149 @@ export class ResourcesService {
       changed_by_user_id: userId,
       changed_by_agent: byAgent,
     });
+  }
+
+  /**
+   * Envia um comando remoto para o agente
+   */
+  async sendCommand(
+    resourceId: string,
+    command: string,
+    userId?: string,
+  ): Promise<{ success: boolean; message: string }> {
+    // Validar comando
+    const validCommands = Object.values(RemoteCommand);
+    if (!validCommands.includes(command as RemoteCommand)) {
+      throw new BadRequestException(
+        `Comando inválido. Comandos válidos: ${validCommands.join(', ')}`,
+      );
+    }
+
+    const resource = await this.findOne(resourceId);
+
+    // Verificar se tem agente instalado
+    if (!resource.agent_id) {
+      throw new BadRequestException('Este recurso não possui agente instalado');
+    }
+
+    // Verificar se já existe comando pendente
+    if (resource.pending_command) {
+      throw new BadRequestException(
+        `Já existe um comando pendente: ${resource.pending_command}`,
+      );
+    }
+
+    // Salvar comando pendente
+    resource.pending_command = command;
+    resource.pending_command_at = new Date();
+    await this.resourceRepository.save(resource);
+
+    // Registrar no histórico
+    await this.createHistory(
+      resourceId,
+      ResourceEventType.COMMAND_SENT,
+      `Comando remoto enviado: ${command}`,
+      null,
+      { command, sentAt: resource.pending_command_at },
+      userId,
+    );
+
+    // Emitir evento WebSocket
+    this.eventEmitter.emit('resource.command.sent', {
+      resourceId: resource.id,
+      command,
+    });
+
+    this.logger.log(
+      `Comando '${command}' enviado para recurso ${resource.resource_code} (ID: ${resourceId})`,
+    );
+
+    return {
+      success: true,
+      message: `Comando '${command}' enviado com sucesso. Aguardando execução pelo agente.`,
+    };
+  }
+
+  /**
+   * Busca comando pendente para um agente
+   */
+  async getPendingCommand(agentId: string): Promise<{
+    command: string | null;
+    commandAt: Date | null;
+  }> {
+    const resource = await this.resourceRepository.findOne({
+      where: { agent_id: agentId },
+    });
+
+    if (!resource) {
+      throw new NotFoundException(`Agente não encontrado: ${agentId}`);
+    }
+
+    return {
+      command: resource.pending_command,
+      commandAt: resource.pending_command_at,
+    };
+  }
+
+  /**
+   * Confirma execução de comando pelo agente
+   */
+  async confirmCommandExecution(
+    agentId: string,
+    command: string,
+    success: boolean,
+    message?: string,
+  ): Promise<void> {
+    const resource = await this.resourceRepository.findOne({
+      where: { agent_id: agentId },
+    });
+
+    if (!resource) {
+      throw new NotFoundException(`Agente não encontrado: ${agentId}`);
+    }
+
+    const executedCommand = resource.pending_command;
+
+    // Limpar comando pendente
+    resource.pending_command = null;
+    resource.pending_command_at = null;
+
+    // Se foi uninstall bem-sucedido, limpar dados do agente
+    if (success && command === RemoteCommand.UNINSTALL) {
+      resource.agent_id = null;
+      resource.agent_token = null;
+      resource.agent_version = null;
+      resource.agent_installed_at = null;
+      resource.agent_last_heartbeat = null;
+      resource.is_online = false;
+      resource.status = ResourceStatus.INACTIVE;
+    }
+
+    await this.resourceRepository.save(resource);
+
+    // Registrar no histórico
+    await this.createHistory(
+      resource.id,
+      ResourceEventType.COMMAND_EXECUTED,
+      `Comando '${executedCommand}' ${success ? 'executado com sucesso' : 'falhou'}: ${message || ''}`,
+      null,
+      { command: executedCommand, success, message },
+      null,
+      true,
+    );
+
+    // Emitir evento de atualização
+    this.eventEmitter.emit('resource.updated', {
+      resourceId: resource.id,
+      changes: {
+        commandExecuted: executedCommand,
+        success,
+        message,
+      },
+    });
+
+    this.logger.log(
+      `Comando '${executedCommand}' ${success ? 'executado' : 'falhou'} no recurso ${resource.resource_code}`,
+    );
   }
 }

@@ -80,6 +80,14 @@ export const resourceService = {
     return response.data.data;
   },
 
+  async sendCommand(resourceId: string, command: string): Promise<{ success: boolean; message: string }> {
+    const response = await api.post<ApiResponse<{ success: boolean; message: string }>>(
+      `/v1/resources/${resourceId}/command`,
+      { command }
+    );
+    return response.data.data;
+  },
+
   async getStats(clientId?: string): Promise<ResourceStats> {
     const response = await api.get<ApiResponse<ResourceStats>>('/v1/resources/stats/overview', {
       params: clientId ? { clientId } : undefined,

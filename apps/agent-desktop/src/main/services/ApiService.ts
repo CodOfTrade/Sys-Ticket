@@ -156,4 +156,31 @@ export class ApiService {
       return false;
     }
   }
+
+  /**
+   * Busca comando pendente para o agente
+   */
+  async getPendingCommand(agentId: string): Promise<{
+    command: string | null;
+    commandAt: string | null;
+  }> {
+    const response = await this.api.get(`/v1/agent/commands/${agentId}`);
+    return response.data.data || { command: null, commandAt: null };
+  }
+
+  /**
+   * Confirma execução de comando
+   */
+  async confirmCommand(
+    agentId: string,
+    command: string,
+    success: boolean,
+    message?: string,
+  ): Promise<void> {
+    await this.api.post(`/v1/agent/commands/${agentId}/confirm`, {
+      command,
+      success,
+      message,
+    });
+  }
 }

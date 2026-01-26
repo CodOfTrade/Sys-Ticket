@@ -13,6 +13,7 @@ import Resources from '@pages/Resources';
 import ResourceDetails from '@pages/ResourceDetails';
 import ResourceLicenses from '@pages/ResourceLicenses';
 import ContractQuotas from '@pages/ContractQuotas';
+import AgentDownload from '@pages/AgentDownload';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,7 @@ function App() {
             <Route path="resources/:id" element={<ResourceDetails />} />
             <Route path="licenses" element={<ResourceLicenses />} />
             <Route path="quotas" element={<ContractQuotas />} />
+            <Route path="downloads/agent" element={<AgentDownload />} />
             <Route path="timesheets" element={
               <div className="text-gray-600 dark:text-gray-400">Página em desenvolvimento...</div>
             } />

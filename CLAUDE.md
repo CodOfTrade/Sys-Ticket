@@ -58,20 +58,33 @@ ssh root@172.31.255.26 "cd /root/Sys-Ticket && git pull && cd apps/backend && np
 ssh root@172.31.255.26 "cd /root/Sys-Ticket && git pull && cd apps/frontend && npm run build && rm -rf /var/www/sys-ticket/* && cp -r dist/* /var/www/sys-ticket/"
 ```
 
-**Agent Desktop (Build no Servidor Linux com Wine):**
+**Agent Desktop (Build + Publicação no Servidor Linux com Wine):**
 ```bash
-ssh root@172.31.255.26 "cd /root/Sys-Ticket && git pull && cd apps/agent-desktop && npm install && npm run build:win"
+ssh root@172.31.255.26 "cd /root/Sys-Ticket && git pull && cd apps/agent-desktop && npm install && npm run build:win && chmod +x ./scripts/publish-release.sh && ./scripts/publish-release.sh"
 ```
 
-**Baixar EXEs gerados:**
-```bash
-# Via SCP do servidor para o Windows local
-scp root@172.31.255.26:/root/Sys-Ticket/apps/agent-desktop/release/*.exe "c:\Users\josed\Downloads\"
+**URLs de Download (após publicação):**
+- **Instalador**: https://172.31.255.26/api/v1/downloads/agent/installer
+- **Portátil**: https://172.31.255.26/api/v1/downloads/agent/portable
+- **Versões**: https://172.31.255.26/api/v1/downloads/agent/versions
+
+**Página Web de Download:**
+- https://172.31.255.26/downloads/agent
+
+**Estrutura de Arquivos no Servidor:**
+```
+/root/Sys-Ticket/apps/agent-desktop/release/
+├── latest/                              # Sempre aponta para versão mais recente
+│   ├── Sys-Ticket-Agent-Setup.exe
+│   └── Sys-Ticket-Agent-Portable.exe
+├── {version}/                           # Histórico de versões
+└── versions.json                        # Metadados de versões
 ```
 
-**Arquivos gerados no servidor:**
-- `/root/Sys-Ticket/apps/agent-desktop/release/Sys-Ticket Agent-Setup-1.0.0.exe` (Instalador)
-- `/root/Sys-Ticket/apps/agent-desktop/release/Sys-Ticket Agent-Portable-1.0.0.exe` (Portátil)
+**Baixar EXEs manualmente (opcional):**
+```bash
+scp root@172.31.255.26:/root/Sys-Ticket/apps/agent-desktop/release/latest/*.exe "c:\Users\josed\Downloads\"
+```
 
 ---
 

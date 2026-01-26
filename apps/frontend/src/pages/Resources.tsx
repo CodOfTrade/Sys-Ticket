@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Search, Filter, Eye, Trash2, Monitor, Printer, Server, HardDrive, Network, Circle } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
+import { useResourcesSocket } from '@/hooks/useResourcesSocket';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -45,6 +46,17 @@ export default function Resources() {
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const perPage = 20;
+
+  // WebSocket para atualizações em tempo real
+  useResourcesSocket({
+    enabled: true,
+    onStatusChanged: () => {
+      queryClient.invalidateQueries({ queryKey: ['resources-stats'] });
+    },
+    onRegistered: () => {
+      queryClient.invalidateQueries({ queryKey: ['resources-stats'] });
+    },
+  });
 
   // Query para buscar recursos
   const { data, isLoading } = useQuery({

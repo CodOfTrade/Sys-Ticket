@@ -18,6 +18,8 @@ export enum ResourceEventType {
   LICENSE_ASSIGNED = 'license_assigned',
   LICENSE_REMOVED = 'license_removed',
   RETIRED = 'retired',
+  COMMAND_SENT = 'command_sent',
+  COMMAND_EXECUTED = 'command_executed',
 }
 
 @Entity('resource_history')

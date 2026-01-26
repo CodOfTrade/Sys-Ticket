@@ -1,8 +1,9 @@
 import { Injectable, Logger, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { randomUUID } from 'crypto';
-import { Resource, ResourceType, ResourceStatus } from '../entities/resource.entity';
+import { Resource, ResourceType, ResourceStatus, AntivirusStatus } from '../entities/resource.entity';
 import { AgentTicket } from '../entities/agent-ticket.entity';
 import { Ticket, TicketStatus, TicketPriority, TicketType } from '../../tickets/entities/ticket.entity';
 import { ServiceDesk } from '../../service-desks/entities/service-desk.entity';
@@ -32,6 +33,7 @@ export class AgentService {
     private sigeClientRepository: Repository<SigeClient>,
     @Inject(forwardRef(() => ClientsService))
     private clientsService: ClientsService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -194,6 +196,14 @@ export class AgentService {
       }
     }
 
+    // Emitir evento para WebSocket
+    this.eventEmitter.emit('resource.registered', {
+      resourceId: resource.id,
+      resourceCode: resource.resource_code,
+      clientId: resource.client_id,
+      hostname: resource.hostname,
+    });
+
     return {
       agentId: resource.agent_id,
       agentToken: resource.agent_token,
@@ -227,6 +237,16 @@ export class AgentService {
     // Antivírus
     if (systemInfo.antivirus) {
       resource.antivirus_name = systemInfo.antivirus.name;
+      resource.antivirus_last_updated = new Date();
+
+      // Determinar status baseado em enabled e upToDate
+      if (!systemInfo.antivirus.enabled) {
+        resource.antivirus_status = AntivirusStatus.INACTIVE;
+      } else if (!systemInfo.antivirus.upToDate) {
+        resource.antivirus_status = AntivirusStatus.OUTDATED;
+      } else {
+        resource.antivirus_status = AntivirusStatus.ACTIVE;
+      }
     }
 
     // Specs completas
@@ -264,6 +284,13 @@ export class AgentService {
 
     await this.resourceRepository.save(resource);
     this.logger.debug(`Heartbeat recebido de ${dto.agentId}`);
+
+    // Emitir evento para WebSocket
+    this.eventEmitter.emit('resource.heartbeat', {
+      resourceId: resource.id,
+      quickStatus: dto.quickStatus,
+      timestamp: dto.timestamp,
+    });
   }
 
   /**
@@ -409,5 +436,77 @@ export class AgentService {
       createdAt: at.ticket.created_at,
       updatedAt: at.ticket.updated_at,
     }));
+  }
+
+  /**
+   * Busca comando pendente para um agente
+   */
+  async getPendingCommand(agentId: string): Promise<{
+    command: string | null;
+    commandAt: Date | null;
+  }> {
+    const resource = await this.resourceRepository.findOne({
+      where: { agent_id: agentId },
+    });
+
+    if (!resource) {
+      throw new NotFoundException(`Agente não encontrado: ${agentId}`);
+    }
+
+    return {
+      command: resource.pending_command,
+      commandAt: resource.pending_command_at,
+    };
+  }
+
+  /**
+   * Confirma execução de comando pelo agente
+   */
+  async confirmCommandExecution(
+    agentId: string,
+    command: string,
+    success: boolean,
+    message?: string,
+  ): Promise<void> {
+    const resource = await this.resourceRepository.findOne({
+      where: { agent_id: agentId },
+    });
+
+    if (!resource) {
+      throw new NotFoundException(`Agente não encontrado: ${agentId}`);
+    }
+
+    const executedCommand = resource.pending_command;
+
+    // Limpar comando pendente
+    resource.pending_command = null;
+    resource.pending_command_at = null;
+
+    // Se foi uninstall bem-sucedido, limpar dados do agente
+    if (success && command === 'uninstall') {
+      resource.agent_id = null;
+      resource.agent_token = null;
+      resource.agent_version = null;
+      resource.agent_installed_at = null;
+      resource.agent_last_heartbeat = null;
+      resource.is_online = false;
+      resource.status = ResourceStatus.INACTIVE;
+    }
+
+    await this.resourceRepository.save(resource);
+
+    // Emitir evento de atualização
+    this.eventEmitter.emit('resource.updated', {
+      resourceId: resource.id,
+      changes: {
+        commandExecuted: executedCommand,
+        success,
+        message,
+      },
+    });
+
+    this.logger.log(
+      `Comando '${executedCommand}' ${success ? 'executado' : 'falhou'} no recurso ${resource.resource_code}`,
+    );
   }
 }

@@ -43,6 +43,8 @@ export enum ResourceEventType {
   LICENSE_ASSIGNED = 'license_assigned',
   LICENSE_REMOVED = 'license_removed',
   RETIRED = 'retired',
+  COMMAND_SENT = 'command_sent',
+  COMMAND_EXECUTED = 'command_executed',
 }
 
 export interface Resource {
@@ -70,6 +72,8 @@ export interface Resource {
   agent_version?: string;
   agent_installed_at?: string;
   agent_last_heartbeat?: string;
+  pending_command?: string;
+  pending_command_at?: string;
   specifications?: Record<string, any>;
   installed_software?: Record<string, any>;
   os_name?: string;

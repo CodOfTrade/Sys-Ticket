@@ -24,6 +24,7 @@ import { EmailModule } from './modules/email/email.module';
 import { ProductsModule } from './modules/products/products.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { ResourcesModule } from './modules/resources/resources.module';
+import { DownloadsModule } from './modules/downloads/downloads.module';
 
 // Guards
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -92,6 +93,7 @@ import { HealthController } from './health/health.controller';
     ProductsModule,
     SettingsModule,
     ResourcesModule,
+    DownloadsModule,
   ],
   controllers: [HealthController],
   providers: [

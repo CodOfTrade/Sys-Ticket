@@ -145,4 +145,80 @@ export class AgentController {
       data: tickets,
     };
   }
+
+  @Get('commands/:agentId')
+  @Public()
+  @UseGuards(AgentTokenGuard)
+  @ApiOperation({ summary: 'Buscar comando pendente para o agente' })
+  @ApiHeader({ name: 'X-Agent-Token', description: 'Token do agente', required: true })
+  @ApiResponse({
+    status: 200,
+    description: 'Comando pendente (ou null se não houver)',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          command: 'uninstall',
+          commandAt: '2026-01-26T12:00:00Z',
+        },
+      },
+    },
+  })
+  async getPendingCommand(@Param('agentId') agentId: string, @Req() req: any) {
+    // Validar que o agentId do path corresponde ao token
+    if (req.agentId !== agentId) {
+      return {
+        success: false,
+        message: 'Acesso negado',
+        data: null,
+      };
+    }
+
+    const pendingCommand = await this.agentService.getPendingCommand(agentId);
+    return {
+      success: true,
+      data: pendingCommand,
+    };
+  }
+
+  @Post('commands/:agentId/confirm')
+  @Public()
+  @UseGuards(AgentTokenGuard)
+  @ApiOperation({ summary: 'Confirmar execução de comando pelo agente' })
+  @ApiHeader({ name: 'X-Agent-Token', description: 'Token do agente', required: true })
+  @ApiResponse({
+    status: 200,
+    description: 'Confirmação recebida',
+    schema: {
+      example: {
+        success: true,
+        message: 'Comando confirmado',
+      },
+    },
+  })
+  async confirmCommand(
+    @Param('agentId') agentId: string,
+    @Body() body: { command: string; success: boolean; message?: string },
+    @Req() req: any,
+  ) {
+    // Validar que o agentId do path corresponde ao token
+    if (req.agentId !== agentId) {
+      return {
+        success: false,
+        message: 'Acesso negado',
+      };
+    }
+
+    await this.agentService.confirmCommandExecution(
+      agentId,
+      body.command,
+      body.success,
+      body.message,
+    );
+
+    return {
+      success: true,
+      message: 'Comando confirmado',
+    };
+  }
 }

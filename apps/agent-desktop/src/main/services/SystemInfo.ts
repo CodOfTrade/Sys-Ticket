@@ -1,7 +1,102 @@
 import si from 'systeminformation';
+import { execSync } from 'child_process';
 import { SystemInfo } from '@shared/types';
 
+interface AntivirusInfo {
+  name: string;
+  enabled: boolean;
+  upToDate: boolean;
+}
+
 export class SystemInfoService {
+  /**
+   * Detecta antivírus instalado via Windows Security Center (WMI)
+   * Funciona no Windows 10/11 com Windows Defender e antivírus de terceiros
+   */
+  private async getAntivirusInfo(): Promise<AntivirusInfo | undefined> {
+    if (process.platform !== 'win32') {
+      return undefined;
+    }
+
+    try {
+      // Query WMI para produtos antivírus registrados no Security Center
+      const psScript = `
+        $avProducts = Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntivirusProduct -ErrorAction SilentlyContinue
+        if ($avProducts) {
+          $av = $avProducts | Select-Object -First 1
+          @{
+            displayName = $av.displayName
+            productState = $av.productState
+          } | ConvertTo-Json -Compress
+        } else {
+          @{ displayName = $null; productState = 0 } | ConvertTo-Json -Compress
+        }
+      `.replace(/\n/g, ' ');
+
+      const result = execSync(
+        `powershell -NoProfile -NonInteractive -Command "${psScript}"`,
+        { encoding: 'utf8', timeout: 15000 }
+      );
+
+      const avInfo = JSON.parse(result.trim());
+
+      if (!avInfo.displayName) {
+        // Fallback: tentar detectar Windows Defender diretamente
+        return this.getWindowsDefenderStatus();
+      }
+
+      // Decodificar productState (bitmap do Windows Security Center)
+      // Bit 12 (0x1000): Proteção em tempo real ativa
+      // Bit 4 (0x10): Definições desatualizadas
+      const state = avInfo.productState || 0;
+      const enabled = (state & 0x1000) !== 0;
+      const upToDate = (state & 0x10) === 0;
+
+      return {
+        name: avInfo.displayName,
+        enabled,
+        upToDate,
+      };
+    } catch (error) {
+      console.error('Erro ao detectar antivírus via SecurityCenter2:', error);
+      // Tentar fallback para Windows Defender
+      return this.getWindowsDefenderStatus();
+    }
+  }
+
+  /**
+   * Fallback: detectar status do Windows Defender diretamente
+   */
+  private async getWindowsDefenderStatus(): Promise<AntivirusInfo | undefined> {
+    try {
+      const psScript = `
+        $status = Get-MpComputerStatus -ErrorAction SilentlyContinue
+        if ($status) {
+          @{
+            name = 'Windows Defender'
+            enabled = $status.RealTimeProtectionEnabled
+            upToDate = $status.AntivirusSignatureLastUpdated -gt (Get-Date).AddDays(-7)
+          } | ConvertTo-Json -Compress
+        } else {
+          $null
+        }
+      `.replace(/\n/g, ' ');
+
+      const result = execSync(
+        `powershell -NoProfile -NonInteractive -Command "${psScript}"`,
+        { encoding: 'utf8', timeout: 15000 }
+      );
+
+      if (result && result.trim() && result.trim() !== 'null') {
+        return JSON.parse(result.trim());
+      }
+    } catch (error) {
+      console.error('Erro ao detectar Windows Defender:', error);
+    }
+
+    return undefined;
+  }
+
   /**
    * Coleta informações completas do sistema
    */
@@ -14,12 +109,11 @@ export class SystemInfoService {
       si.networkInterfaces(),
     ]);
 
-    // Tentar coletar informações do antivírus (apenas Windows)
-    let antivirusInfo = undefined;
+    // Coletar informações do antivírus (apenas Windows)
+    let antivirusInfo: AntivirusInfo | undefined = undefined;
     if (process.platform === 'win32') {
       try {
-        // TODO: Implementar detecção de antivírus via WMI
-        // Por enquanto, deixar undefined
+        antivirusInfo = await this.getAntivirusInfo();
       } catch (error) {
         console.error('Erro ao coletar informações do antivírus:', error);
       }

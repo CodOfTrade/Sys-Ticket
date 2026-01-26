@@ -73,6 +73,16 @@ export class ResourcesController {
     return this.resourcesService.retire(id, userId);
   }
 
+  @Post(':id/command')
+  async sendCommand(
+    @Param('id') id: string,
+    @Body('command') command: string,
+    @Req() req: any,
+  ) {
+    const userId = req.user?.id;
+    return this.resourcesService.sendCommand(id, command, userId);
+  }
+
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return this.resourcesService.remove(id);

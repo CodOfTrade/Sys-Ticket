@@ -1,9 +1,10 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog, Notification } from 'electron';
 import path from 'path';
+import { execSync } from 'child_process';
 import { StorageService } from './services/StorageService';
 import { ApiService } from './services/ApiService';
 import { SystemInfoService } from './services/SystemInfo';
-import { HeartbeatService } from './services/HeartbeatService';
+import { HeartbeatService, CommandHandler } from './services/HeartbeatService';
 
 // Variáveis globais
 let mainWindow: BrowserWindow | null = null;
@@ -16,6 +17,134 @@ let isQuitting = false;
 
 // Constantes
 const isDev = !app.isPackaged;
+
+/**
+ * Handler de comandos remotos
+ */
+const handleRemoteCommand: CommandHandler = async (command: string) => {
+  console.log(`Executando comando remoto: ${command}`);
+
+  switch (command) {
+    case 'uninstall':
+      return await handleUninstallCommand();
+
+    case 'restart':
+      return await handleRestartCommand();
+
+    case 'update':
+      return { success: false, message: 'Comando de atualização ainda não implementado' };
+
+    case 'collect_info':
+      return await handleCollectInfoCommand();
+
+    default:
+      return { success: false, message: `Comando desconhecido: ${command}` };
+  }
+};
+
+/**
+ * Comando: Desinstalar agente
+ */
+async function handleUninstallCommand(): Promise<{ success: boolean; message?: string }> {
+  try {
+    console.log('Iniciando desinstalação remota...');
+
+    // Parar heartbeat
+    if (heartbeatService) {
+      heartbeatService.stop();
+    }
+
+    // Limpar configuração
+    const emptyConfig = {
+      apiUrl: storageService.loadConfig().apiUrl,
+      configured: false,
+    };
+    storageService.saveConfig(emptyConfig);
+
+    // Mostrar notificação
+    if (Notification.isSupported()) {
+      const notification = new Notification({
+        title: 'Sys-Ticket Agent',
+        body: 'O agente foi desinstalado remotamente. A aplicação será fechada.',
+      });
+      notification.show();
+    }
+
+    // Se instalado via NSIS, executar uninstaller
+    if (!isDev && process.platform === 'win32') {
+      try {
+        const uninstallerPath = path.join(
+          process.env.LOCALAPPDATA || '',
+          'Programs',
+          'sys-ticket-agent',
+          'Uninstall Sys-Ticket Agent.exe',
+        );
+
+        // Executar desinstalador silenciosamente em background
+        execSync(`start "" /B "${uninstallerPath}" /S`, {
+          shell: 'cmd.exe',
+          stdio: 'ignore',
+        });
+      } catch (uninstallError) {
+        console.error('Erro ao executar desinstalador:', uninstallError);
+        // Se não encontrar o uninstaller, apenas fechar o app
+      }
+    }
+
+    // Aguardar um pouco antes de fechar
+    setTimeout(() => {
+      isQuitting = true;
+      app.quit();
+    }, 2000);
+
+    return { success: true, message: 'Desinstalação iniciada' };
+  } catch (error: any) {
+    console.error('Erro na desinstalação:', error);
+    return { success: false, message: error.message || 'Erro na desinstalação' };
+  }
+}
+
+/**
+ * Comando: Reiniciar agente
+ */
+async function handleRestartCommand(): Promise<{ success: boolean; message?: string }> {
+  try {
+    console.log('Reiniciando agente...');
+
+    // Usar app.relaunch() para reiniciar
+    app.relaunch();
+
+    setTimeout(() => {
+      isQuitting = true;
+      app.quit();
+    }, 1000);
+
+    return { success: true, message: 'Agente será reiniciado' };
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Erro ao reiniciar' };
+  }
+}
+
+/**
+ * Comando: Coletar informações do sistema
+ */
+async function handleCollectInfoCommand(): Promise<{ success: boolean; message?: string }> {
+  try {
+    console.log('Coletando informações do sistema...');
+
+    const config = storageService.loadConfig();
+    if (!config.agentId) {
+      return { success: false, message: 'Agente não configurado' };
+    }
+
+    const systemInfo = await systemInfoService.collectFullSystemInfo();
+    await apiService.updateInventory(config.agentId, systemInfo);
+
+    return { success: true, message: 'Informações coletadas e enviadas' };
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Erro ao coletar informações' };
+  }
+}
 
 function getRendererPath() {
   if (isDev) {
@@ -187,6 +316,7 @@ function initializeServices() {
       systemInfoService,
       config.agentId
     );
+    heartbeatService.setCommandHandler(handleRemoteCommand);
     heartbeatService.start();
   }
 }
@@ -241,6 +371,7 @@ function registerIpcHandlers() {
         systemInfoService,
         response.agentId
       );
+      heartbeatService.setCommandHandler(handleRemoteCommand);
       heartbeatService.start();
 
       updateTrayMenu();

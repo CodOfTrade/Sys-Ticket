@@ -18,6 +18,7 @@ import { ResourcesController } from './controllers/resources.controller';
 import { ResourceLicensesController } from './controllers/resource-licenses.controller';
 import { ContractQuotasController } from './controllers/contract-quotas.controller';
 import { AgentController } from './controllers/agent.controller';
+import { ResourcesGateway } from './gateways/resources.gateway';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { AgentController } from './controllers/agent.controller';
     ResourceLicensesService,
     ContractQuotasService,
     AgentService,
+    ResourcesGateway,
   ],
   exports: [
     ResourcesService,
