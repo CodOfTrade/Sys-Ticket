@@ -365,16 +365,16 @@ export class ResourcesService {
     const executedCommand = resource.pending_command;
 
     // Limpar comando pendente
-    resource.pending_command = null;
-    resource.pending_command_at = null;
+    resource.pending_command = undefined;
+    resource.pending_command_at = undefined;
 
     // Se foi uninstall bem-sucedido, limpar dados do agente
     if (success && command === RemoteCommand.UNINSTALL) {
-      resource.agent_id = null;
-      resource.agent_token = null;
-      resource.agent_version = null;
-      resource.agent_installed_at = null;
-      resource.agent_last_heartbeat = null;
+      resource.agent_id = undefined;
+      resource.agent_token = undefined;
+      resource.agent_version = undefined;
+      resource.agent_installed_at = undefined;
+      resource.agent_last_heartbeat = undefined;
       resource.is_online = false;
       resource.status = ResourceStatus.INACTIVE;
     }
@@ -386,9 +386,9 @@ export class ResourcesService {
       resource.id,
       ResourceEventType.COMMAND_EXECUTED,
       `Comando '${executedCommand}' ${success ? 'executado com sucesso' : 'falhou'}: ${message || ''}`,
-      null,
+      undefined,
       { command: executedCommand, success, message },
-      null,
+      undefined,
       true,
     );
 
