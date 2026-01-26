@@ -21,7 +21,7 @@ interface VersionsJson {
 }
 
 @ApiTags('Downloads')
-@Controller('v1/downloads')
+@Controller('downloads')
 export class DownloadsController {
   private readonly logger = new Logger(DownloadsController.name);
   private readonly RELEASES_PATH = '/root/Sys-Ticket/apps/agent-desktop/release';
