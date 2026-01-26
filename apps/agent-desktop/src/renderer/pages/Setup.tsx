@@ -34,6 +34,7 @@ export function Setup({ onComplete }: SetupProps) {
   const [assignedUserPhone, setAssignedUserPhone] = useState('');
   const [resourceCode, setResourceCode] = useState('');
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
+  const [appVersion, setAppVersion] = useState<string>('1.0.0');
 
   useEffect(() => {
     loadInitialData();
@@ -59,8 +60,12 @@ export function Setup({ onComplete }: SetupProps) {
     try {
       const hostname = await window.electronAPI.getHostname();
       setMachineName(hostname);
+
+      // Carregar versão do app
+      const version = await window.electronAPI.getAppVersion();
+      setAppVersion(version);
     } catch (error) {
-      console.error('Erro ao carregar hostname:', error);
+      console.error('Erro ao carregar dados iniciais:', error);
     }
   };
 
@@ -193,6 +198,7 @@ export function Setup({ onComplete }: SetupProps) {
         assignedUserEmail: assignedUserEmail || undefined,
         assignedUserPhone: assignedUserPhone || undefined,
         resourceCode: resourceCode || undefined,
+        agentVersion: appVersion,
         systemInfo,
       };
 

@@ -77,6 +77,7 @@ export interface RegistrationData {
   assignedUserEmail?: string;
   assignedUserPhone?: string;
   resourceCode?: string;
+  agentVersion?: string;
   systemInfo: SystemInfo;
 }
 

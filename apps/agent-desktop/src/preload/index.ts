@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Sistema
   getSystemInfo: (): Promise<SystemInfo> => ipcRenderer.invoke('get-system-info'),
   getHostname: (): Promise<string> => ipcRenderer.invoke('get-hostname'),
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke('get-app-version'),
 
   // API
   testConnection: (apiUrl: string): Promise<boolean> =>
@@ -48,6 +49,7 @@ declare global {
       registerAgent: (data: RegistrationData) => Promise<any>;
       getSystemInfo: () => Promise<SystemInfo>;
       getHostname: () => Promise<string>;
+      getAppVersion: () => Promise<string>;
       testConnection: (apiUrl: string) => Promise<boolean>;
       getClients: () => Promise<any[]>;
       getClientContracts: (clientId: string) => Promise<any[]>;

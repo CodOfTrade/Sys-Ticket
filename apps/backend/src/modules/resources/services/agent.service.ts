@@ -105,6 +105,7 @@ export class AgentService {
 
       // Gerar novo token
       resource.agent_token = this.generateAgentToken();
+      resource.agent_version = dto.agentVersion || '1.0.0';
       resource.agent_installed_at = new Date();
       resource.agent_last_heartbeat = new Date();
       resource.is_online = true;
@@ -156,6 +157,7 @@ export class AgentService {
         hostname: systemInfo.os.hostname,
         agent_id: agentId,
         agent_token: agentToken,
+        agent_version: dto.agentVersion || '1.0.0',
         agent_installed_at: new Date(),
         agent_last_heartbeat: new Date(),
       });

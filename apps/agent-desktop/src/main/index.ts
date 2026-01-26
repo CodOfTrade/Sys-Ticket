@@ -392,6 +392,11 @@ function registerIpcHandlers() {
     return await systemInfoService.getHostname();
   });
 
+  // Obter versão do app
+  ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
+  });
+
   // Testar conexão com API
   ipcMain.handle('test-connection', async (_, apiUrl) => {
     const testApi = new ApiService(apiUrl);

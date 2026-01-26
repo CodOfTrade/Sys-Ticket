@@ -201,6 +201,11 @@ export class RegisterAgentDto {
   })
   resourceCode?: string;
 
+  @ApiPropertyOptional({ description: 'Versão do agente' })
+  @IsOptional()
+  @IsString()
+  agentVersion?: string;
+
   @ApiProperty({ description: 'Informações do sistema', type: SystemInfoDto })
   @ValidateNested()
   @Type(() => SystemInfoDto)

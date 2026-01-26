@@ -191,10 +191,25 @@ export default function ResourceDetails() {
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {resource.name}
                 </h1>
-                {resource.is_online && (
+                {resource.is_online ? (
                   <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400">
                     <Circle className="fill-green-500" size={8} />
                     Online
+                    {resource.agent_last_heartbeat && (
+                      <span className="text-gray-400 dark:text-gray-500 ml-1">
+                        • {format(new Date(resource.agent_last_heartbeat), 'HH:mm', { locale: ptBR })}
+                      </span>
+                    )}
+                  </span>
+                ) : resource.agent_id && (
+                  <span className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                    <Circle className="fill-gray-400" size={8} />
+                    Offline
+                    {resource.agent_last_heartbeat && (
+                      <span className="ml-1">
+                        • {format(new Date(resource.agent_last_heartbeat), 'dd/MM HH:mm', { locale: ptBR })}
+                      </span>
+                    )}
                   </span>
                 )}
               </div>

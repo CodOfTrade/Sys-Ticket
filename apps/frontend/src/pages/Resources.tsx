@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, Eye, Trash2, Monitor, Printer, Server, HardDrive, Network, Circle } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Trash2, Monitor, Printer, Server, HardDrive, Network, Circle, Download, ChevronDown } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
 import { useResourcesSocket } from '@/hooks/useResourcesSocket';
@@ -44,8 +44,21 @@ export default function Resources() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [onlineFilter, setOnlineFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [page, setPage] = useState(1);
   const perPage = 20;
+  const downloadMenuRef = useRef<HTMLDivElement>(null);
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (downloadMenuRef.current && !downloadMenuRef.current.contains(event.target as Node)) {
+        setShowDownloadMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // WebSocket para atualizações em tempo real
   useResourcesSocket({
@@ -112,13 +125,53 @@ export default function Resources() {
             Gerencie computadores, impressoras, licenças e mais
           </p>
         </div>
-        <Link
-          to="/resources/new"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-        >
-          <Plus size={20} />
-          Novo Recurso
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* Download Agente Dropdown */}
+          <div className="relative" ref={downloadMenuRef}>
+            <button
+              onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+            >
+              <Download size={20} />
+              Download Agente
+              <ChevronDown size={16} className={`transition-transform ${showDownloadMenu ? 'rotate-180' : ''}`} />
+            </button>
+            {showDownloadMenu && (
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+                <a
+                  href="/api/v1/downloads/agent/installer"
+                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={() => setShowDownloadMenu(false)}
+                >
+                  <Download size={16} className="text-blue-500" />
+                  <div>
+                    <p className="font-medium">Instalador (NSIS)</p>
+                    <p className="text-xs text-gray-500">Recomendado - com auto-start</p>
+                  </div>
+                </a>
+                <a
+                  href="/api/v1/downloads/agent/portable"
+                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={() => setShowDownloadMenu(false)}
+                >
+                  <Download size={16} className="text-green-500" />
+                  <div>
+                    <p className="font-medium">Portátil (EXE)</p>
+                    <p className="text-xs text-gray-500">Sem instalação</p>
+                  </div>
+                </a>
+              </div>
+            )}
+          </div>
+
+          <Link
+            to="/resources/new"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            <Plus size={20} />
+            Novo Recurso
+          </Link>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -306,8 +359,16 @@ export default function Resources() {
                               <p className="font-medium text-gray-900 dark:text-white">
                                 {resource.name}
                               </p>
-                              {resource.is_online && (
-                                <Circle className="text-green-500 fill-green-500" size={8} />
+                              {resource.is_online ? (
+                                <span className="flex items-center gap-1 text-xs text-green-600">
+                                  <Circle className="text-green-500 fill-green-500" size={8} />
+                                  {resource.agent_last_heartbeat && format(new Date(resource.agent_last_heartbeat), 'HH:mm', { locale: ptBR })}
+                                </span>
+                              ) : resource.agent_id && (
+                                <span className="flex items-center gap-1 text-xs text-gray-400">
+                                  <Circle className="fill-gray-400" size={8} />
+                                  {resource.agent_last_heartbeat && format(new Date(resource.agent_last_heartbeat), 'dd/MM HH:mm', { locale: ptBR })}
+                                </span>
                               )}
                             </div>
                             <p className="text-sm text-gray-500 dark:text-gray-400">

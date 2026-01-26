@@ -11,7 +11,6 @@ import {
   Building2,
   ClipboardCheck,
   HardDrive,
-  Download,
 } from 'lucide-react';
 import { settingsService } from '@/services/settings.service';
 
@@ -47,11 +46,6 @@ const menuItems: MenuItem[] = [
     title: 'Recursos',
     icon: <HardDrive size={20} />,
     path: '/resources',
-  },
-  {
-    title: 'Download Agente',
-    icon: <Download size={20} />,
-    path: '/downloads/agent',
   },
   {
     title: 'Apontamentos',
