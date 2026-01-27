@@ -4,11 +4,8 @@ import {
   LayoutDashboard,
   Ticket,
   Users,
-  Clock,
   Settings,
   FileText,
-  DollarSign,
-  Building2,
   ClipboardCheck,
   HardDrive,
   Key,
@@ -52,21 +49,6 @@ const menuItems: MenuItem[] = [
     title: 'Licenças',
     icon: <Key size={20} />,
     path: '/licenses',
-  },
-  {
-    title: 'Apontamentos',
-    icon: <Clock size={20} />,
-    path: '/timesheets',
-  },
-  {
-    title: 'Mesas de Serviço',
-    icon: <Building2 size={20} />,
-    path: '/service-desks',
-  },
-  {
-    title: 'Precificação',
-    icon: <DollarSign size={20} />,
-    path: '/pricing',
   },
   {
     title: 'Relatórios',
