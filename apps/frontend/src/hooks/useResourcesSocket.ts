@@ -46,6 +46,12 @@ interface ResourceCommandEvent {
   timestamp: string;
 }
 
+interface LicenseEvent {
+  type: 'created' | 'updated' | 'deleted';
+  licenseId: string;
+  timestamp: string;
+}
+
 interface UseResourcesSocketOptions {
   enabled?: boolean;
   onHeartbeat?: (event: ResourceHeartbeatEvent) => void;
@@ -154,6 +160,30 @@ export function useResourcesSocket(options: UseResourcesSocketOptions = {}) {
     socket.on('resource:command-sent', (event: ResourceCommandEvent) => {
       console.log('[WebSocket] Comando enviado:', event.resourceId, event.command);
       options.onCommandSent?.(event);
+    });
+
+    // ==================== EVENTOS DE LICENÇAS ====================
+
+    socket.on('license:created', (event: LicenseEvent) => {
+      console.log('[WebSocket] Licença criada:', event.licenseId);
+      // Invalidar todas as queries de licenças
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === 'licenses',
+      });
+    });
+
+    socket.on('license:updated', (event: LicenseEvent) => {
+      console.log('[WebSocket] Licença atualizada:', event.licenseId);
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === 'licenses',
+      });
+    });
+
+    socket.on('license:deleted', (event: LicenseEvent) => {
+      console.log('[WebSocket] Licença excluída:', event.licenseId);
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === 'licenses',
+      });
     });
 
     // Cleanup na desmontagem

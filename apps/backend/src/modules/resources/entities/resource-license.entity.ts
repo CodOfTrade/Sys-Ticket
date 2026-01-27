@@ -25,6 +25,12 @@ export enum LicenseStatus {
   SUSPENDED = 'suspended',
 }
 
+export enum ActivationType {
+  SERIAL = 'serial',      // Apenas chave serial (Windows, Antivirus)
+  ACCOUNT = 'account',    // Apenas conta/email (Microsoft 365)
+  HYBRID = 'hybrid',      // Serial + Conta (Office perpetuo)
+}
+
 @Entity('resource_licenses')
 export class ResourceLicense {
   @PrimaryGeneratedColumn('uuid')
@@ -33,6 +39,16 @@ export class ResourceLicense {
   // Identificação
   @Column({ type: 'varchar', length: 255, nullable: true })
   license_key: string;
+
+  @Column({
+    type: 'enum',
+    enum: ActivationType,
+    default: ActivationType.SERIAL,
+  })
+  activation_type: ActivationType;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  linked_email: string;
 
   @Column({
     type: 'enum',

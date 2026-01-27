@@ -3,7 +3,8 @@ import { Plus, Search, Filter, Key, AlertTriangle, Check, X, Loader2 } from 'luc
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
 import { clientService } from '@/services/client.service';
-import { LicenseStatus, LicenseType, CreateLicenseDto } from '@/types/resource.types';
+import { LicenseStatus, LicenseType, CreateLicenseDto, ActivationType } from '@/types/resource.types';
+import { useResourcesSocket } from '@/hooks/useResourcesSocket';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -29,10 +30,18 @@ const licenseStatusColors: Record<string, string> = {
   suspended: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
 };
 
+const activationTypeLabels: Record<string, string> = {
+  serial: 'Chave Serial',
+  account: 'Conta/Email',
+  hybrid: 'Híbrido (Serial + Conta)',
+};
+
 const initialFormData: CreateLicenseDto = {
   product_name: '',
   license_type: LicenseType.WINDOWS,
+  activation_type: ActivationType.SERIAL,
   license_key: '',
+  linked_email: '',
   product_version: '',
   client_id: '',
   contract_id: '',
@@ -52,6 +61,9 @@ export default function ResourceLicenses() {
   const [showFilters, setShowFilters] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [formData, setFormData] = useState<CreateLicenseDto>(initialFormData);
+
+  // WebSocket para atualizações em tempo real
+  useResourcesSocket({ enabled: true });
 
   // Query para buscar licenças
   const { data: licenses = [], isLoading } = useQuery({
@@ -81,7 +93,10 @@ export default function ResourceLicenses() {
     mutationFn: (data: CreateLicenseDto) => resourceService.createLicense(data),
     onSuccess: () => {
       toast.success('Licença criada com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['licenses'] });
+      // Usar predicate para invalidar TODAS as queries de licenças (com ou sem filtros)
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === 'licenses',
+      });
       setShowCreateModal(false);
       setFormData(initialFormData);
     },
@@ -95,7 +110,10 @@ export default function ResourceLicenses() {
     mutationFn: resourceService.deleteLicense,
     onSuccess: () => {
       toast.success('Licença excluída com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['licenses'] });
+      // Usar predicate para invalidar TODAS as queries de licenças
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === 'licenses',
+      });
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Erro ao excluir licença');
@@ -120,8 +138,14 @@ export default function ResourceLicenses() {
       return;
     }
 
+    // Limpar campos não relevantes baseado no tipo de ativação
+    const shouldHaveKey = formData.activation_type === 'serial' || formData.activation_type === 'hybrid';
+    const shouldHaveEmail = formData.activation_type === 'account' || formData.activation_type === 'hybrid';
+
     const data: CreateLicenseDto = {
       ...formData,
+      license_key: shouldHaveKey ? formData.license_key || undefined : undefined,
+      linked_email: shouldHaveEmail ? formData.linked_email || undefined : undefined,
       expiry_date: formData.is_perpetual ? undefined : formData.expiry_date || undefined,
       contract_id: formData.contract_id || undefined,
       cost: formData.cost ? Number(formData.cost) : undefined,
@@ -362,10 +386,16 @@ export default function ResourceLicenses() {
                           <p className="font-medium text-gray-900 dark:text-white">
                             {license.product_name}
                           </p>
-                          {license.product_version && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              v{license.product_version}
-                            </p>
+                          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            {license.product_version && <span>v{license.product_version}</span>}
+                            {license.activation_type && (
+                              <span className="inline-flex px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">
+                                {activationTypeLabels[license.activation_type] || license.activation_type}
+                              </span>
+                            )}
+                          </div>
+                          {license.linked_email && (
+                            <p className="text-xs text-blue-600 dark:text-blue-400">{license.linked_email}</p>
                           )}
                         </div>
                       </div>
@@ -544,19 +574,58 @@ export default function ResourceLicenses() {
                 </div>
               </div>
 
-              {/* Chave da Licença */}
+              {/* Tipo de Ativação */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Chave da Licença
+                  Tipo de Ativação *
                 </label>
-                <input
-                  type="text"
-                  value={formData.license_key || ''}
-                  onChange={(e) => setFormData({ ...formData, license_key: e.target.value })}
-                  placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"
-                />
+                <select
+                  value={formData.activation_type}
+                  onChange={(e) => setFormData({ ...formData, activation_type: e.target.value as ActivationType })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="serial">Chave Serial (Windows, Antivírus)</option>
+                  <option value="account">Conta/Email (Microsoft 365)</option>
+                  <option value="hybrid">Híbrido - Serial + Conta (Office perpétuo)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.activation_type === 'serial' && 'Apenas chave de produto para ativação'}
+                  {formData.activation_type === 'account' && 'Vinculada a uma conta de email'}
+                  {formData.activation_type === 'hybrid' && 'Serial para ativar, depois vincula a uma conta'}
+                </p>
               </div>
+
+              {/* Chave da Licença - mostrar para SERIAL e HYBRID */}
+              {(formData.activation_type === 'serial' || formData.activation_type === 'hybrid') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Chave da Licença
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.license_key || ''}
+                    onChange={(e) => setFormData({ ...formData, license_key: e.target.value })}
+                    placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"
+                  />
+                </div>
+              )}
+
+              {/* Email Vinculado - mostrar para ACCOUNT e HYBRID */}
+              {(formData.activation_type === 'account' || formData.activation_type === 'hybrid') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Email Vinculado
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.linked_email || ''}
+                    onChange={(e) => setFormData({ ...formData, linked_email: e.target.value })}
+                    placeholder="usuario@empresa.com"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+              )}
 
               {/* Perpétua / Validade */}
               <div className="space-y-3">

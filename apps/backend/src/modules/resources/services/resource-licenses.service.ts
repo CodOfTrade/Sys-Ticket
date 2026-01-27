@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere, LessThanOrEqual, In } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ResourceLicense, LicenseStatus } from '../entities/resource-license.entity';
 import { LicenseDeviceAssignment } from '../entities/license-device-assignment.entity';
 import { CreateLicenseDto } from '../dto/create-license.dto';
@@ -13,11 +14,17 @@ export class ResourceLicensesService {
     private readonly licenseRepository: Repository<ResourceLicense>,
     @InjectRepository(LicenseDeviceAssignment)
     private readonly assignmentRepository: Repository<LicenseDeviceAssignment>,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(createLicenseDto: CreateLicenseDto): Promise<ResourceLicense> {
     const license = this.licenseRepository.create(createLicenseDto);
-    return this.licenseRepository.save(license);
+    const saved = await this.licenseRepository.save(license);
+
+    // Emitir evento WebSocket
+    this.eventEmitter.emit('license.created', { licenseId: saved.id });
+
+    return saved;
   }
 
   async findAll(filters?: {
@@ -56,12 +63,20 @@ export class ResourceLicensesService {
   async update(id: string, updateLicenseDto: UpdateLicenseDto): Promise<ResourceLicense> {
     const license = await this.findOne(id);
     Object.assign(license, updateLicenseDto);
-    return this.licenseRepository.save(license);
+    const saved = await this.licenseRepository.save(license);
+
+    // Emitir evento WebSocket
+    this.eventEmitter.emit('license.updated', { licenseId: saved.id });
+
+    return saved;
   }
 
   async remove(id: string): Promise<void> {
     const license = await this.findOne(id);
     await this.licenseRepository.remove(license);
+
+    // Emitir evento WebSocket
+    this.eventEmitter.emit('license.deleted', { licenseId: id });
   }
 
   /**

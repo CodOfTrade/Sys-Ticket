@@ -33,6 +33,12 @@ export enum LicenseStatus {
   SUSPENDED = 'suspended',
 }
 
+export enum ActivationType {
+  SERIAL = 'serial',
+  ACCOUNT = 'account',
+  HYBRID = 'hybrid',
+}
+
 export enum ResourceEventType {
   CREATED = 'created',
   UPDATED = 'updated',
@@ -100,6 +106,8 @@ export interface Resource {
 export interface ResourceLicense {
   id: string;
   license_key?: string;
+  activation_type?: ActivationType;
+  linked_email?: string;
   license_type: LicenseType;
   product_name: string;
   product_version?: string;
@@ -249,6 +257,8 @@ export interface QueryResourceDto {
 
 export interface CreateLicenseDto {
   license_key?: string;
+  activation_type?: ActivationType;
+  linked_email?: string;
   license_type: LicenseType;
   product_name: string;
   product_version?: string;

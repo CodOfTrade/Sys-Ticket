@@ -1,10 +1,18 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsBoolean, IsDateString, IsObject, IsNumber, IsInt } from 'class-validator';
-import { LicenseType, LicenseStatus } from '../entities/resource-license.entity';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, IsBoolean, IsDateString, IsObject, IsNumber, IsInt, IsEmail } from 'class-validator';
+import { LicenseType, LicenseStatus, ActivationType } from '../entities/resource-license.entity';
 
 export class CreateLicenseDto {
   @IsString()
   @IsOptional()
   license_key?: string;
+
+  @IsEnum(ActivationType)
+  @IsOptional()
+  activation_type?: ActivationType;
+
+  @IsEmail()
+  @IsOptional()
+  linked_email?: string;
 
   @IsEnum(LicenseType)
   @IsNotEmpty()

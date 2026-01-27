@@ -140,6 +140,38 @@ export class ResourcesGateway
     });
   }
 
+  // ==================== EVENTOS DE LICENÇAS ====================
+
+  @OnEvent('license.created')
+  handleLicenseCreated(payload: { licenseId: string }) {
+    this.logger.log(`Evento license.created - ID: ${payload.licenseId}`);
+    this.server.to('resources-room').emit('license:created', {
+      type: 'created',
+      licenseId: payload.licenseId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  @OnEvent('license.updated')
+  handleLicenseUpdated(payload: { licenseId: string }) {
+    this.logger.log(`Evento license.updated - ID: ${payload.licenseId}`);
+    this.server.to('resources-room').emit('license:updated', {
+      type: 'updated',
+      licenseId: payload.licenseId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  @OnEvent('license.deleted')
+  handleLicenseDeleted(payload: { licenseId: string }) {
+    this.logger.log(`Evento license.deleted - ID: ${payload.licenseId}`);
+    this.server.to('resources-room').emit('license:deleted', {
+      type: 'deleted',
+      licenseId: payload.licenseId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   // Método público para emitir eventos manualmente se necessário
   emitToAll(event: string, data: any) {
     this.server.to('resources-room').emit(event, data);
