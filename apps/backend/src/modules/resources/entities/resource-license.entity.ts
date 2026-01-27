@@ -63,9 +63,9 @@ export class ResourceLicense {
   @Column({ type: 'varchar', length: 100, nullable: true })
   product_version: string;
 
-  // Cliente/Contrato
+  // Cliente/Contrato (client_id armazena o sige_id do cliente)
   @ManyToOne(() => SigeClient, { nullable: true })
-  @JoinColumn({ name: 'client_id', referencedColumnName: 'id' })
+  @JoinColumn({ name: 'client_id', referencedColumnName: 'sigeId' })
   client: SigeClient;
 
   @Column({ type: 'varchar', length: 100 })
