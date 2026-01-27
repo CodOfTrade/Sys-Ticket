@@ -21,6 +21,7 @@ import {
   Loader2,
   Plus,
   X,
+  Search,
 } from 'lucide-react';
 import { resourceService } from '@/services/resource.service';
 import { useResourcesSocket } from '@/hooks/useResourcesSocket';
@@ -67,6 +68,7 @@ export default function ResourceDetails() {
   const [activeTab, setActiveTab] = useState<TabType>('info');
   const [showUninstallConfirm, setShowUninstallConfirm] = useState(false);
   const [showLicenseModal, setShowLicenseModal] = useState(false);
+  const [licenseSearch, setLicenseSearch] = useState('');
 
   // Mutation para enviar comandos
   const sendCommandMutation = useMutation({
@@ -911,103 +913,160 @@ export default function ResourceDetails() {
       )}
 
       {/* Modal de Atribuição de Licença */}
-      {showLicenseModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <Key size={20} />
-                Atribuir Licença
-              </h3>
-              <button
-                onClick={() => setShowLicenseModal(false)}
-                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                <X size={20} />
-              </button>
-            </div>
+      {showLicenseModal && (() => {
+        // Filtrar licenças: apenas vigentes (não expiradas) e que correspondam à busca
+        const filteredLicenses = availableLicenses?.filter((license) => {
+          // Filtrar licenças expiradas
+          if (license.license_status === 'expired') return false;
+          if (license.expiry_date && !license.is_perpetual) {
+            const expiryDate = new Date(license.expiry_date);
+            if (expiryDate < new Date()) return false;
+          }
 
-            <div className="flex-1 overflow-y-auto">
-              {isLoadingLicenses ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="animate-spin text-blue-600" size={32} />
-                </div>
-              ) : availableLicenses && availableLicenses.length > 0 ? (
-                <div className="space-y-2">
-                  {availableLicenses.map((license) => {
-                    const remaining = license.max_activations
-                      ? license.max_activations - license.current_activations
-                      : null;
-                    return (
-                      <div
-                        key={license.id}
-                        className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Key className="text-blue-500" size={20} />
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white">
-                              {license.product_name}
-                            </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {license.license_type.toUpperCase()}
-                              {license.product_version && ` • v${license.product_version}`}
-                            </p>
-                            {license.max_activations && (
-                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                {remaining} de {license.max_activations} ativações disponíveis
-                              </p>
-                            )}
-                            {!license.max_activations && (
-                              <p className="text-xs text-green-500 dark:text-green-400 mt-1">
-                                Ativações ilimitadas
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => assignLicenseMutation.mutate({
-                            licenseId: license.id,
-                            resourceId: resource.id,
-                          })}
-                          disabled={assignLicenseMutation.isPending}
-                          className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 flex items-center gap-1"
+          // Filtrar por busca
+          if (licenseSearch.trim()) {
+            const searchLower = licenseSearch.toLowerCase();
+            const matchesProduct = license.product_name?.toLowerCase().includes(searchLower);
+            const matchesType = license.license_type?.toLowerCase().includes(searchLower);
+            const matchesVendor = license.vendor?.toLowerCase().includes(searchLower);
+            return matchesProduct || matchesType || matchesVendor;
+          }
+
+          return true;
+        }) || [];
+
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[80vh] flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Key size={20} />
+                  Atribuir Licença
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowLicenseModal(false);
+                    setLicenseSearch('');
+                  }}
+                  className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Campo de Busca */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  value={licenseSearch}
+                  onChange={(e) => setLicenseSearch(e.target.value)}
+                  placeholder="Buscar licença por nome, tipo ou fornecedor..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                Exibindo apenas licenças vigentes ({filteredLicenses.length} disponíveis)
+              </p>
+
+              <div className="flex-1 overflow-y-auto">
+                {isLoadingLicenses ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="animate-spin text-blue-600" size={32} />
+                  </div>
+                ) : filteredLicenses.length > 0 ? (
+                  <div className="space-y-2">
+                    {filteredLicenses.map((license) => {
+                      const remaining = license.max_activations
+                        ? license.max_activations - license.current_activations
+                        : null;
+                      return (
+                        <div
+                          key={license.id}
+                          className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
                         >
-                          {assignLicenseMutation.isPending ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <Plus size={14} />
-                          )}
-                          Atribuir
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Key className="mx-auto text-gray-300 dark:text-gray-600 mb-3" size={40} />
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Nenhuma licença disponível
-                  </p>
-                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                    Não há licenças cadastradas para este cliente ou todas atingiram o limite de ativações.
-                  </p>
-                </div>
-              )}
-            </div>
+                          <div className="flex items-center gap-3">
+                            <Key className="text-blue-500" size={20} />
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {license.product_name}
+                              </p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {license.license_type.toUpperCase()}
+                                {license.product_version && ` • v${license.product_version}`}
+                              </p>
+                              {license.max_activations && (
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                  {remaining} de {license.max_activations} ativações disponíveis
+                                </p>
+                              )}
+                              {!license.max_activations && (
+                                <p className="text-xs text-green-500 dark:text-green-400 mt-1">
+                                  Ativações ilimitadas
+                                </p>
+                              )}
+                              {license.expiry_date && !license.is_perpetual && (
+                                <p className="text-xs text-orange-500 dark:text-orange-400 mt-1">
+                                  Expira em: {format(new Date(license.expiry_date), 'dd/MM/yyyy', { locale: ptBR })}
+                                </p>
+                              )}
+                              {license.is_perpetual && (
+                                <p className="text-xs text-green-500 dark:text-green-400 mt-1">
+                                  Licença perpétua
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => assignLicenseMutation.mutate({
+                              licenseId: license.id,
+                              resourceId: resource.id,
+                            })}
+                            disabled={assignLicenseMutation.isPending}
+                            className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 flex items-center gap-1"
+                          >
+                            {assignLicenseMutation.isPending ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <Plus size={14} />
+                            )}
+                            Atribuir
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Key className="mx-auto text-gray-300 dark:text-gray-600 mb-3" size={40} />
+                    <p className="text-gray-500 dark:text-gray-400">
+                      {licenseSearch ? 'Nenhuma licença encontrada' : 'Nenhuma licença disponível'}
+                    </p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                      {licenseSearch
+                        ? 'Tente buscar por outro termo.'
+                        : 'Não há licenças vigentes cadastradas para este cliente ou todas atingiram o limite de ativações.'}
+                    </p>
+                  </div>
+                )}
+              </div>
 
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-              <button
-                onClick={() => setShowLicenseModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg"
-              >
-                Fechar
-              </button>
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowLicenseModal(false);
+                    setLicenseSearch('');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg"
+                >
+                  Fechar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
