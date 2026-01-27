@@ -172,6 +172,30 @@ export class ResourcesGateway
     });
   }
 
+  @OnEvent('license.assigned')
+  handleLicenseAssigned(payload: { licenseId: string; resourceId: string; license: any }) {
+    this.logger.log(`Evento license.assigned - License: ${payload.licenseId}, Resource: ${payload.resourceId}`);
+    this.server.to('resources-room').emit('license:assigned', {
+      type: 'assigned',
+      licenseId: payload.licenseId,
+      resourceId: payload.resourceId,
+      license: payload.license,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  @OnEvent('license.unassigned')
+  handleLicenseUnassigned(payload: { licenseId: string; resourceId: string; license: any }) {
+    this.logger.log(`Evento license.unassigned - License: ${payload.licenseId}, Resource: ${payload.resourceId}`);
+    this.server.to('resources-room').emit('license:unassigned', {
+      type: 'unassigned',
+      licenseId: payload.licenseId,
+      resourceId: payload.resourceId,
+      license: payload.license,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   // Método público para emitir eventos manualmente se necessário
   emitToAll(event: string, data: any) {
     this.server.to('resources-room').emit(event, data);

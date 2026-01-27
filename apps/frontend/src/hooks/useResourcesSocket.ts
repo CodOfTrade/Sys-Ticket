@@ -52,6 +52,14 @@ interface LicenseEvent {
   timestamp: string;
 }
 
+interface LicenseAssignmentEvent {
+  type: 'assigned' | 'unassigned';
+  licenseId: string;
+  resourceId: string;
+  license: any;
+  timestamp: string;
+}
+
 interface UseResourcesSocketOptions {
   enabled?: boolean;
   onHeartbeat?: (event: ResourceHeartbeatEvent) => void;
@@ -184,6 +192,24 @@ export function useResourcesSocket(options: UseResourcesSocketOptions = {}) {
       queryClient.invalidateQueries({
         predicate: (query) => query.queryKey[0] === 'licenses',
       });
+    });
+
+    socket.on('license:assigned', (event: LicenseAssignmentEvent) => {
+      console.log('[WebSocket] Licença atribuída:', event.licenseId, 'ao recurso:', event.resourceId);
+      // Invalidar queries de licenças
+      queryClient.invalidateQueries({ queryKey: ['licenses'] });
+      queryClient.invalidateQueries({ queryKey: ['available-licenses'] });
+      queryClient.invalidateQueries({ queryKey: ['resource-licenses', event.resourceId] });
+      queryClient.invalidateQueries({ queryKey: ['resource', event.resourceId] });
+    });
+
+    socket.on('license:unassigned', (event: LicenseAssignmentEvent) => {
+      console.log('[WebSocket] Licença removida:', event.licenseId, 'do recurso:', event.resourceId);
+      // Invalidar queries de licenças
+      queryClient.invalidateQueries({ queryKey: ['licenses'] });
+      queryClient.invalidateQueries({ queryKey: ['available-licenses'] });
+      queryClient.invalidateQueries({ queryKey: ['resource-licenses', event.resourceId] });
+      queryClient.invalidateQueries({ queryKey: ['resource', event.resourceId] });
     });
 
     // Cleanup na desmontagem

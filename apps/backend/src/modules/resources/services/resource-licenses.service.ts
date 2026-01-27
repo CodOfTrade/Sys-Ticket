@@ -121,19 +121,34 @@ export class ResourceLicensesService {
     });
     await this.assignmentRepository.save(assignment);
 
-    // Atualizar licenca
-    license.current_activations += 1;
-    license.license_status = LicenseStatus.ASSIGNED;
+    // Atualizar licenca usando update direto para evitar problemas com relacoes
+    const updateData: any = {
+      current_activations: license.current_activations + 1,
+      license_status: LicenseStatus.ASSIGNED,
+    };
+
     if (!license.activated_at) {
-      license.activated_at = new Date();
+      updateData.activated_at = new Date();
     }
 
     // Manter compatibilidade: Se e a primeira atribuicao, definir resource_id
     if (!license.resource_id) {
-      license.resource_id = resourceId;
+      updateData.resource_id = resourceId;
     }
 
-    return this.licenseRepository.save(license);
+    await this.licenseRepository.update(licenseId, updateData);
+
+    // Buscar licenca atualizada
+    const updatedLicense = await this.findOne(licenseId);
+
+    // Emitir evento WebSocket
+    this.eventEmitter.emit('license.assigned', {
+      licenseId,
+      resourceId,
+      license: updatedLicense,
+    });
+
+    return updatedLicense;
   }
 
   /**
@@ -154,23 +169,38 @@ export class ResourceLicensesService {
     // Remover assignment
     await this.assignmentRepository.remove(assignment);
 
-    // Atualizar licenca
-    license.current_activations = Math.max(0, license.current_activations - 1);
+    // Calcular nova contagem
+    const newActivations = Math.max(0, license.current_activations - 1);
+    const updateData: any = {
+      current_activations: newActivations,
+    };
 
     // Se nao tem mais dispositivos, marcar como disponivel
-    if (license.current_activations === 0) {
-      license.license_status = LicenseStatus.AVAILABLE;
-      license.resource_id = null;
-      license.deactivated_at = new Date();
+    if (newActivations === 0) {
+      updateData.license_status = LicenseStatus.AVAILABLE;
+      updateData.resource_id = null;
+      updateData.deactivated_at = new Date();
     } else if (license.resource_id === resourceId) {
       // Se era o resource_id principal, pegar outro
       const remainingAssignment = await this.assignmentRepository.findOne({
         where: { license_id: licenseId },
       });
-      license.resource_id = remainingAssignment?.resource_id || null;
+      updateData.resource_id = remainingAssignment?.resource_id || null;
     }
 
-    return this.licenseRepository.save(license);
+    await this.licenseRepository.update(licenseId, updateData);
+
+    // Buscar licenca atualizada
+    const updatedLicense = await this.findOne(licenseId);
+
+    // Emitir evento WebSocket
+    this.eventEmitter.emit('license.unassigned', {
+      licenseId,
+      resourceId,
+      license: updatedLicense,
+    });
+
+    return updatedLicense;
   }
 
   /**

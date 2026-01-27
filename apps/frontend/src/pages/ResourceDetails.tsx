@@ -929,7 +929,9 @@ export default function ResourceDetails() {
             const matchesProduct = license.product_name?.toLowerCase().includes(searchLower);
             const matchesType = license.license_type?.toLowerCase().includes(searchLower);
             const matchesVendor = license.vendor?.toLowerCase().includes(searchLower);
-            return matchesProduct || matchesType || matchesVendor;
+            const matchesClient = license.client?.nome?.toLowerCase().includes(searchLower) ||
+                                  license.client?.razaoSocial?.toLowerCase().includes(searchLower);
+            return matchesProduct || matchesType || matchesVendor || matchesClient;
           }
 
           return true;
@@ -996,6 +998,11 @@ export default function ResourceDetails() {
                                 {license.license_type.toUpperCase()}
                                 {license.product_version && ` • v${license.product_version}`}
                               </p>
+                              {license.client && (
+                                <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
+                                  Cliente: {license.client.nome || license.client.razaoSocial}
+                                </p>
+                              )}
                               {license.max_activations && (
                                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                                   {remaining} de {license.max_activations} ativações disponíveis
