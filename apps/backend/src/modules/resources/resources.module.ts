@@ -39,10 +39,12 @@ import { OfflineDetectionTask } from './tasks/offline-detection.task';
     forwardRef(() => ClientsModule),
   ],
   controllers: [
-    ResourcesController,
+    // IMPORTANTE: Controllers com rotas mais específicas devem vir ANTES dos genéricos
+    // /resources/licenses deve ser registrado antes de /resources/:id
     ResourceLicensesController,
     ContractQuotasController,
     AgentController,
+    ResourcesController, // Este tem @Get(':id') que capturaria "licenses" se viesse antes
   ],
   providers: [
     ResourcesService,
