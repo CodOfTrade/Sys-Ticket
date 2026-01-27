@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 import { Client } from '@services/client.service';
 import { contractService, Contract, ContractQuota, CreateQuotaDto } from '@services/contract.service';
 import ClientRequesters from './ClientRequesters';
-import { Monitor, Printer, Server, HardDrive, Shield, FileText, Settings, X, Save, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Monitor, Printer, Server, HardDrive, Shield, FileText, Settings, Save, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ClientDetailsProps {
   client: Client;
