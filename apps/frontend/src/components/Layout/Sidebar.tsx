@@ -11,6 +11,7 @@ import {
   Building2,
   ClipboardCheck,
   HardDrive,
+  Key,
 } from 'lucide-react';
 import { settingsService } from '@/services/settings.service';
 
@@ -46,6 +47,11 @@ const menuItems: MenuItem[] = [
     title: 'Recursos',
     icon: <HardDrive size={20} />,
     path: '/resources',
+  },
+  {
+    title: 'Licenças',
+    icon: <Key size={20} />,
+    path: '/licenses',
   },
   {
     title: 'Apontamentos',
