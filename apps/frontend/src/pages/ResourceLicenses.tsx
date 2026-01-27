@@ -72,7 +72,7 @@ export default function ResourceLicenses() {
   // Query para clientes (para o select)
   const { data: clientsData } = useQuery({
     queryKey: ['clients-list'],
-    queryFn: () => clientService.getAll({ perPage: 100 }),
+    queryFn: () => clientService.findAll(1, 100),
     enabled: showCreateModal,
   });
 
