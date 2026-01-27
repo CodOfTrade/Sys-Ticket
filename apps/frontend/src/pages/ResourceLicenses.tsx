@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Plus, Search, Filter, Key, AlertTriangle, Check, X, Loader2 } from 'lucide-react';
+import { Plus, Search, Filter, Key, AlertTriangle, Check, X, Loader2, Eye, Building2, Calendar, DollarSign, User, FileText, Copy } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
 import { clientService } from '@/services/client.service';
-import { LicenseStatus, LicenseType, CreateLicenseDto, ActivationType } from '@/types/resource.types';
+import { LicenseStatus, LicenseType, CreateLicenseDto, ActivationType, ResourceLicense } from '@/types/resource.types';
 import { useResourcesSocket } from '@/hooks/useResourcesSocket';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -61,6 +61,7 @@ export default function ResourceLicenses() {
   const [showFilters, setShowFilters] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [formData, setFormData] = useState<CreateLicenseDto>(initialFormData);
+  const [selectedLicense, setSelectedLicense] = useState<ResourceLicense | null>(null);
 
   // WebSocket para atualizações em tempo real
   useResourcesSocket({ enabled: true });
@@ -344,6 +345,9 @@ export default function ResourceLicenses() {
                   Produto
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Cliente
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Tipo
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -363,13 +367,13 @@ export default function ResourceLicenses() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                     Carregando...
                   </td>
                 </tr>
               ) : filteredLicenses.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                     Nenhuma licença encontrada
                   </td>
                 </tr>
@@ -377,7 +381,8 @@ export default function ResourceLicenses() {
                 filteredLicenses.map((license) => (
                   <tr
                     key={license.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    onClick={() => setSelectedLicense(license)}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -398,6 +403,14 @@ export default function ResourceLicenses() {
                             <p className="text-xs text-blue-600 dark:text-blue-400">{license.linked_email}</p>
                           )}
                         </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="text-gray-400" size={16} />
+                        <span className="text-sm text-gray-900 dark:text-white">
+                          {license.client?.nome || license.client?.nomeFantasia || '-'}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -431,12 +444,26 @@ export default function ResourceLicenses() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleDelete(license.id)}
-                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                      >
-                        Excluir
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedLicense(license);
+                          }}
+                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(license.id);
+                          }}
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          Excluir
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -734,6 +761,265 @@ export default function ResourceLicenses() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Detalhes da Licença */}
+      {selectedLicense && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Key size={24} />
+                  Detalhes da Licença
+                </h2>
+                <button
+                  onClick={() => setSelectedLicense(null)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Produto */}
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  {selectedLicense.product_name}
+                  {selectedLicense.product_version && (
+                    <span className="text-sm font-normal text-gray-500 ml-2">
+                      v{selectedLicense.product_version}
+                    </span>
+                  )}
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    {licenseTypeLabels[selectedLicense.license_type] || selectedLicense.license_type}
+                  </span>
+                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${licenseStatusColors[selectedLicense.license_status]}`}>
+                    {licenseStatusLabels[selectedLicense.license_status] || selectedLicense.license_status}
+                  </span>
+                  {selectedLicense.activation_type && (
+                    <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300">
+                      {activationTypeLabels[selectedLicense.activation_type]}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Cliente */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                  <Building2 size={16} />
+                  Cliente
+                </h4>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {selectedLicense.client?.nome || selectedLicense.client?.nomeFantasia || 'Não informado'}
+                  </p>
+                  {selectedLicense.client?.razaoSocial && (
+                    <p className="text-sm text-gray-500">{selectedLicense.client.razaoSocial}</p>
+                  )}
+                  {selectedLicense.client?.cpfCnpj && (
+                    <p className="text-sm text-gray-500">{selectedLicense.client.cpfCnpj}</p>
+                  )}
+                  {selectedLicense.client?.email && (
+                    <p className="text-sm text-blue-600 dark:text-blue-400">{selectedLicense.client.email}</p>
+                  )}
+                  {selectedLicense.client?.telefone && (
+                    <p className="text-sm text-gray-500">{selectedLicense.client.telefone}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Chave e Email */}
+              {(selectedLicense.license_key || selectedLicense.linked_email) && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <Key size={16} />
+                    Credenciais
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedLicense.license_key && (
+                      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Chave da Licença</p>
+                          <p className="font-mono text-sm text-gray-900 dark:text-white">
+                            {selectedLicense.license_key}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(selectedLicense.license_key || '');
+                            toast.success('Chave copiada!');
+                          }}
+                          className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg"
+                        >
+                          <Copy size={16} className="text-gray-500" />
+                        </button>
+                      </div>
+                    )}
+                    {selectedLicense.linked_email && (
+                      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Email Vinculado</p>
+                          <p className="text-sm text-blue-600 dark:text-blue-400">
+                            {selectedLicense.linked_email}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(selectedLicense.linked_email || '');
+                            toast.success('Email copiado!');
+                          }}
+                          className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg"
+                        >
+                          <Copy size={16} className="text-gray-500" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Informações de Uso */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-gray-500 mb-1">
+                    <User size={16} />
+                    <span className="text-xs uppercase">Ativações</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {selectedLicense.current_activations}/{selectedLicense.max_activations || '∞'}
+                  </p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-gray-500 mb-1">
+                    <Calendar size={16} />
+                    <span className="text-xs uppercase">Validade</span>
+                  </div>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {selectedLicense.is_perpetual ? (
+                      'Perpétua'
+                    ) : selectedLicense.expiry_date ? (
+                      format(new Date(selectedLicense.expiry_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                    ) : (
+                      'Não definida'
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Informações Financeiras */}
+              {(selectedLicense.vendor || selectedLicense.cost || selectedLicense.purchase_date) && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <DollarSign size={16} />
+                    Informações de Compra
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {selectedLicense.vendor && (
+                      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 mb-1">Fornecedor</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{selectedLicense.vendor}</p>
+                      </div>
+                    )}
+                    {selectedLicense.cost && (
+                      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 mb-1">Custo</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          R$ {Number(selectedLicense.cost).toFixed(2)}
+                        </p>
+                      </div>
+                    )}
+                    {selectedLicense.purchase_date && (
+                      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 mb-1">Data de Compra</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {format(new Date(selectedLicense.purchase_date), 'dd/MM/yyyy', { locale: ptBR })}
+                        </p>
+                      </div>
+                    )}
+                    {selectedLicense.purchase_order && (
+                      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 mb-1">Ordem de Compra</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{selectedLicense.purchase_order}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Observações */}
+              {selectedLicense.notes && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <FileText size={16} />
+                    Observações
+                  </h4>
+                  <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                      {selectedLicense.notes}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Dispositivos Atribuídos */}
+              {selectedLicense.device_assignments && selectedLicense.device_assignments.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Dispositivos Atribuídos ({selectedLicense.device_assignments.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedLicense.device_assignments.map((assignment) => (
+                      <div key={assignment.id} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {assignment.resource?.name || assignment.resource?.hostname || 'Dispositivo'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Atribuído em {format(new Date(assignment.assigned_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Timestamps */}
+              <div className="text-xs text-gray-500 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-1">
+                <p>Criada em: {format(new Date(selectedLicense.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+                {selectedLicense.activated_at && (
+                  <p>Primeira ativação: {format(new Date(selectedLicense.activated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Footer com ações */}
+            <div className="sticky bottom-0 bg-white dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+              <button
+                onClick={() => setSelectedLicense(null)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
+              >
+                Fechar
+              </button>
+              <button
+                onClick={() => {
+                  if (window.confirm('Tem certeza que deseja excluir esta licença?')) {
+                    handleDelete(selectedLicense.id);
+                    setSelectedLicense(null);
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                Excluir Licença
+              </button>
+            </div>
           </div>
         </div>
       )}

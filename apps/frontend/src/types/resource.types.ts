@@ -103,6 +103,24 @@ export interface Resource {
   history?: ResourceHistory[];
 }
 
+export interface SigeClient {
+  id: string;
+  sigeId: string;
+  nome: string;
+  razaoSocial?: string;
+  nomeFantasia?: string;
+  cpfCnpj?: string;
+  tipoPessoa?: string;
+  email?: string;
+  telefone?: string;
+  celular?: string;
+  endereco?: string;
+  cidade?: string;
+  estado?: string;
+  cep?: string;
+  ativo: boolean;
+}
+
 export interface ResourceLicense {
   id: string;
   license_key?: string;
@@ -131,6 +149,7 @@ export interface ResourceLicense {
   activated_at?: string;
   deactivated_at?: string;
   resource?: Resource;
+  client?: SigeClient;
   device_assignments?: LicenseDeviceAssignment[];
 }
 

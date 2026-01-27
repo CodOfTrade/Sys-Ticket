@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Resource } from './resource.entity';
 import { LicenseDeviceAssignment } from './license-device-assignment.entity';
+import { SigeClient } from '../../clients/entities/sige-client.entity';
 
 export enum LicenseType {
   WINDOWS = 'windows',
@@ -62,7 +63,11 @@ export class ResourceLicense {
   @Column({ type: 'varchar', length: 100, nullable: true })
   product_version: string;
 
-  // Cliente/Contrato (referência lógica ao SIGE Cloud)
+  // Cliente/Contrato
+  @ManyToOne(() => SigeClient, { nullable: true })
+  @JoinColumn({ name: 'client_id', referencedColumnName: 'id' })
+  client: SigeClient;
+
   @Column({ type: 'varchar', length: 100 })
   client_id: string;
 

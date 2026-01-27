@@ -42,7 +42,7 @@ export class ResourceLicensesService {
 
     return this.licenseRepository.find({
       where,
-      relations: ['resource', 'device_assignments', 'device_assignments.resource'],
+      relations: ['resource', 'client', 'device_assignments', 'device_assignments.resource'],
       order: { created_at: 'DESC' },
     });
   }
@@ -50,7 +50,7 @@ export class ResourceLicensesService {
   async findOne(id: string): Promise<ResourceLicense> {
     const license = await this.licenseRepository.findOne({
       where: { id },
-      relations: ['resource', 'device_assignments', 'device_assignments.resource'],
+      relations: ['resource', 'client', 'device_assignments', 'device_assignments.resource'],
     });
 
     if (!license) {
@@ -217,7 +217,7 @@ export class ResourceLicensesService {
         expiry_date: LessThanOrEqual(futureDate),
         license_status: LicenseStatus.ASSIGNED,
       },
-      relations: ['resource'],
+      relations: ['resource', 'client'],
       order: { expiry_date: 'ASC' },
     });
   }
