@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 import { Client } from '@services/client.service';
 import { contractService, Contract, ContractQuota, CreateQuotaDto } from '@services/contract.service';
 import ClientRequesters from './ClientRequesters';
-import { Monitor, Printer, Server, HardDrive, Shield, FileText, Settings, Save, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Monitor, Server, Settings, Save, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ClientDetailsProps {
   client: Client;
@@ -90,24 +90,14 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
     if (quota) {
       setQuotaForm({
         computers_quota: quota.computers_quota,
-        printers_quota: quota.printers_quota,
-        monitors_quota: quota.monitors_quota,
         servers_quota: quota.servers_quota,
-        windows_licenses_quota: quota.windows_licenses_quota,
-        office_licenses_quota: quota.office_licenses_quota,
-        antivirus_licenses_quota: quota.antivirus_licenses_quota,
         allow_exceed: quota.allow_exceed,
         alert_threshold: quota.alert_threshold,
       });
     } else {
       setQuotaForm({
         computers_quota: 0,
-        printers_quota: 0,
-        monitors_quota: 0,
         servers_quota: 0,
-        windows_licenses_quota: 0,
-        office_licenses_quota: 0,
-        antivirus_licenses_quota: 0,
         allow_exceed: false,
         alert_threshold: 90,
       });
@@ -231,7 +221,7 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
         }
       }}
     >
-      <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl h-[600px] overflow-hidden flex flex-col shadow-2xl">
+      <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-4xl h-[80vh] max-h-[800px] overflow-hidden flex flex-col shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-start">
@@ -560,32 +550,6 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
 
                                 <div>
                                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    <Printer size={12} className="inline mr-1" /> Impressoras
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    value={quotaForm.printers_quota || 0}
-                                    onChange={(e) => setQuotaForm({ ...quotaForm, printers_quota: parseInt(e.target.value) || 0 })}
-                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                  />
-                                </div>
-
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    <HardDrive size={12} className="inline mr-1" /> Monitores
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    value={quotaForm.monitors_quota || 0}
-                                    onChange={(e) => setQuotaForm({ ...quotaForm, monitors_quota: parseInt(e.target.value) || 0 })}
-                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                  />
-                                </div>
-
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     <Server size={12} className="inline mr-1" /> Servidores
                                   </label>
                                   <input
@@ -593,49 +557,6 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
                                     min="0"
                                     value={quotaForm.servers_quota || 0}
                                     onChange={(e) => setQuotaForm({ ...quotaForm, servers_quota: parseInt(e.target.value) || 0 })}
-                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                  />
-                                </div>
-
-                                <div className="col-span-2 pt-2 border-t border-gray-200 dark:border-gray-600">
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Licenças de Software</p>
-                                </div>
-
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Windows
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    value={quotaForm.windows_licenses_quota || 0}
-                                    onChange={(e) => setQuotaForm({ ...quotaForm, windows_licenses_quota: parseInt(e.target.value) || 0 })}
-                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                  />
-                                </div>
-
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Office
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    value={quotaForm.office_licenses_quota || 0}
-                                    onChange={(e) => setQuotaForm({ ...quotaForm, office_licenses_quota: parseInt(e.target.value) || 0 })}
-                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                  />
-                                </div>
-
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    <Shield size={12} className="inline mr-1" /> Antivírus
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    value={quotaForm.antivirus_licenses_quota || 0}
-                                    onChange={(e) => setQuotaForm({ ...quotaForm, antivirus_licenses_quota: parseInt(e.target.value) || 0 })}
                                     className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                   />
                                 </div>
@@ -654,7 +575,7 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
                                   />
                                 </div>
 
-                                <div className="col-span-2">
+                                <div className="flex items-end">
                                   <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                     <input
                                       type="checkbox"
@@ -678,19 +599,8 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
                                 )}
 
                                 <div className="grid grid-cols-2 gap-x-6">
-                                  <div>
-                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Recursos</p>
-                                    <ProgressBar label="Computadores" icon={Monitor} {...quotaUsage.usage.computers} />
-                                    <ProgressBar label="Impressoras" icon={Printer} {...quotaUsage.usage.printers} />
-                                    <ProgressBar label="Monitores" icon={HardDrive} {...quotaUsage.usage.monitors} />
-                                    <ProgressBar label="Servidores" icon={Server} {...quotaUsage.usage.servers} />
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Licenças</p>
-                                    <ProgressBar label="Windows" icon={FileText} {...quotaUsage.usage.windows_licenses} />
-                                    <ProgressBar label="Office" icon={FileText} {...quotaUsage.usage.office_licenses} />
-                                    <ProgressBar label="Antivírus" icon={Shield} {...quotaUsage.usage.antivirus_licenses} />
-                                  </div>
+                                  <ProgressBar label="Computadores" icon={Monitor} {...quotaUsage.usage.computers} />
+                                  <ProgressBar label="Servidores" icon={Server} {...quotaUsage.usage.servers} />
                                 </div>
                               </div>
                             ) : (
