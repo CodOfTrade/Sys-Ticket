@@ -135,11 +135,14 @@ export default function ResourceDetails() {
     enabled: !!id && activeTab === 'licenses',
   });
 
-  // Query para licenças disponíveis do contrato
+  // Query para licenças disponíveis (contrato ou cliente)
   const { data: availableLicenses, isLoading: isLoadingLicenses } = useQuery({
-    queryKey: ['available-licenses', resource?.contract_id],
-    queryFn: () => resourceService.getAvailableLicenses(resource!.contract_id!),
-    enabled: !!resource?.contract_id && showLicenseModal,
+    queryKey: ['available-licenses', resource?.contract_id || resource?.client_id],
+    queryFn: () => resourceService.getAvailableLicenses({
+      contractId: resource?.contract_id,
+      clientId: resource?.client_id,
+    }),
+    enabled: !!(resource?.contract_id || resource?.client_id) && showLicenseModal,
   });
 
   // Mutation para atribuir licença
@@ -736,7 +739,7 @@ export default function ResourceDetails() {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Licenças Atribuídas
                 </h3>
-                {resource.contract_id && (
+                {(resource.contract_id || resource.client_id) && (
                   <button
                     onClick={() => setShowLicenseModal(true)}
                     className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
@@ -807,7 +810,7 @@ export default function ResourceDetails() {
                   <p className="text-gray-500 dark:text-gray-400">
                     Nenhuma licença atribuída a este recurso
                   </p>
-                  {resource.contract_id && (
+                  {(resource.contract_id || resource.client_id) && (
                     <button
                       onClick={() => setShowLicenseModal(true)}
                       className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
@@ -816,9 +819,9 @@ export default function ResourceDetails() {
                       Atribuir primeira licença
                     </button>
                   )}
-                  {!resource.contract_id && (
+                  {!resource.contract_id && !resource.client_id && (
                     <p className="mt-2 text-sm text-yellow-600 dark:text-yellow-400">
-                      Este recurso não está vinculado a um contrato.
+                      Este recurso não está vinculado a um cliente.
                     </p>
                   )}
                 </div>
@@ -988,10 +991,12 @@ export default function ResourceDetails() {
                 <div className="text-center py-8">
                   <Key className="mx-auto text-gray-300 dark:text-gray-600 mb-3" size={40} />
                   <p className="text-gray-500 dark:text-gray-400">
-                    Nenhuma licença disponível neste contrato
+                    Nenhuma licença disponível
                   </p>
                   <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                    Todas as licenças atingiram o limite ou não há licenças cadastradas.
+                    {resource?.contract_id
+                      ? 'Todas as licenças deste contrato atingiram o limite ou não há licenças cadastradas.'
+                      : 'Não há licenças cadastradas para este cliente.'}
                   </p>
                 </div>
               )}

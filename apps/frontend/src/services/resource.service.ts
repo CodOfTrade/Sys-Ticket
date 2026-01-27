@@ -171,9 +171,10 @@ export const resourceService = {
     return response.data.data;
   },
 
-  async getAvailableLicenses(contractId: string): Promise<ResourceLicense[]> {
+  async getAvailableLicenses(params: { contractId?: string; clientId?: string }): Promise<ResourceLicense[]> {
     const response = await api.get<ApiResponse<ResourceLicense[]>>(
-      `/v1/resources/licenses/contract/${contractId}/available`
+      '/v1/resources/licenses/available',
+      { params }
     );
     return response.data.data;
   },

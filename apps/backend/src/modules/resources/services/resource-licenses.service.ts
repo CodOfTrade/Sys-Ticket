@@ -4,6 +4,7 @@ import { Repository, FindOptionsWhere, LessThanOrEqual, In } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ResourceLicense, LicenseStatus } from '../entities/resource-license.entity';
 import { LicenseDeviceAssignment } from '../entities/license-device-assignment.entity';
+import { Resource } from '../entities/resource.entity';
 import { CreateLicenseDto } from '../dto/create-license.dto';
 import { UpdateLicenseDto } from '../dto/update-license.dto';
 
@@ -14,6 +15,8 @@ export class ResourceLicensesService {
     private readonly licenseRepository: Repository<ResourceLicense>,
     @InjectRepository(LicenseDeviceAssignment)
     private readonly assignmentRepository: Repository<LicenseDeviceAssignment>,
+    @InjectRepository(Resource)
+    private readonly resourceRepository: Repository<Resource>,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -84,6 +87,17 @@ export class ResourceLicensesService {
    */
   async assignToResource(licenseId: string, resourceId: string, userId?: string): Promise<ResourceLicense> {
     const license = await this.findOne(licenseId);
+
+    // Buscar recurso para validar cliente
+    const resource = await this.resourceRepository.findOne({ where: { id: resourceId } });
+    if (!resource) {
+      throw new NotFoundException('Recurso nao encontrado');
+    }
+
+    // Validar que licenca e recurso pertencem ao mesmo cliente
+    if (license.client_id !== resource.client_id) {
+      throw new BadRequestException('Licenca e recurso devem pertencer ao mesmo cliente');
+    }
 
     // Verificar se ja esta atribuida a este dispositivo
     const existingAssignment = await this.assignmentRepository.findOne({
@@ -203,6 +217,40 @@ export class ResourceLicensesService {
     // Filtrar: licencas sem limite OU com ativacoes restantes
     return licenses.filter(l => {
       if (!l.max_activations) return true; // Sem limite
+      return l.current_activations < l.max_activations;
+    });
+  }
+
+  /**
+   * Busca licencas disponiveis com logica flexivel:
+   * 1. Se tem contractId: busca por contrato
+   * 2. Se nao tem contractId mas tem clientId: busca por cliente
+   * 3. Filtra apenas licencas com ativacoes disponiveis
+   */
+  async findAvailableLicenses(params: { contractId?: string; clientId?: string }): Promise<ResourceLicense[]> {
+    const { contractId, clientId } = params;
+
+    const where: FindOptionsWhere<ResourceLicense> = {};
+
+    if (contractId) {
+      // Prioridade: buscar por contrato especifico
+      where.contract_id = contractId;
+    } else if (clientId) {
+      // Fallback: buscar todas do cliente
+      where.client_id = clientId;
+    } else {
+      return []; // Sem filtro, nao retorna nada
+    }
+
+    const licenses = await this.licenseRepository.find({
+      where,
+      relations: ['client'],
+      order: { created_at: 'DESC' },
+    });
+
+    // Filtrar: licencas sem limite OU com ativacoes restantes
+    return licenses.filter(l => {
+      if (!l.max_activations) return true;
       return l.current_activations < l.max_activations;
     });
   }
