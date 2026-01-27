@@ -145,9 +145,13 @@ export default function ResourceLicenses() {
     expiringSoon: expiringLicenses.length,
   };
 
-  // Buscar contratos do cliente selecionado
-  const selectedClient = clientsData?.data?.find((c: any) => c.id === formData.client_id);
-  const contracts = selectedClient?.contracts || [];
+  // Query para contratos do cliente selecionado
+  const { data: contractsData } = useQuery({
+    queryKey: ['client-contracts', formData.client_id],
+    queryFn: () => clientService.getClientContracts(formData.client_id),
+    enabled: !!formData.client_id && showCreateModal,
+  });
+  const contracts = contractsData || [];
 
   return (
     <div className="space-y-6">
@@ -449,7 +453,7 @@ export default function ResourceLicenses() {
                   <option value="">Selecione um cliente</option>
                   {clientsData?.data?.map((client: any) => (
                     <option key={client.id} value={client.id}>
-                      {client.name}
+                      {client.nome || client.nome_fantasia || client.razao_social}
                     </option>
                   ))}
                 </select>
@@ -469,7 +473,7 @@ export default function ResourceLicenses() {
                     <option value="">Sem contrato específico</option>
                     {contracts.map((contract: any) => (
                       <option key={contract.id} value={contract.id}>
-                        {contract.contract_number} - {contract.name}
+                        {contract.numero_contrato || contract.contract_number} - {contract.descricao || contract.name}
                       </option>
                     ))}
                   </select>
