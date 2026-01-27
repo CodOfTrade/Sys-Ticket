@@ -222,28 +222,20 @@ export class ResourceLicensesService {
   }
 
   /**
-   * Busca licencas disponiveis com logica flexivel:
-   * 1. Se tem contractId: busca por contrato
-   * 2. Se nao tem contractId mas tem clientId: busca por cliente
-   * 3. Filtra apenas licencas com ativacoes disponiveis
+   * Busca licencas disponiveis por cliente.
+   * Licencas pertencem ao CLIENTE, independente de contrato.
+   * Filtra apenas licencas com ativacoes disponiveis.
    */
-  async findAvailableLicenses(params: { contractId?: string; clientId?: string }): Promise<ResourceLicense[]> {
-    const { contractId, clientId } = params;
+  async findAvailableLicenses(params: { clientId: string }): Promise<ResourceLicense[]> {
+    const { clientId } = params;
 
-    const where: FindOptionsWhere<ResourceLicense> = {};
-
-    if (contractId) {
-      // Prioridade: buscar por contrato especifico
-      where.contract_id = contractId;
-    } else if (clientId) {
-      // Fallback: buscar todas do cliente
-      where.client_id = clientId;
-    } else {
-      return []; // Sem filtro, nao retorna nada
+    if (!clientId) {
+      return [];
     }
 
+    // Busca SEMPRE por cliente, independente de contrato
     const licenses = await this.licenseRepository.find({
-      where,
+      where: { client_id: clientId },
       relations: ['client'],
       order: { created_at: 'DESC' },
     });

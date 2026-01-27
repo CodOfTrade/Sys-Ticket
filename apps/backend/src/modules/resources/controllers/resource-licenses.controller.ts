@@ -42,10 +42,9 @@ export class ResourceLicensesController {
 
   @Get('available')
   async findAvailableLicenses(
-    @Query('contractId') contractId?: string,
-    @Query('clientId') clientId?: string,
+    @Query('clientId') clientId: string,
   ) {
-    return this.licensesService.findAvailableLicenses({ contractId, clientId });
+    return this.licensesService.findAvailableLicenses({ clientId });
   }
 
   @Get('contract/:contractId/available')

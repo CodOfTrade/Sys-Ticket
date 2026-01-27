@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 import { Client } from '@services/client.service';
-import { contractService } from '@services/contract.service';
+import { contractService, Contract, ContractQuota, CreateQuotaDto } from '@services/contract.service';
 import ClientRequesters from './ClientRequesters';
+import { Monitor, Printer, Server, HardDrive, Shield, FileText, Settings, X, Save, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ClientDetailsProps {
   client: Client;
@@ -13,6 +15,10 @@ type TabType = 'info' | 'requesters' | 'contracts';
 
 export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('info');
+  const [expandedContract, setExpandedContract] = useState<string | null>(null);
+  const [editingQuota, setEditingQuota] = useState<string | null>(null);
+  const [quotaForm, setQuotaForm] = useState<Partial<CreateQuotaDto>>({});
+  const queryClient = useQueryClient();
 
   // Buscar contratos do cliente (usando localId se disponível)
   const clientIdForContracts = client.localId || client.id;
@@ -21,6 +27,140 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
     queryFn: () => contractService.getByClient(clientIdForContracts),
     enabled: activeTab === 'contracts' && !!clientIdForContracts,
   });
+
+  // Query para buscar quota do contrato expandido
+  const { data: quotaUsage, isLoading: loadingQuota
+
+ } = useQuery({
+    queryKey: ['contract-quota', expandedContract],
+    queryFn: () => contractService.getQuotaUsage(expandedContract!),
+    enabled: !!expandedContract,
+  });
+
+  // Mutation para criar quota
+  const createQuotaMutation = useMutation({
+    mutationFn: (data: CreateQuotaDto) => contractService.createContractQuota(data),
+    onSuccess: () => {
+      toast.success('Quota configurada com sucesso');
+      queryClient.invalidateQueries({ queryKey: ['contract-quota', expandedContract] });
+      setEditingQuota(null);
+    },
+    onError: () => {
+      toast.error('Erro ao configurar quota');
+    },
+  });
+
+  // Mutation para atualizar quota
+  const updateQuotaMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<CreateQuotaDto> }) =>
+      contractService.updateContractQuota(id, data),
+    onSuccess: () => {
+      toast.success('Quota atualizada com sucesso');
+      queryClient.invalidateQueries({ queryKey: ['contract-quota', expandedContract] });
+      setEditingQuota(null);
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar quota');
+    },
+  });
+
+  // Mutation para recalcular quota
+  const recalculateMutation = useMutation({
+    mutationFn: (contractId: string) => contractService.recalculateQuota(contractId),
+    onSuccess: () => {
+      toast.success('Uso recalculado');
+      queryClient.invalidateQueries({ queryKey: ['contract-quota', expandedContract] });
+    },
+  });
+
+  // Função para expandir/colapsar contrato
+  const toggleContract = (contractId: string) => {
+    if (expandedContract === contractId) {
+      setExpandedContract(null);
+      setEditingQuota(null);
+    } else {
+      setExpandedContract(contractId);
+      setEditingQuota(null);
+    }
+  };
+
+  // Função para iniciar edição de quota
+  const startEditQuota = (contract: Contract, quota: ContractQuota | null) => {
+    setEditingQuota(contract.id);
+    if (quota) {
+      setQuotaForm({
+        computers_quota: quota.computers_quota,
+        printers_quota: quota.printers_quota,
+        monitors_quota: quota.monitors_quota,
+        servers_quota: quota.servers_quota,
+        windows_licenses_quota: quota.windows_licenses_quota,
+        office_licenses_quota: quota.office_licenses_quota,
+        antivirus_licenses_quota: quota.antivirus_licenses_quota,
+        allow_exceed: quota.allow_exceed,
+        alert_threshold: quota.alert_threshold,
+      });
+    } else {
+      setQuotaForm({
+        computers_quota: 0,
+        printers_quota: 0,
+        monitors_quota: 0,
+        servers_quota: 0,
+        windows_licenses_quota: 0,
+        office_licenses_quota: 0,
+        antivirus_licenses_quota: 0,
+        allow_exceed: false,
+        alert_threshold: 90,
+      });
+    }
+  };
+
+  // Função para salvar quota
+  const saveQuota = (contract: Contract, existingQuota: ContractQuota | null) => {
+    if (existingQuota) {
+      updateQuotaMutation.mutate({ id: existingQuota.id, data: quotaForm });
+    } else {
+      createQuotaMutation.mutate({
+        contract_id: contract.sige_id || contract.id,
+        client_id: clientIdForContracts,
+        ...quotaForm,
+      } as CreateQuotaDto);
+    }
+  };
+
+  // Componente de barra de progresso
+  const ProgressBar = ({ label, icon: Icon, quota, used, percentage }: {
+    label: string;
+    icon: any;
+    quota: number;
+    used: number;
+    percentage: number;
+  }) => {
+    const getColor = () => {
+      if (percentage >= 100) return 'bg-red-500';
+      if (percentage >= 90) return 'bg-yellow-500';
+      return 'bg-green-500';
+    };
+
+    return (
+      <div className="mb-3">
+        <div className="flex items-center justify-between text-sm mb-1">
+          <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+            <Icon size={14} />
+            {label}
+          </span>
+          <span className="text-gray-600 dark:text-gray-400">
+            {used} / {quota}
+          </span>
+        </div>
+        <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+          <div
+            className={`h-full ${getColor()} transition-all`}
+            style={{ width: `${Math.min(percentage, 100)}%` }}
+          />
+        </div>
+      </div>
+    );
+  };
 
   const formatDocument = (doc?: string) => {
     if (!doc) return '-';
@@ -274,62 +414,296 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
                 <div className="space-y-2">
                   {contracts.map((contract) => {
                     const vigente = isContractValid(contract.data_inicio, contract.data_fim);
+                    const isExpanded = expandedContract === contract.id;
+                    const contractSigeId = contract.sige_id || contract.id;
+
                     return (
                       <div
                         key={contract.id}
-                        className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:shadow-md transition-shadow"
+                        className={`bg-white dark:bg-gray-700 border rounded-lg transition-all ${
+                          isExpanded
+                            ? 'border-blue-500 shadow-lg'
+                            : 'border-gray-200 dark:border-gray-600 hover:shadow-md'
+                        }`}
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              {contract.numero_contrato && (
-                                <span className="font-mono text-sm font-semibold text-gray-900 dark:text-white">
-                                  #{contract.numero_contrato}
-                                </span>
+                        {/* Header do contrato */}
+                        <div
+                          className="p-3 cursor-pointer"
+                          onClick={() => toggleContract(contract.id)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                {contract.numero_contrato && (
+                                  <span className="font-mono text-sm font-semibold text-gray-900 dark:text-white">
+                                    #{contract.numero_contrato}
+                                  </span>
+                                )}
+
+                                {vigente && (
+                                  <span className="text-xs px-3 py-1 rounded-full font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg">
+                                    ✓ VIGENTE
+                                  </span>
+                                )}
+
+                                {contract.status && (
+                                  <span className={`text-xs px-2 py-1 rounded font-medium ${getStatusColor(contract.status)}`}>
+                                    {contract.status}
+                                  </span>
+                                )}
+
+                                {contract.tipo && (
+                                  <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                    {contract.tipo}
+                                  </span>
+                                )}
+                              </div>
+
+                              {contract.descricao && (
+                                <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">
+                                  {contract.descricao}
+                                </p>
                               )}
 
-                              {/* Tag de Vigência - destaque maior */}
-                              {vigente && (
-                                <span className="text-xs px-3 py-1 rounded-full font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg">
-                                  ✓ VIGENTE
-                                </span>
-                              )}
-
-                              {/* Tag de Status */}
-                              {contract.status && (
-                                <span className={`text-xs px-2 py-1 rounded font-medium ${getStatusColor(contract.status)}`}>
-                                  {contract.status}
-                                </span>
-                              )}
-
-                              {contract.tipo && (
-                                <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                  {contract.tipo}
-                                </span>
-                              )}
+                              <div className="flex gap-4 text-xs text-gray-600 dark:text-gray-400">
+                                {contract.data_inicio && (
+                                  <span><strong>Início:</strong> {formatDate(contract.data_inicio)}</span>
+                                )}
+                                {contract.data_fim && (
+                                  <span><strong>Fim:</strong> {formatDate(contract.data_fim)}</span>
+                                )}
+                              </div>
                             </div>
 
-                          {contract.descricao && (
-                            <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">
-                              {contract.descricao}
-                            </p>
-                          )}
-
-                          <div className="flex gap-4 text-xs text-gray-600 dark:text-gray-400">
-                            {contract.data_inicio && (
-                              <span>
-                                <strong>Início:</strong> {formatDate(contract.data_inicio)}
-                              </span>
-                            )}
-                            {contract.data_fim && (
-                              <span>
-                                <strong>Fim:</strong> {formatDate(contract.data_fim)}
-                              </span>
-                            )}
+                            <button className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                              {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                            </button>
                           </div>
                         </div>
+
+                        {/* Seção expandida de Quotas */}
+                        {isExpanded && (
+                          <div className="border-t border-gray-200 dark:border-gray-600 p-4 bg-gray-50 dark:bg-gray-800">
+                            <div className="flex items-center justify-between mb-4">
+                              <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                <Server size={18} />
+                                Recursos do Contrato
+                              </h4>
+                              <div className="flex gap-2">
+                                {quotaUsage?.quota && (
+                                  <button
+                                    onClick={() => recalculateMutation.mutate(contractSigeId)}
+                                    disabled={recalculateMutation.isPending}
+                                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                                    title="Recalcular uso"
+                                  >
+                                    <RefreshCw size={16} className={recalculateMutation.isPending ? 'animate-spin' : ''} />
+                                  </button>
+                                )}
+                                {editingQuota !== contract.id ? (
+                                  <button
+                                    onClick={() => startEditQuota(contract, quotaUsage?.quota || null)}
+                                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                                  >
+                                    <Settings size={14} />
+                                    {quotaUsage?.quota ? 'Editar' : 'Configurar'}
+                                  </button>
+                                ) : (
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => setEditingQuota(null)}
+                                      className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-500"
+                                    >
+                                      Cancelar
+                                    </button>
+                                    <button
+                                      onClick={() => saveQuota(contract, quotaUsage?.quota || null)}
+                                      disabled={createQuotaMutation.isPending || updateQuotaMutation.isPending}
+                                      className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+                                    >
+                                      <Save size={14} />
+                                      Salvar
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {loadingQuota ? (
+                              <div className="text-center py-4">
+                                <svg className="animate-spin h-6 w-6 text-blue-600 mx-auto" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                              </div>
+                            ) : editingQuota === contract.id ? (
+                              /* Formulário de edição */
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2">
+                                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                                    Define quantos recursos este contrato permite cadastrar.
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    <Monitor size={12} className="inline mr-1" /> Computadores
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={quotaForm.computers_quota || 0}
+                                    onChange={(e) => setQuotaForm({ ...quotaForm, computers_quota: parseInt(e.target.value) || 0 })}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    <Printer size={12} className="inline mr-1" /> Impressoras
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={quotaForm.printers_quota || 0}
+                                    onChange={(e) => setQuotaForm({ ...quotaForm, printers_quota: parseInt(e.target.value) || 0 })}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    <HardDrive size={12} className="inline mr-1" /> Monitores
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={quotaForm.monitors_quota || 0}
+                                    onChange={(e) => setQuotaForm({ ...quotaForm, monitors_quota: parseInt(e.target.value) || 0 })}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    <Server size={12} className="inline mr-1" /> Servidores
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={quotaForm.servers_quota || 0}
+                                    onChange={(e) => setQuotaForm({ ...quotaForm, servers_quota: parseInt(e.target.value) || 0 })}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  />
+                                </div>
+
+                                <div className="col-span-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Licenças de Software</p>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Windows
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={quotaForm.windows_licenses_quota || 0}
+                                    onChange={(e) => setQuotaForm({ ...quotaForm, windows_licenses_quota: parseInt(e.target.value) || 0 })}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Office
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={quotaForm.office_licenses_quota || 0}
+                                    onChange={(e) => setQuotaForm({ ...quotaForm, office_licenses_quota: parseInt(e.target.value) || 0 })}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    <Shield size={12} className="inline mr-1" /> Antivírus
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={quotaForm.antivirus_licenses_quota || 0}
+                                    onChange={(e) => setQuotaForm({ ...quotaForm, antivirus_licenses_quota: parseInt(e.target.value) || 0 })}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Alerta (%)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={quotaForm.alert_threshold || 90}
+                                    onChange={(e) => setQuotaForm({ ...quotaForm, alert_threshold: parseInt(e.target.value) || 90 })}
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  />
+                                </div>
+
+                                <div className="col-span-2">
+                                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                    <input
+                                      type="checkbox"
+                                      checked={quotaForm.allow_exceed || false}
+                                      onChange={(e) => setQuotaForm({ ...quotaForm, allow_exceed: e.target.checked })}
+                                      className="rounded border-gray-300 dark:border-gray-600"
+                                    />
+                                    Permitir exceder quota
+                                  </label>
+                                </div>
+                              </div>
+                            ) : quotaUsage?.quota ? (
+                              /* Visualização das quotas */
+                              <div>
+                                {quotaUsage.alerts && quotaUsage.alerts.length > 0 && (
+                                  <div className="mb-4 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
+                                    {quotaUsage.alerts.map((alert, i) => (
+                                      <p key={i} className="text-xs text-yellow-700 dark:text-yellow-300">⚠️ {alert}</p>
+                                    ))}
+                                  </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-x-6">
+                                  <div>
+                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Recursos</p>
+                                    <ProgressBar label="Computadores" icon={Monitor} {...quotaUsage.usage.computers} />
+                                    <ProgressBar label="Impressoras" icon={Printer} {...quotaUsage.usage.printers} />
+                                    <ProgressBar label="Monitores" icon={HardDrive} {...quotaUsage.usage.monitors} />
+                                    <ProgressBar label="Servidores" icon={Server} {...quotaUsage.usage.servers} />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Licenças</p>
+                                    <ProgressBar label="Windows" icon={FileText} {...quotaUsage.usage.windows_licenses} />
+                                    <ProgressBar label="Office" icon={FileText} {...quotaUsage.usage.office_licenses} />
+                                    <ProgressBar label="Antivírus" icon={Shield} {...quotaUsage.usage.antivirus_licenses} />
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              /* Sem quota configurada */
+                              <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                                <Server size={32} className="mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">Nenhuma quota configurada para este contrato</p>
+                                <p className="text-xs mt-1">Clique em "Configurar" para definir os limites de recursos</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    </div>
                     );
                   })}
                 </div>
