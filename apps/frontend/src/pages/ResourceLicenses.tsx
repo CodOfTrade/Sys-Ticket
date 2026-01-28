@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Plus, Search, Filter, Key, AlertTriangle, Check, X, Loader2, Eye, Building2, Calendar, DollarSign, User, FileText, Copy, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Search, Filter, Key, AlertTriangle, Check, X, Loader2, Eye, Building2, Calendar, DollarSign, User, FileText, Copy, Trash2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
 import { clientService } from '@/services/client.service';
-import { LicenseStatus, LicenseType, CreateLicenseDto, UpdateLicenseDto, ActivationType, DurationType, ResourceLicense } from '@/types/resource.types';
+import { LicenseStatus, LicenseType, CreateLicenseDto, ActivationType, DurationType, ResourceLicense } from '@/types/resource.types';
 import { useResourcesSocket } from '@/hooks/useResourcesSocket';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -66,9 +66,7 @@ export default function ResourceLicenses() {
   const [formData, setFormData] = useState<CreateLicenseDto>(initialFormData);
   const [selectedLicense, setSelectedLicense] = useState<ResourceLicense | null>(null);
   const [licenseToDelete, setLicenseToDelete] = useState<ResourceLicense | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingLicense, setEditingLicense] = useState<ResourceLicense | null>(null);
-  const [editFormData, setEditFormData] = useState<CreateLicenseDto>(initialFormData);
+  const [editActivationDate, setEditActivationDate] = useState<string>('');
 
   // WebSocket para atualizações em tempo real
   useResourcesSocket({ enabled: true });
@@ -128,68 +126,30 @@ export default function ResourceLicenses() {
     },
   });
 
-  // Mutation para atualizar licença
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateLicenseDto }) =>
-      resourceService.updateLicense(id, data),
-    onSuccess: () => {
-      toast.success('Licença atualizada com sucesso!');
+  // Mutation para atualizar data de ativação da licença
+  const updateActivationMutation = useMutation({
+    mutationFn: ({ id, activation_date }: { id: string; activation_date: string }) =>
+      resourceService.updateLicense(id, { activation_date }),
+    onSuccess: (updatedLicense) => {
+      toast.success('Data de ativação atualizada! Validade recalculada.');
       queryClient.invalidateQueries({
         predicate: (query) => query.queryKey[0] === 'licenses',
       });
-      setShowEditModal(false);
-      setEditingLicense(null);
+      // Atualizar o selectedLicense com os dados atualizados
+      setSelectedLicense(updatedLicense);
+      setEditActivationDate('');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao atualizar licença');
+      toast.error(error.response?.data?.message || 'Erro ao atualizar data de ativação');
     },
   });
 
-  const handleEdit = (license: ResourceLicense) => {
-    setEditingLicense(license);
-    setEditFormData({
-      product_name: license.product_name,
-      license_type: license.license_type,
-      activation_type: license.activation_type,
-      license_key: license.license_key || '',
-      linked_email: license.linked_email || '',
-      product_version: license.product_version || '',
-      client_id: license.client_id,
-      contract_id: license.contract_id || '',
-      max_activations: license.max_activations || 1,
-      is_perpetual: license.is_perpetual,
-      expiry_date: license.expiry_date || '',
-      duration_type: license.duration_type || undefined,
-      duration_value: license.duration_value || undefined,
-      activation_date: license.activation_date || '',
-      vendor: license.vendor || '',
-      cost: license.cost,
-      notes: license.notes || '',
+  const handleSaveActivationDate = () => {
+    if (!selectedLicense || !editActivationDate) return;
+    updateActivationMutation.mutate({
+      id: selectedLicense.id,
+      activation_date: editActivationDate,
     });
-    setShowEditModal(true);
-  };
-
-  const handleEditSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingLicense) return;
-
-    const shouldHaveKey = editFormData.activation_type === 'serial' || editFormData.activation_type === 'hybrid';
-    const shouldHaveEmail = editFormData.activation_type === 'account' || editFormData.activation_type === 'hybrid';
-
-    const data: UpdateLicenseDto = {
-      ...editFormData,
-      license_key: shouldHaveKey ? editFormData.license_key || undefined : undefined,
-      linked_email: shouldHaveEmail ? editFormData.linked_email || undefined : undefined,
-      duration_type: !editFormData.is_perpetual ? editFormData.duration_type : undefined,
-      duration_value: !editFormData.is_perpetual ? editFormData.duration_value : undefined,
-      activation_date: !editFormData.is_perpetual ? editFormData.activation_date || undefined : undefined,
-      expiry_date: undefined,
-      contract_id: editFormData.contract_id || undefined,
-      cost: editFormData.cost ? Number(editFormData.cost) : undefined,
-      max_activations: editFormData.max_activations ? Number(editFormData.max_activations) : 1,
-    };
-
-    updateMutation.mutate({ id: editingLicense.id, data });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -447,7 +407,10 @@ export default function ResourceLicenses() {
                 filteredLicenses.map((license) => (
                   <tr
                     key={license.id}
-                    onClick={() => setSelectedLicense(license)}
+                    onClick={() => {
+                      setSelectedLicense(license);
+                      setEditActivationDate(license.activation_date || '');
+                    }}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                   >
                     <td className="px-6 py-4">
@@ -522,21 +485,12 @@ export default function ResourceLicenses() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedLicense(license);
+                            setEditActivationDate(license.activation_date || '');
                           }}
                           className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                           title="Ver detalhes"
                         >
                           <Eye size={16} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEdit(license);
-                          }}
-                          className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                          title="Editar"
-                        >
-                          <Edit2 size={16} />
                         </button>
                         <button
                           onClick={(e) => {
@@ -929,7 +883,10 @@ export default function ResourceLicenses() {
                   Detalhes da Licença
                 </h2>
                 <button
-                  onClick={() => setSelectedLicense(null)}
+                  onClick={() => {
+                    setSelectedLicense(null);
+                    setEditActivationDate('');
+                  }}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                 >
                   <X size={20} />
@@ -1063,8 +1020,71 @@ export default function ResourceLicenses() {
                       'Não definida'
                     )}
                   </p>
+                  {!selectedLicense.is_perpetual && selectedLicense.duration_type && selectedLicense.duration_value && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      ({selectedLicense.duration_value} {selectedLicense.duration_type === 'months' ? 'meses' : 'anos'})
+                    </p>
+                  )}
                 </div>
               </div>
+
+              {/* Seção de Data de Ativação - Editável */}
+              {!selectedLicense.is_perpetual && selectedLicense.duration_type && selectedLicense.duration_value && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <Calendar size={16} />
+                    Data de Ativação
+                  </h4>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                          Início da contagem ({selectedLicense.duration_value} {selectedLicense.duration_type === 'months' ? 'meses' : 'anos'})
+                        </label>
+                        <input
+                          type="date"
+                          value={editActivationDate}
+                          onChange={(e) => setEditActivationDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      {editActivationDate && editActivationDate !== (selectedLicense.activation_date || '') && (
+                        <button
+                          onClick={handleSaveActivationDate}
+                          disabled={updateActivationMutation.isPending}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 self-end"
+                        >
+                          {updateActivationMutation.isPending ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            <Check size={16} />
+                          )}
+                          Salvar
+                        </button>
+                      )}
+                    </div>
+                    {editActivationDate && (
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        <span className="font-medium">Expira em:</span>{' '}
+                        {(() => {
+                          const date = new Date(editActivationDate + 'T00:00:00');
+                          if (selectedLicense.duration_type === 'months') {
+                            date.setMonth(date.getMonth() + (selectedLicense.duration_value || 0));
+                          } else {
+                            date.setFullYear(date.getFullYear() + (selectedLicense.duration_value || 0));
+                          }
+                          return format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+                        })()}
+                      </p>
+                    )}
+                    {!editActivationDate && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Defina a data de ativação para calcular automaticamente a data de expiração.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Informações Financeiras */}
               {(selectedLicense.vendor || selectedLicense.cost || selectedLicense.purchase_date) && (
@@ -1156,24 +1176,18 @@ export default function ResourceLicenses() {
             {/* Footer com ações */}
             <div className="sticky bottom-0 bg-white dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
               <button
-                onClick={() => setSelectedLicense(null)}
+                onClick={() => {
+                  setSelectedLicense(null);
+                  setEditActivationDate('');
+                }}
                 className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
               >
                 Fechar
               </button>
               <button
                 onClick={() => {
-                  handleEdit(selectedLicense);
                   setSelectedLicense(null);
-                }}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Edit2 size={16} />
-                Editar
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedLicense(null);
+                  setEditActivationDate('');
                   setLicenseToDelete(selectedLicense);
                 }}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2"
@@ -1238,320 +1252,6 @@ export default function ResourceLicenses() {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Edição */}
-      {showEditModal && editingLicense && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white dark:bg-gray-800 p-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Edit2 size={24} />
-                  Editar Licença
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setEditingLicense(null);
-                  }}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
-              {/* Info: Cliente não pode ser alterado */}
-              <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  <strong>Cliente:</strong> {editingLicense.client?.nome || editingLicense.client?.nomeFantasia || 'N/A'}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Produto */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Nome do Produto *
-                  </label>
-                  <input
-                    type="text"
-                    value={editFormData.product_name}
-                    onChange={(e) => setEditFormData({ ...editFormData, product_name: e.target.value })}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-
-                {/* Tipo */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Tipo *
-                  </label>
-                  <select
-                    value={editFormData.license_type}
-                    onChange={(e) => setEditFormData({ ...editFormData, license_type: e.target.value as LicenseType })}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    <option value="windows">Windows</option>
-                    <option value="office">Office</option>
-                    <option value="antivirus">Antivírus</option>
-                    <option value="custom">Personalizada</option>
-                  </select>
-                </div>
-
-                {/* Versão */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Versão
-                  </label>
-                  <input
-                    type="text"
-                    value={editFormData.product_version || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, product_version: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-
-                {/* Máx Ativações */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Máx. Ativações
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={editFormData.max_activations || 1}
-                    onChange={(e) => setEditFormData({ ...editFormData, max_activations: parseInt(e.target.value) || 1 })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              {/* Tipo de Ativação */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Tipo de Ativação
-                </label>
-                <select
-                  value={editFormData.activation_type}
-                  onChange={(e) => setEditFormData({ ...editFormData, activation_type: e.target.value as ActivationType })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  <option value="serial">Chave Serial</option>
-                  <option value="account">Conta/Email</option>
-                  <option value="hybrid">Híbrido</option>
-                </select>
-              </div>
-
-              {/* Chave da Licença */}
-              {(editFormData.activation_type === 'serial' || editFormData.activation_type === 'hybrid') && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Chave da Licença
-                  </label>
-                  <input
-                    type="text"
-                    value={editFormData.license_key || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, license_key: e.target.value })}
-                    placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"
-                  />
-                </div>
-              )}
-
-              {/* Email Vinculado */}
-              {(editFormData.activation_type === 'account' || editFormData.activation_type === 'hybrid') && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Email Vinculado
-                  </label>
-                  <input
-                    type="email"
-                    value={editFormData.linked_email || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, linked_email: e.target.value })}
-                    placeholder="usuario@empresa.com"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-              )}
-
-              {/* Perpétua / Validade */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="edit_is_perpetual"
-                    checked={editFormData.is_perpetual}
-                    onChange={(e) => setEditFormData({
-                      ...editFormData,
-                      is_perpetual: e.target.checked,
-                      duration_type: e.target.checked ? undefined : editFormData.duration_type,
-                      duration_value: e.target.checked ? undefined : editFormData.duration_value,
-                      activation_date: e.target.checked ? '' : editFormData.activation_date,
-                    })}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor="edit_is_perpetual" className="text-sm text-gray-700 dark:text-gray-300">
-                    Licença perpétua (sem data de expiração)
-                  </label>
-                </div>
-
-                {!editFormData.is_perpetual && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    {/* Tipo de Duração */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Tipo de Duração
-                      </label>
-                      <select
-                        value={editFormData.duration_type || ''}
-                        onChange={(e) => setEditFormData({
-                          ...editFormData,
-                          duration_type: (e.target.value as DurationType) || undefined
-                        })}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      >
-                        <option value="">Selecione</option>
-                        <option value="months">Meses</option>
-                        <option value="years">Anos</option>
-                      </select>
-                    </div>
-
-                    {/* Quantidade */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Quantidade
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={editFormData.duration_value || ''}
-                        onChange={(e) => setEditFormData({
-                          ...editFormData,
-                          duration_value: parseInt(e.target.value) || undefined
-                        })}
-                        placeholder="Ex: 12"
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-
-                    {/* Data de Ativação */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Data de Ativação
-                      </label>
-                      <input
-                        type="date"
-                        value={editFormData.activation_date || ''}
-                        onChange={(e) => setEditFormData({ ...editFormData, activation_date: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Data a partir da qual começa a contar
-                      </p>
-                    </div>
-
-                    {/* Preview da Data de Expiração */}
-                    {editFormData.duration_type && editFormData.duration_value && editFormData.activation_date && (
-                      <div className="md:col-span-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <p className="text-sm text-blue-700 dark:text-blue-300">
-                          <span className="font-medium">Data de expiração calculada:</span>{' '}
-                          {(() => {
-                            const date = new Date(editFormData.activation_date + 'T00:00:00');
-                            if (editFormData.duration_type === 'months') {
-                              date.setMonth(date.getMonth() + editFormData.duration_value);
-                            } else {
-                              date.setFullYear(date.getFullYear() + editFormData.duration_value);
-                            }
-                            return format(date, 'dd/MM/yyyy', { locale: ptBR });
-                          })()}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Fornecedor */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Fornecedor
-                  </label>
-                  <input
-                    type="text"
-                    value={editFormData.vendor || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, vendor: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-
-                {/* Custo */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Custo (R$)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={editFormData.cost || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, cost: parseFloat(e.target.value) || undefined })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              {/* Notas */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Observações
-                </label>
-                <textarea
-                  value={editFormData.notes || ''}
-                  onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-                />
-              </div>
-
-              {/* Botões */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setEditingLicense(null);
-                  }}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={updateMutation.isPending}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  {updateMutation.isPending ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    <>
-                      <Check size={16} />
-                      Salvar Alterações
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
