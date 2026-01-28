@@ -24,10 +24,20 @@ const ALERT_TYPE_DESCRIPTIONS: Record<string, string> = {
 export function NotificationSettings() {
   const queryClient = useQueryClient();
 
-  const { data: configs = [], isLoading } = useQuery({
+  const { data: configsData, isLoading } = useQuery({
     queryKey: ['notification-configs'],
-    queryFn: () => notificationService.getConfigs(),
+    queryFn: async () => {
+      try {
+        return await notificationService.getConfigs();
+      } catch (error) {
+        console.error('Erro ao buscar configs:', error);
+        return [];
+      }
+    },
   });
+
+  // Garantir que seja sempre um array
+  const configs = Array.isArray(configsData) ? configsData : [];
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<NotificationConfig> }) =>
