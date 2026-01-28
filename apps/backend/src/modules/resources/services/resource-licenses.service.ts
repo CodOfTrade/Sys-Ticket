@@ -31,15 +31,15 @@ export class ResourceLicensesService {
   }
 
   async create(createLicenseDto: CreateLicenseDto): Promise<ResourceLicense> {
-    const data: any = { ...createLicenseDto };
+    const data = { ...createLicenseDto } as Partial<ResourceLicense>;
 
     // Calcular expiry_date se tiver duração definida
     if (!data.is_perpetual && data.activation_date && data.duration_type && data.duration_value) {
       data.expiry_date = this.calculateExpiryDate(
-        new Date(data.activation_date),
+        new Date(data.activation_date as unknown as Date),
         data.duration_type,
         data.duration_value
-      ).toISOString().split('T')[0];
+      );
     }
 
     const license = this.licenseRepository.create(data);
@@ -88,18 +88,17 @@ export class ResourceLicensesService {
     const license = await this.findOne(id);
 
     // Mesclar dados
-    const merged: any = { ...license, ...updateLicenseDto };
+    Object.assign(license, updateLicenseDto);
 
     // Recalcular expiry_date se dados de duração mudaram
-    if (!merged.is_perpetual && merged.activation_date && merged.duration_type && merged.duration_value) {
-      merged.expiry_date = this.calculateExpiryDate(
-        new Date(merged.activation_date),
-        merged.duration_type,
-        merged.duration_value
+    if (!license.is_perpetual && license.activation_date && license.duration_type && license.duration_value) {
+      license.expiry_date = this.calculateExpiryDate(
+        new Date(license.activation_date),
+        license.duration_type,
+        license.duration_value
       );
     }
 
-    Object.assign(license, merged);
     const saved = await this.licenseRepository.save(license);
 
     // Emitir evento WebSocket
