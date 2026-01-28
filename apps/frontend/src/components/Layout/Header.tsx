@@ -23,11 +23,21 @@ export function Header({ onMenuClick }: HeaderProps) {
   const navigate = useNavigate();
 
   // Buscar notificações
-  const { data: notifications = [], isLoading: loadingNotifications } = useQuery({
+  const { data: notificationsData, isLoading: loadingNotifications } = useQuery({
     queryKey: ['notifications'],
-    queryFn: () => notificationService.getMyNotifications(),
+    queryFn: async () => {
+      try {
+        return await notificationService.getMyNotifications();
+      } catch (error) {
+        console.error('Erro ao buscar notificações:', error);
+        return [];
+      }
+    },
     refetchInterval: 30000, // Atualizar a cada 30 segundos
   });
+
+  // Garantir que seja sempre um array
+  const notifications = Array.isArray(notificationsData) ? notificationsData : [];
 
   // Contar não lidas
   const unreadCount = notifications.filter(n => !n.is_read).length;
