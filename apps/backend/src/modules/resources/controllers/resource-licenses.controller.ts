@@ -58,6 +58,11 @@ export class ResourceLicensesController {
     return this.licensesService.findExpiringSoon(daysNumber);
   }
 
+  @Get('stats/general')
+  async getGeneralStats() {
+    return this.licensesService.getGeneralStats();
+  }
+
   @Get('contract/:contractId/stats')
   async getStatsByContract(@Param('contractId') contractId: string) {
     return this.licensesService.getStatsByContract(contractId);
@@ -76,6 +81,15 @@ export class ResourceLicensesController {
   @Get(':id/devices')
   async getAssignedDevices(@Param('id') id: string) {
     return this.licensesService.getAssignedDevices(id);
+  }
+
+  @Get(':id/history')
+  async getHistory(
+    @Param('id') id: string,
+    @Query('limit') limit?: string,
+  ) {
+    const limitNumber = limit ? parseInt(limit) : 50;
+    return this.licensesService.getHistory(id, limitNumber);
   }
 
   @Patch(':id')
@@ -102,6 +116,40 @@ export class ResourceLicensesController {
     @Body('resourceId') resourceId: string,
   ) {
     return this.licensesService.unassignFromResource(id, resourceId);
+  }
+
+  @Post(':id/renew')
+  async renewLicense(
+    @Param('id') id: string,
+    @Body() renewData: {
+      duration_type?: string;
+      duration_value?: number;
+      new_activation_date?: string;
+      extend_from_current?: boolean;
+    },
+    @Req() req: any,
+  ) {
+    const userId = req.user?.id;
+    return this.licensesService.renewLicense(id, renewData as any, userId);
+  }
+
+  @Post(':id/suspend')
+  async suspendLicense(
+    @Param('id') id: string,
+    @Body('reason') reason?: string,
+    @Req() req?: any,
+  ) {
+    const userId = req?.user?.id;
+    return this.licensesService.suspendLicense(id, reason, userId);
+  }
+
+  @Post(':id/reactivate')
+  async reactivateLicense(
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
+    const userId = req.user?.id;
+    return this.licensesService.reactivateLicense(id, userId);
   }
 
   @Delete(':id')

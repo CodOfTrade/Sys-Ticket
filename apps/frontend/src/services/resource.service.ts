@@ -14,6 +14,8 @@ import {
   UpdateLicenseDto,
   CreateQuotaDto,
   UpdateQuotaDto,
+  LicenseGeneralStats,
+  LicenseHistoryEntry,
 } from '@/types/resource.types';
 
 interface ApiResponse<T> {
@@ -190,6 +192,52 @@ export const resourceService = {
   async getLicenseStats(contractId: string): Promise<any> {
     const response = await api.get<ApiResponse<any>>(
       `/v1/resources/licenses/contract/${contractId}/stats`
+    );
+    return response.data.data;
+  },
+
+  async getGeneralLicenseStats(): Promise<LicenseGeneralStats> {
+    const response = await api.get<ApiResponse<LicenseGeneralStats>>(
+      '/v1/resources/licenses/stats/general'
+    );
+    return response.data.data;
+  },
+
+  async getLicenseHistory(licenseId: string, limit: number = 50): Promise<LicenseHistoryEntry[]> {
+    const response = await api.get<ApiResponse<LicenseHistoryEntry[]>>(
+      `/v1/resources/licenses/${licenseId}/history`,
+      { params: { limit } }
+    );
+    return response.data.data;
+  },
+
+  async renewLicense(
+    licenseId: string,
+    renewData: {
+      duration_type?: string;
+      duration_value?: number;
+      new_activation_date?: string;
+      extend_from_current?: boolean;
+    }
+  ): Promise<ResourceLicense> {
+    const response = await api.post<ApiResponse<ResourceLicense>>(
+      `/v1/resources/licenses/${licenseId}/renew`,
+      renewData
+    );
+    return response.data.data;
+  },
+
+  async suspendLicense(licenseId: string, reason?: string): Promise<ResourceLicense> {
+    const response = await api.post<ApiResponse<ResourceLicense>>(
+      `/v1/resources/licenses/${licenseId}/suspend`,
+      { reason }
+    );
+    return response.data.data;
+  },
+
+  async reactivateLicense(licenseId: string): Promise<ResourceLicense> {
+    const response = await api.post<ApiResponse<ResourceLicense>>(
+      `/v1/resources/licenses/${licenseId}/reactivate`
     );
     return response.data.data;
   },

@@ -5,6 +5,7 @@ import { ResourceLicense } from './entities/resource-license.entity';
 import { LicenseDeviceAssignment } from './entities/license-device-assignment.entity';
 import { ContractResourceQuota } from './entities/contract-resource-quota.entity';
 import { ResourceHistory } from './entities/resource-history.entity';
+import { LicenseHistory } from './entities/license-history.entity';
 import { AgentTicket } from './entities/agent-ticket.entity';
 import { AgentChatMessage } from './entities/agent-chat-message.entity';
 import { Ticket } from '../tickets/entities/ticket.entity';
@@ -15,12 +16,14 @@ import { ResourcesService } from './services/resources.service';
 import { ResourceLicensesService } from './services/resource-licenses.service';
 import { ContractQuotasService } from './services/contract-quotas.service';
 import { AgentService } from './services/agent.service';
+import { LicenseHistoryService } from './services/license-history.service';
 import { ResourcesController } from './controllers/resources.controller';
 import { ResourceLicensesController } from './controllers/resource-licenses.controller';
 import { ContractQuotasController } from './controllers/contract-quotas.controller';
 import { AgentController } from './controllers/agent.controller';
 import { ResourcesGateway } from './gateways/resources.gateway';
 import { OfflineDetectionTask } from './tasks/offline-detection.task';
+import { LicenseExpiryTask } from './tasks/license-expiry.task';
 
 @Module({
   imports: [
@@ -30,6 +33,7 @@ import { OfflineDetectionTask } from './tasks/offline-detection.task';
       LicenseDeviceAssignment,
       ContractResourceQuota,
       ResourceHistory,
+      LicenseHistory,
       AgentTicket,
       AgentChatMessage,
       Ticket,
@@ -51,14 +55,17 @@ import { OfflineDetectionTask } from './tasks/offline-detection.task';
     ResourceLicensesService,
     ContractQuotasService,
     AgentService,
+    LicenseHistoryService,
     ResourcesGateway,
     OfflineDetectionTask,
+    LicenseExpiryTask,
   ],
   exports: [
     ResourcesService,
     ResourceLicensesService,
     ContractQuotasService,
     AgentService,
+    LicenseHistoryService,
   ],
 })
 export class ResourcesModule {}

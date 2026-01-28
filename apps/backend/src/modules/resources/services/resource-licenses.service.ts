@@ -7,6 +7,8 @@ import { LicenseDeviceAssignment } from '../entities/license-device-assignment.e
 import { Resource } from '../entities/resource.entity';
 import { CreateLicenseDto } from '../dto/create-license.dto';
 import { UpdateLicenseDto } from '../dto/update-license.dto';
+import { LicenseHistoryService } from './license-history.service';
+import { LicenseHistory } from '../entities/license-history.entity';
 
 @Injectable()
 export class ResourceLicensesService {
@@ -18,6 +20,7 @@ export class ResourceLicensesService {
     @InjectRepository(Resource)
     private readonly resourceRepository: Repository<Resource>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly historyService: LicenseHistoryService,
   ) {}
 
   private calculateExpiryDate(activationDate: Date, durationType: DurationType, durationValue: number): Date {
@@ -130,6 +133,23 @@ export class ResourceLicensesService {
     // Validar que licenca e recurso pertencem ao mesmo cliente
     if (license.client_id !== resource.client_id) {
       throw new BadRequestException('Licenca e recurso devem pertencer ao mesmo cliente');
+    }
+
+    // Validar status da licença - não permitir atribuir licenças expiradas ou suspensas
+    if (license.license_status === LicenseStatus.EXPIRED) {
+      throw new BadRequestException('Nao e possivel atribuir uma licenca expirada');
+    }
+    if (license.license_status === LicenseStatus.SUSPENDED) {
+      throw new BadRequestException('Nao e possivel atribuir uma licenca suspensa');
+    }
+
+    // Validar se a licença já expirou (caso o status ainda não tenha sido atualizado)
+    if (!license.is_perpetual && license.expiry_date) {
+      const now = new Date();
+      const expiryDate = new Date(license.expiry_date);
+      if (expiryDate < now) {
+        throw new BadRequestException('Nao e possivel atribuir uma licenca com data de validade expirada');
+      }
     }
 
     // Verificar se ja esta atribuida a este dispositivo
@@ -355,6 +375,182 @@ export class ResourceLicensesService {
       totalCapacity,
       totalUsed,
       utilizationPercent: totalCapacity > 0 ? Math.round((totalUsed / totalCapacity) * 100) : 0,
+    };
+  }
+
+  /**
+   * Renova/estende uma licença
+   * Permite adicionar mais tempo à licença existente
+   */
+  async renewLicense(
+    id: string,
+    renewData: {
+      duration_type?: DurationType;
+      duration_value?: number;
+      new_activation_date?: string;
+      extend_from_current?: boolean;
+    },
+    userId?: string,
+  ): Promise<ResourceLicense> {
+    const license = await this.findOne(id);
+
+    if (license.is_perpetual) {
+      throw new BadRequestException('Licencas perpetuas nao precisam de renovacao');
+    }
+
+    const oldExpiryDate = license.expiry_date;
+
+    // Definir nova data de ativação
+    let newActivationDate: Date;
+    if (renewData.new_activation_date) {
+      newActivationDate = new Date(renewData.new_activation_date);
+    } else if (renewData.extend_from_current && license.expiry_date) {
+      // Estender a partir da data de expiração atual
+      newActivationDate = new Date(license.expiry_date);
+    } else {
+      // Usar data atual
+      newActivationDate = new Date();
+    }
+
+    // Usar durações fornecidas ou manter as atuais
+    const durationType = renewData.duration_type || license.duration_type;
+    const durationValue = renewData.duration_value || license.duration_value;
+
+    if (!durationType || !durationValue) {
+      throw new BadRequestException('Tipo e valor de duracao sao obrigatorios para renovacao');
+    }
+
+    // Calcular nova data de expiração
+    const newExpiryDate = this.calculateExpiryDate(newActivationDate, durationType, durationValue);
+
+    // Atualizar licença
+    license.activation_date = newActivationDate;
+    license.expiry_date = newExpiryDate;
+    license.duration_type = durationType;
+    license.duration_value = durationValue;
+
+    // Se estava expirada, reativar
+    if (license.license_status === LicenseStatus.EXPIRED) {
+      license.license_status = license.current_activations > 0
+        ? LicenseStatus.ASSIGNED
+        : LicenseStatus.AVAILABLE;
+    }
+
+    const saved = await this.licenseRepository.save(license);
+
+    // Registrar no histórico
+    await this.historyService.logRenewed(saved, oldExpiryDate, newExpiryDate, userId);
+
+    // Emitir evento WebSocket
+    this.eventEmitter.emit('license.updated', { licenseId: saved.id });
+
+    return saved;
+  }
+
+  /**
+   * Suspende uma licença
+   */
+  async suspendLicense(id: string, reason?: string, userId?: string): Promise<ResourceLicense> {
+    const license = await this.findOne(id);
+    const oldStatus = license.license_status;
+
+    license.license_status = LicenseStatus.SUSPENDED;
+
+    const saved = await this.licenseRepository.save(license);
+
+    // Registrar no histórico
+    await this.historyService.logStatusChange(saved, oldStatus, LicenseStatus.SUSPENDED, false, userId);
+
+    // Emitir evento WebSocket
+    this.eventEmitter.emit('license.updated', { licenseId: saved.id });
+
+    return saved;
+  }
+
+  /**
+   * Reativa uma licença suspensa
+   */
+  async reactivateLicense(id: string, userId?: string): Promise<ResourceLicense> {
+    const license = await this.findOne(id);
+
+    if (license.license_status !== LicenseStatus.SUSPENDED) {
+      throw new BadRequestException('Apenas licencas suspensas podem ser reativadas');
+    }
+
+    // Verificar se não está expirada
+    if (!license.is_perpetual && license.expiry_date) {
+      const now = new Date();
+      if (new Date(license.expiry_date) < now) {
+        throw new BadRequestException('Licenca esta expirada. Renove antes de reativar');
+      }
+    }
+
+    const oldStatus = license.license_status;
+    license.license_status = license.current_activations > 0
+      ? LicenseStatus.ASSIGNED
+      : LicenseStatus.AVAILABLE;
+
+    const saved = await this.licenseRepository.save(license);
+
+    // Registrar no histórico
+    await this.historyService.logStatusChange(saved, oldStatus, license.license_status, false, userId);
+
+    // Emitir evento WebSocket
+    this.eventEmitter.emit('license.updated', { licenseId: saved.id });
+
+    return saved;
+  }
+
+  /**
+   * Retorna histórico de alterações da licença
+   */
+  async getHistory(licenseId: string, limit: number = 50): Promise<LicenseHistory[]> {
+    return this.historyService.getHistory(licenseId, limit);
+  }
+
+  /**
+   * Estatísticas gerais de licenças (não por contrato)
+   */
+  async getGeneralStats(): Promise<any> {
+    const licenses = await this.licenseRepository.find();
+
+    const total = licenses.length;
+    const available = licenses.filter(l => l.license_status === LicenseStatus.AVAILABLE).length;
+    const assigned = licenses.filter(l => l.license_status === LicenseStatus.ASSIGNED).length;
+    const expired = licenses.filter(l => l.license_status === LicenseStatus.EXPIRED).length;
+    const suspended = licenses.filter(l => l.license_status === LicenseStatus.SUSPENDED).length;
+    const perpetual = licenses.filter(l => l.is_perpetual).length;
+
+    // Licenças por tipo
+    const byType = licenses.reduce((acc, l) => {
+      acc[l.license_type] = (acc[l.license_type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Custo total
+    const totalCost = licenses.reduce((sum, l) => sum + (l.cost || 0), 0);
+
+    // Licenças expirando em 30 dias
+    const now = new Date();
+    const thirtyDays = new Date();
+    thirtyDays.setDate(thirtyDays.getDate() + 30);
+
+    const expiringSoon = licenses.filter(l => {
+      if (l.is_perpetual || !l.expiry_date) return false;
+      const expiry = new Date(l.expiry_date);
+      return expiry > now && expiry <= thirtyDays;
+    }).length;
+
+    return {
+      total,
+      available,
+      assigned,
+      expired,
+      suspended,
+      perpetual,
+      expiringSoon,
+      byType,
+      totalCost,
     };
   }
 }

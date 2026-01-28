@@ -326,3 +326,45 @@ export interface CreateQuotaDto {
 }
 
 export interface UpdateQuotaDto extends Partial<CreateQuotaDto> {}
+
+// License Statistics
+export interface LicenseGeneralStats {
+  total: number;
+  available: number;
+  assigned: number;
+  expired: number;
+  suspended: number;
+  perpetual: number;
+  expiringSoon: number;
+  byType: Record<string, number>;
+  totalCost: number;
+}
+
+// License History
+export enum LicenseHistoryEventType {
+  CREATED = 'created',
+  UPDATED = 'updated',
+  DELETED = 'deleted',
+  STATUS_CHANGED = 'status_changed',
+  ASSIGNED = 'assigned',
+  UNASSIGNED = 'unassigned',
+  EXPIRED = 'expired',
+  RENEWED = 'renewed',
+  SUSPENDED = 'suspended',
+  REACTIVATED = 'reactivated',
+}
+
+export interface LicenseHistoryEntry {
+  id: string;
+  license_id: string;
+  event_type: LicenseHistoryEventType;
+  event_description?: string;
+  old_data?: Record<string, any>;
+  new_data?: Record<string, any>;
+  resource_id?: string;
+  resource?: Resource;
+  changed_by_user_id?: string;
+  is_automatic: boolean;
+  ip_address?: string;
+  created_at: string;
+}
