@@ -24,13 +24,15 @@ const ALERT_TYPE_DESCRIPTIONS: Record<string, string> = {
 export function NotificationSettings() {
   const queryClient = useQueryClient();
 
-  const { data: configsData, isLoading } = useQuery({
+  const { data: configsData, isLoading, error } = useQuery({
     queryKey: ['notification-configs'],
     queryFn: async () => {
       try {
-        return await notificationService.getConfigs();
+        const result = await notificationService.getConfigs();
+        console.log('✅ Configs recebidas:', result);
+        return result;
       } catch (error) {
-        console.error('Erro ao buscar configs:', error);
+        console.error('❌ Erro ao buscar configs:', error);
         return [];
       }
     },
@@ -38,6 +40,13 @@ export function NotificationSettings() {
 
   // Garantir que seja sempre um array
   const configs = Array.isArray(configsData) ? configsData : [];
+
+  console.log('📊 Configs após validação:', configs);
+  console.log('📊 licenseConfigs:', configs.filter(c => c.alert_type?.includes('license')));
+
+  if (error) {
+    console.error('❌ Query error:', error);
+  }
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<NotificationConfig> }) =>
