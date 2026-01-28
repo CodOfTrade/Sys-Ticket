@@ -4,6 +4,7 @@ import { PricingSettings } from '@/components/Settings/PricingSettings';
 import { LogoSettings } from '@/components/Settings/LogoSettings';
 import { ChecklistSettings } from '@/components/Settings/ChecklistSettings';
 import { ServiceCatalogSettings } from '@/components/Settings/ServiceCatalogSettings';
+import { NotificationSettings } from '@/components/Settings/NotificationSettings';
 
 type SettingsTab = 'pricing' | 'branding' | 'checklists' | 'catalogs' | 'users' | 'notifications' | 'general';
 
@@ -74,11 +75,7 @@ export function Settings() {
                 Usuarios e Permissoes - Em desenvolvimento
               </div>
             )}
-            {activeTab === 'notifications' && (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                Notificacoes - Em desenvolvimento
-              </div>
-            )}
+            {activeTab === 'notifications' && <NotificationSettings />}
             {activeTab === 'general' && (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 Configuracoes Gerais - Em desenvolvimento

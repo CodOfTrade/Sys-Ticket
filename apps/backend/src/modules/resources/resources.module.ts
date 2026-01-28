@@ -12,6 +12,7 @@ import { Ticket } from '../tickets/entities/ticket.entity';
 import { ServiceDesk } from '../service-desks/entities/service-desk.entity';
 import { SigeClient } from '../clients/entities/sige-client.entity';
 import { ClientsModule } from '../clients/clients.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { ResourcesService } from './services/resources.service';
 import { ResourceLicensesService } from './services/resource-licenses.service';
 import { ContractQuotasService } from './services/contract-quotas.service';
@@ -41,6 +42,7 @@ import { LicenseExpiryTask } from './tasks/license-expiry.task';
       SigeClient,
     ]),
     forwardRef(() => ClientsModule),
+    forwardRef(() => NotificationsModule),
   ],
   controllers: [
     // IMPORTANTE: Controllers com rotas mais específicas devem vir ANTES dos genéricos
