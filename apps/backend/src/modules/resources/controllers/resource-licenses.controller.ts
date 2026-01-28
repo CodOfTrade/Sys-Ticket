@@ -9,7 +9,11 @@ import {
   Query,
   UseGuards,
   Req,
+  Res,
+  Header,
+  StreamableFile,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ResourceLicensesService } from '../services/resource-licenses.service';
 import { CreateLicenseDto } from '../dto/create-license.dto';
 import { UpdateLicenseDto } from '../dto/update-license.dto';
@@ -61,6 +65,25 @@ export class ResourceLicensesController {
   @Get('stats/general')
   async getGeneralStats() {
     return this.licensesService.getGeneralStats();
+  }
+
+  @Get('export/excel')
+  @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  async exportToExcel(
+    @Query('clientId') clientId?: string,
+    @Query('licenseStatus') licenseStatus?: string,
+    @Query('licenseType') licenseType?: string,
+    @Res() res?: Response,
+  ) {
+    const buffer = await this.licensesService.exportToExcel({
+      client_id: clientId,
+      license_status: licenseStatus,
+      license_type: licenseType,
+    });
+
+    const filename = `licencas-${new Date().toISOString().split('T')[0]}.xlsx`;
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    res.send(buffer);
   }
 
   @Get('contract/:contractId/stats')

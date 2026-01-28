@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere, LessThanOrEqual, In } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import * as ExcelJS from 'exceljs';
 import { ResourceLicense, LicenseStatus, DurationType } from '../entities/resource-license.entity';
 import { LicenseDeviceAssignment } from '../entities/license-device-assignment.entity';
 import { Resource } from '../entities/resource.entity';
@@ -552,5 +553,142 @@ export class ResourceLicensesService {
       byType,
       totalCost,
     };
+  }
+
+  /**
+   * Exporta licenças para Excel
+   */
+  async exportToExcel(filters?: {
+    client_id?: string;
+    license_status?: string;
+    license_type?: string;
+  }): Promise<Buffer> {
+    const licenses = await this.findAll(filters);
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Sys-Ticket';
+    workbook.created = new Date();
+
+    const sheet = workbook.addWorksheet('Licenças', {
+      properties: { tabColor: { argb: '4F81BD' } },
+    });
+
+    // Definir colunas
+    sheet.columns = [
+      { header: 'Produto', key: 'product_name', width: 30 },
+      { header: 'Versão', key: 'product_version', width: 12 },
+      { header: 'Cliente', key: 'client_name', width: 30 },
+      { header: 'Tipo', key: 'license_type', width: 15 },
+      { header: 'Status', key: 'license_status', width: 12 },
+      { header: 'Tipo Ativação', key: 'activation_type', width: 15 },
+      { header: 'Chave', key: 'license_key', width: 35 },
+      { header: 'Email Vinculado', key: 'linked_email', width: 30 },
+      { header: 'Fornecedor', key: 'vendor', width: 20 },
+      { header: 'Custo (R$)', key: 'cost', width: 12 },
+      { header: 'Data Ativação', key: 'activation_date', width: 15 },
+      { header: 'Data Expiração', key: 'expiry_date', width: 15 },
+      { header: 'Perpétua', key: 'is_perpetual', width: 10 },
+      { header: 'Ativações', key: 'activations', width: 12 },
+      { header: 'Criada em', key: 'created_at', width: 18 },
+    ];
+
+    // Estilo do cabeçalho
+    sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } };
+    sheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4F81BD' },
+    };
+    sheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Mapeamento de labels
+    const typeLabels: Record<string, string> = {
+      windows: 'Windows',
+      office: 'Office',
+      antivirus: 'Antivírus',
+      custom: 'Personalizada',
+    };
+
+    const statusLabels: Record<string, string> = {
+      available: 'Disponível',
+      assigned: 'Atribuída',
+      expired: 'Expirada',
+      suspended: 'Suspensa',
+    };
+
+    const activationTypeLabels: Record<string, string> = {
+      serial: 'Chave Serial',
+      account: 'Conta/Email',
+      hybrid: 'Híbrido',
+    };
+
+    // Adicionar dados
+    licenses.forEach((license) => {
+      const row = sheet.addRow({
+        product_name: license.product_name,
+        product_version: license.product_version || '-',
+        client_name: license.client?.nome || license.client?.nomeFantasia || '-',
+        license_type: typeLabels[license.license_type] || license.license_type,
+        license_status: statusLabels[license.license_status] || license.license_status,
+        activation_type: activationTypeLabels[license.activation_type] || license.activation_type || '-',
+        license_key: license.license_key || '-',
+        linked_email: license.linked_email || '-',
+        vendor: license.vendor || '-',
+        cost: license.cost ? Number(license.cost).toFixed(2) : '-',
+        activation_date: license.activation_date
+          ? new Date(license.activation_date).toLocaleDateString('pt-BR')
+          : '-',
+        expiry_date: license.is_perpetual
+          ? 'Perpétua'
+          : license.expiry_date
+            ? new Date(license.expiry_date).toLocaleDateString('pt-BR')
+            : '-',
+        is_perpetual: license.is_perpetual ? 'Sim' : 'Não',
+        activations: `${license.current_activations}/${license.max_activations || '∞'}`,
+        created_at: new Date(license.created_at).toLocaleString('pt-BR'),
+      });
+
+      // Colorir linha baseado no status
+      if (license.license_status === LicenseStatus.EXPIRED) {
+        row.eachCell((cell) => {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFEBEE' },
+          };
+        });
+      } else if (license.license_status === LicenseStatus.SUSPENDED) {
+        row.eachCell((cell) => {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF8E1' },
+          };
+        });
+      }
+    });
+
+    // Adicionar bordas
+    sheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+    });
+
+    // Adicionar filtro automático
+    sheet.autoFilter = {
+      from: 'A1',
+      to: `O${licenses.length + 1}`,
+    };
+
+    // Congelar linha de cabeçalho
+    sheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+    return (await workbook.xlsx.writeBuffer()) as Buffer;
   }
 }

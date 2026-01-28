@@ -242,6 +242,26 @@ export const resourceService = {
     return response.data.data;
   },
 
+  async exportLicensesToExcel(params?: {
+    clientId?: string;
+    licenseStatus?: string;
+    licenseType?: string;
+  }): Promise<void> {
+    const response = await api.get('/v1/resources/licenses/export/excel', {
+      params,
+      responseType: 'blob',
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `licencas-${new Date().toISOString().split('T')[0]}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
   // ========================================
   // QUOTAS
   // ========================================

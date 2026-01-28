@@ -48,6 +48,7 @@
     "class-validator": "^0.14.1",
     "class-transformer": "^0.5.1",
     "axios": "^1.6.5",
+    "exceljs": "^4.4.0",
     "multer": "^1.4.5-lts.1",
     "uuid": "^9.0.1",
     "date-fns": "^3.0.6",

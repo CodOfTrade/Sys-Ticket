@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Plus, Search, Filter, Key, AlertTriangle, Check, X, Loader2, Eye, Building2, Calendar, DollarSign, User, FileText, Copy, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Key, AlertTriangle, Check, X, Loader2, Eye, Building2, Calendar, DollarSign, User, FileText, Copy, Trash2, Download, RotateCcw, Clock } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
 import { clientService } from '@/services/client.service';
-import { LicenseStatus, LicenseType, CreateLicenseDto, ActivationType, DurationType, ResourceLicense } from '@/types/resource.types';
+import { LicenseStatus, LicenseType, CreateLicenseDto, ActivationType, DurationType, ResourceLicense, LicenseHistoryEntry } from '@/types/resource.types';
 import { useResourcesSocket } from '@/hooks/useResourcesSocket';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -36,6 +36,34 @@ const activationTypeLabels: Record<string, string> = {
   hybrid: 'Híbrido (Serial + Conta)',
 };
 
+const eventTypeLabels: Record<string, string> = {
+  created: 'Criada',
+  updated: 'Atualizada',
+  deleted: 'Excluída',
+  status_changed: 'Status Alterado',
+  assigned: 'Atribuída',
+  unassigned: 'Desatribuída',
+  expired: 'Expirada',
+  renewed: 'Renovada',
+  suspended: 'Suspensa',
+  reactivated: 'Reativada',
+};
+
+const getEventTypeLabel = (type: string) => eventTypeLabels[type] || type;
+
+const getEventTypeStyle = (type: string) => {
+  switch (type) {
+    case 'created': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+    case 'renewed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+    case 'expired': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+    case 'suspended': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+    case 'assigned': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
+    case 'unassigned': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    case 'reactivated': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+    default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+  }
+};
+
 const initialFormData: CreateLicenseDto = {
   product_name: '',
   license_type: LicenseType.WINDOWS,
@@ -61,6 +89,12 @@ export default function ResourceLicenses() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [clientFilter, setClientFilter] = useState<string>('');
+  const [vendorFilter, setVendorFilter] = useState<string>('');
+  const [expiryStartFilter, setExpiryStartFilter] = useState<string>('');
+  const [expiryEndFilter, setExpiryEndFilter] = useState<string>('');
+  const [costMinFilter, setCostMinFilter] = useState<string>('');
+  const [costMaxFilter, setCostMaxFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [formData, setFormData] = useState<CreateLicenseDto>(initialFormData);
@@ -87,11 +121,17 @@ export default function ResourceLicenses() {
     queryFn: () => resourceService.getExpiringLicenses(30),
   });
 
-  // Query para clientes (para o select)
+  // Query para clientes (para o select de filtro e modal)
   const { data: clientsData } = useQuery({
     queryKey: ['clients-list'],
     queryFn: () => clientService.findAll(1, 100),
-    enabled: showCreateModal,
+  });
+
+  // Query para histórico da licença selecionada
+  const { data: licenseHistory = [], isLoading: loadingHistory } = useQuery({
+    queryKey: ['license-history', selectedLicense?.id],
+    queryFn: () => resourceService.getLicenseHistory(selectedLicense!.id),
+    enabled: !!selectedLicense,
   });
 
   // Mutation para criar licença
@@ -182,11 +222,51 @@ export default function ResourceLicenses() {
     createMutation.mutate(data);
   };
 
-  const filteredLicenses = licenses.filter(
-    (license) =>
+  const filteredLicenses = licenses.filter((license) => {
+    // Filtro de busca
+    const matchesSearch = !searchTerm ||
       license.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      license.license_key?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      license.license_key?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Filtro de cliente
+    const matchesClient = !clientFilter || license.client_id === clientFilter;
+
+    // Filtro de fornecedor
+    const matchesVendor = !vendorFilter ||
+      license.vendor?.toLowerCase().includes(vendorFilter.toLowerCase());
+
+    // Filtro de data de expiração
+    const matchesExpiryStart = !expiryStartFilter || !license.expiry_date ||
+      new Date(license.expiry_date) >= new Date(expiryStartFilter);
+    const matchesExpiryEnd = !expiryEndFilter || !license.expiry_date ||
+      new Date(license.expiry_date) <= new Date(expiryEndFilter);
+
+    // Filtro de custo
+    const matchesCostMin = !costMinFilter || !license.cost ||
+      Number(license.cost) >= Number(costMinFilter);
+    const matchesCostMax = !costMaxFilter || !license.cost ||
+      Number(license.cost) <= Number(costMaxFilter);
+
+    return matchesSearch && matchesClient && matchesVendor &&
+           matchesExpiryStart && matchesExpiryEnd && matchesCostMin && matchesCostMax;
+  });
+
+  // Verifica se há algum filtro avançado aplicado
+  const hasAdvancedFilters = clientFilter || vendorFilter || expiryStartFilter ||
+    expiryEndFilter || costMinFilter || costMaxFilter;
+
+  // Função para limpar todos os filtros
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setTypeFilter('');
+    setStatusFilter('');
+    setClientFilter('');
+    setVendorFilter('');
+    setExpiryStartFilter('');
+    setExpiryEndFilter('');
+    setCostMinFilter('');
+    setCostMaxFilter('');
+  };
 
   const stats = {
     total: licenses.length,
@@ -204,6 +284,26 @@ export default function ResourceLicenses() {
   });
   const contracts = contractsData || [];
 
+  // Estado para exportação
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Handler para exportar Excel
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      await resourceService.exportLicensesToExcel({
+        clientId: clientFilter || undefined,
+        licenseStatus: statusFilter || undefined,
+        licenseType: typeFilter || undefined,
+      });
+      toast.success('Relatório exportado com sucesso!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Erro ao exportar relatório');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -216,13 +316,32 @@ export default function ResourceLicenses() {
             Gerencie licenças de Windows, Office, antivírus e mais
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-        >
-          <Plus size={20} />
-          Nova Licença
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleExportExcel}
+            disabled={isExporting}
+            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 disabled:opacity-50"
+          >
+            {isExporting ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                Exportando...
+              </>
+            ) : (
+              <>
+                <Download size={20} />
+                Exportar Excel
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            <Plus size={20} />
+            Nova Licença
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -314,49 +433,169 @@ export default function ResourceLicenses() {
           {/* Filter Button */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
+            className={`inline-flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
+              hasAdvancedFilters || typeFilter || statusFilter
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+            }`}
           >
             <Filter size={20} />
             Filtros
+            {(hasAdvancedFilters || typeFilter || statusFilter) && (
+              <span className="bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {[typeFilter, statusFilter, clientFilter, vendorFilter, expiryStartFilter, expiryEndFilter, costMinFilter, costMaxFilter].filter(Boolean).length}
+              </span>
+            )}
           </button>
+
+          {/* Results count */}
+          {(searchTerm || hasAdvancedFilters || typeFilter || statusFilter) && (
+            <span className="text-sm text-gray-500 dark:text-gray-400 self-center">
+              {filteredLicenses.length} de {licenses.length} licenças
+            </span>
+          )}
         </div>
 
         {/* Expanded Filters */}
         {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Tipo
-              </label>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              >
-                <option value="">Todos</option>
-                <option value="windows">Windows</option>
-                <option value="office">Office</option>
-                <option value="antivirus">Antivírus</option>
-                <option value="custom">Personalizada</option>
-              </select>
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
+            {/* Primeira linha - filtros básicos */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Tipo
+                </label>
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="">Todos</option>
+                  <option value="windows">Windows</option>
+                  <option value="office">Office</option>
+                  <option value="antivirus">Antivírus</option>
+                  <option value="custom">Personalizada</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Status
+                </label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="">Todos</option>
+                  <option value="available">Disponível</option>
+                  <option value="assigned">Atribuída</option>
+                  <option value="expired">Expirada</option>
+                  <option value="suspended">Suspensa</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Cliente
+                </label>
+                <select
+                  value={clientFilter}
+                  onChange={(e) => setClientFilter(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="">Todos</option>
+                  {clientsData?.data?.map((client: any) => (
+                    <option key={client.id} value={client.id}>
+                      {client.nome || client.nome_fantasia || client.razao_social}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Fornecedor
+                </label>
+                <input
+                  type="text"
+                  value={vendorFilter}
+                  onChange={(e) => setVendorFilter(e.target.value)}
+                  placeholder="Filtrar por fornecedor..."
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Status
-              </label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              >
-                <option value="">Todos</option>
-                <option value="available">Disponível</option>
-                <option value="assigned">Atribuída</option>
-                <option value="expired">Expirada</option>
-                <option value="suspended">Suspensa</option>
-              </select>
+            {/* Segunda linha - filtros de data e custo */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Expira de
+                </label>
+                <input
+                  type="date"
+                  value={expiryStartFilter}
+                  onChange={(e) => setExpiryStartFilter(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Expira até
+                </label>
+                <input
+                  type="date"
+                  value={expiryEndFilter}
+                  onChange={(e) => setExpiryEndFilter(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Custo mínimo (R$)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={costMinFilter}
+                  onChange={(e) => setCostMinFilter(e.target.value)}
+                  placeholder="0,00"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Custo máximo (R$)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={costMaxFilter}
+                  onChange={(e) => setCostMaxFilter(e.target.value)}
+                  placeholder="0,00"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
             </div>
+
+            {/* Botão limpar filtros */}
+            {(hasAdvancedFilters || typeFilter || statusFilter || searchTerm) && (
+              <div className="flex justify-end">
+                <button
+                  onClick={clearAllFilters}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  <RotateCcw size={16} />
+                  Limpar filtros
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1163,6 +1402,48 @@ export default function ResourceLicenses() {
                   </div>
                 </div>
               )}
+
+              {/* Histórico de Alterações */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                  <Clock size={16} />
+                  Histórico de Alterações
+                </h4>
+                {loadingHistory ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="animate-spin text-gray-400" size={24} />
+                  </div>
+                ) : licenseHistory.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                    Nenhum registro de alteração
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {licenseHistory.map((entry: LicenseHistoryEntry) => (
+                      <div key={entry.id} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${getEventTypeStyle(entry.event_type)}`}>
+                              {getEventTypeLabel(entry.event_type)}
+                            </span>
+                            {entry.event_description && (
+                              <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 break-words">
+                                {entry.event_description}
+                              </p>
+                            )}
+                            {entry.is_automatic && (
+                              <span className="text-xs text-gray-400 italic block mt-1">Automático</span>
+                            )}
+                          </div>
+                          <span className="text-xs text-gray-500 whitespace-nowrap">
+                            {format(new Date(entry.created_at), 'dd/MM/yy HH:mm', { locale: ptBR })}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Timestamps */}
               <div className="text-xs text-gray-500 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-1">
