@@ -35,6 +35,13 @@ export class NotificationsController {
     return { count };
   }
 
+  @Post('read-all')
+  async markAllAsRead(@Req() req: any) {
+    const userId = req.user?.id;
+    await this.notificationsService.markAllAsRead(userId);
+    return { success: true };
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.notificationsService.findOne(id);
@@ -44,13 +51,6 @@ export class NotificationsController {
   async markAsRead(@Param('id') id: string, @Req() req: any) {
     const userId = req.user?.id;
     return this.notificationsService.markAsRead(id, userId);
-  }
-
-  @Post('read-all')
-  async markAllAsRead(@Req() req: any) {
-    const userId = req.user?.id;
-    await this.notificationsService.markAllAsRead(userId);
-    return { success: true };
   }
 
   @Delete(':id')
