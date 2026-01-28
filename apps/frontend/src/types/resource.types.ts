@@ -39,6 +39,11 @@ export enum ActivationType {
   HYBRID = 'hybrid',
 }
 
+export enum DurationType {
+  MONTHS = 'months',
+  YEARS = 'years',
+}
+
 export enum ResourceEventType {
   CREATED = 'created',
   UPDATED = 'updated',
@@ -137,6 +142,9 @@ export interface ResourceLicense {
   purchase_date?: string;
   expiry_date?: string;
   is_perpetual: boolean;
+  duration_type?: DurationType;
+  duration_value?: number;
+  activation_date?: string;
   max_activations?: number;
   current_activations: number;
   vendor?: string;
@@ -289,6 +297,9 @@ export interface CreateLicenseDto {
   purchase_date?: string;
   expiry_date?: string;
   is_perpetual?: boolean;
+  duration_type?: DurationType;
+  duration_value?: number;
+  activation_date?: string;
   max_activations?: number;
   vendor?: string;
   purchase_order?: string;

@@ -32,6 +32,11 @@ export enum ActivationType {
   HYBRID = 'hybrid',      // Serial + Conta (Office perpetuo)
 }
 
+export enum DurationType {
+  MONTHS = 'months',
+  YEARS = 'years',
+}
+
 @Entity('resource_licenses')
 export class ResourceLicense {
   @PrimaryGeneratedColumn('uuid')
@@ -101,6 +106,20 @@ export class ResourceLicense {
 
   @Column({ type: 'boolean', default: false })
   is_perpetual: boolean;
+
+  // Duração da licença (alternativa a expiry_date manual)
+  @Column({
+    type: 'enum',
+    enum: DurationType,
+    nullable: true,
+  })
+  duration_type: DurationType | null;
+
+  @Column({ type: 'integer', nullable: true })
+  duration_value: number | null;
+
+  @Column({ type: 'date', nullable: true })
+  activation_date: Date | null;
 
   // Cotas
   @Column({ type: 'integer', nullable: true })

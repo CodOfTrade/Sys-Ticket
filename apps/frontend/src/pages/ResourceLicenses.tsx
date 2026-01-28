@@ -3,7 +3,7 @@ import { Plus, Search, Filter, Key, AlertTriangle, Check, X, Loader2, Eye, Build
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
 import { clientService } from '@/services/client.service';
-import { LicenseStatus, LicenseType, CreateLicenseDto, ActivationType, ResourceLicense } from '@/types/resource.types';
+import { LicenseStatus, LicenseType, CreateLicenseDto, ActivationType, DurationType, ResourceLicense } from '@/types/resource.types';
 import { useResourcesSocket } from '@/hooks/useResourcesSocket';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -48,6 +48,9 @@ const initialFormData: CreateLicenseDto = {
   max_activations: 1,
   is_perpetual: true,
   expiry_date: '',
+  duration_type: undefined,
+  duration_value: undefined,
+  activation_date: '',
   vendor: '',
   cost: undefined,
   notes: '',
@@ -147,7 +150,12 @@ export default function ResourceLicenses() {
       ...formData,
       license_key: shouldHaveKey ? formData.license_key || undefined : undefined,
       linked_email: shouldHaveEmail ? formData.linked_email || undefined : undefined,
-      expiry_date: formData.is_perpetual ? undefined : formData.expiry_date || undefined,
+      // Se não perpétua, enviar dados de duração (backend calcula expiry_date)
+      duration_type: !formData.is_perpetual ? formData.duration_type : undefined,
+      duration_value: !formData.is_perpetual ? formData.duration_value : undefined,
+      activation_date: !formData.is_perpetual ? formData.activation_date || undefined : undefined,
+      // Não enviar expiry_date manual - backend calcula a partir da duração
+      expiry_date: undefined,
       contract_id: formData.contract_id || undefined,
       cost: formData.cost ? Number(formData.cost) : undefined,
       max_activations: formData.max_activations ? Number(formData.max_activations) : 1,
@@ -436,11 +444,18 @@ export default function ResourceLicenses() {
                       {license.is_perpetual ? (
                         <span className="text-gray-500">Perpétua</span>
                       ) : license.expiry_date ? (
-                        <span className={new Date(license.expiry_date) < new Date() ? 'text-red-600' : 'text-gray-900 dark:text-white'}>
-                          {format(new Date(license.expiry_date), 'dd/MM/yyyy', { locale: ptBR })}
-                        </span>
+                        <div>
+                          <span className={new Date(license.expiry_date) < new Date() ? 'text-red-600' : 'text-gray-900 dark:text-white'}>
+                            {format(new Date(license.expiry_date), 'dd/MM/yyyy', { locale: ptBR })}
+                          </span>
+                          {license.duration_type && license.duration_value && (
+                            <span className="text-xs text-gray-500 block">
+                              ({license.duration_value} {license.duration_type === 'months' ? 'meses' : 'anos'})
+                            </span>
+                          )}
+                        </div>
                       ) : (
-                        <span className="text-gray-500">-</span>
+                        <span className="text-gray-500">Não definida</span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -655,13 +670,20 @@ export default function ResourceLicenses() {
               )}
 
               {/* Perpétua / Validade */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     id="is_perpetual"
                     checked={formData.is_perpetual}
-                    onChange={(e) => setFormData({ ...formData, is_perpetual: e.target.checked })}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      is_perpetual: e.target.checked,
+                      duration_type: e.target.checked ? undefined : formData.duration_type,
+                      duration_value: e.target.checked ? undefined : formData.duration_value,
+                      activation_date: e.target.checked ? '' : formData.activation_date,
+                      expiry_date: e.target.checked ? '' : formData.expiry_date,
+                    })}
                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="is_perpetual" className="text-sm text-gray-700 dark:text-gray-300">
@@ -670,16 +692,77 @@ export default function ResourceLicenses() {
                 </div>
 
                 {!formData.is_perpetual && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Data de Expiração
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.expiry_date || ''}
-                      onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    {/* Tipo de Duração */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Tipo de Duração
+                      </label>
+                      <select
+                        value={formData.duration_type || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          duration_type: (e.target.value as DurationType) || undefined
+                        })}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      >
+                        <option value="">Selecione</option>
+                        <option value="months">Meses</option>
+                        <option value="years">Anos</option>
+                      </select>
+                    </div>
+
+                    {/* Quantidade */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Quantidade
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={formData.duration_value || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          duration_value: parseInt(e.target.value) || undefined
+                        })}
+                        placeholder="Ex: 12"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                    </div>
+
+                    {/* Data de Ativação */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Data de Ativação
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.activation_date || ''}
+                        onChange={(e) => setFormData({ ...formData, activation_date: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Data a partir da qual começa a contar o período
+                      </p>
+                    </div>
+
+                    {/* Preview da Data de Expiração */}
+                    {formData.duration_type && formData.duration_value && formData.activation_date && (
+                      <div className="md:col-span-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          <span className="font-medium">Data de expiração calculada:</span>{' '}
+                          {(() => {
+                            const date = new Date(formData.activation_date + 'T00:00:00');
+                            if (formData.duration_type === 'months') {
+                              date.setMonth(date.getMonth() + formData.duration_value);
+                            } else {
+                              date.setFullYear(date.getFullYear() + formData.duration_value);
+                            }
+                            return format(date, 'dd/MM/yyyy', { locale: ptBR });
+                          })()}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

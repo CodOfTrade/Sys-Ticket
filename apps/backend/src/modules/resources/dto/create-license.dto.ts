@@ -1,5 +1,5 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsBoolean, IsDateString, IsObject, IsNumber, IsInt, IsEmail } from 'class-validator';
-import { LicenseType, LicenseStatus, ActivationType } from '../entities/resource-license.entity';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, IsBoolean, IsDateString, IsObject, IsNumber, IsInt, IsEmail, Min } from 'class-validator';
+import { LicenseType, LicenseStatus, ActivationType, DurationType } from '../entities/resource-license.entity';
 
 export class CreateLicenseDto {
   @IsString()
@@ -57,6 +57,19 @@ export class CreateLicenseDto {
   @IsBoolean()
   @IsOptional()
   is_perpetual?: boolean;
+
+  @IsEnum(DurationType)
+  @IsOptional()
+  duration_type?: DurationType;
+
+  @IsInt()
+  @IsOptional()
+  @Min(1)
+  duration_value?: number;
+
+  @IsDateString()
+  @IsOptional()
+  activation_date?: string;
 
   @IsInt()
   @IsOptional()
