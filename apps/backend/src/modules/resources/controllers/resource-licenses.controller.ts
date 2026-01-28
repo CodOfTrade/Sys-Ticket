@@ -73,11 +73,11 @@ export class ResourceLicensesController {
     @Query('clientId') clientId?: string,
     @Query('licenseStatus') licenseStatus?: string,
     @Query('licenseType') licenseType?: string,
-    @Res() res?: Response,
+    @Res() res: Response = null as any,
   ) {
     const buffer = await this.licensesService.exportToExcel({
       client_id: clientId,
-      license_status: licenseStatus,
+      license_status: licenseStatus as any,
       license_type: licenseType,
     });
 

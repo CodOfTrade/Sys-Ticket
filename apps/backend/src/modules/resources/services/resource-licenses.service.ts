@@ -563,7 +563,7 @@ export class ResourceLicensesService {
     license_status?: string;
     license_type?: string;
   }): Promise<Buffer> {
-    const licenses = await this.findAll(filters);
+    const licenses = await this.findAll(filters as any);
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Sys-Ticket';
@@ -689,6 +689,7 @@ export class ResourceLicensesService {
     // Congelar linha de cabeçalho
     sheet.views = [{ state: 'frozen', ySplit: 1 }];
 
-    return (await workbook.xlsx.writeBuffer()) as Buffer;
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
   }
 }
