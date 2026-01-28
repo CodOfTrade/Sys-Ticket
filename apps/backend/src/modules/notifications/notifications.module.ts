@@ -15,7 +15,7 @@ import { UsersModule } from '../users/users.module';
     TypeOrmModule.forFeature([Notification, NotificationConfig, User]),
     forwardRef(() => UsersModule),
   ],
-  controllers: [NotificationsController, NotificationConfigController],
+  controllers: [NotificationConfigController, NotificationsController],
   providers: [
     NotificationsService,
     NotificationConfigService,
