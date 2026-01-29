@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog, Notification } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification } from 'electron';
 import path from 'path';
 import { execSync } from 'child_process';
 import { StorageService } from './services/StorageService';
@@ -56,6 +56,13 @@ async function handleUninstallCommand(): Promise<{ success: boolean; message?: s
 
     // Limpar configuração
     const emptyConfig = {
+      agentId: null,
+      agentToken: null,
+      resourceId: null,
+      resourceCode: null,
+      clientId: null,
+      clientName: null,
+      contractId: null,
       apiUrl: storageService.loadConfig().apiUrl,
       configured: false,
     };
