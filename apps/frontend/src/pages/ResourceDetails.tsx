@@ -116,6 +116,55 @@ export default function ResourceDetails() {
         });
       }
     },
+    onCommandExecuted: (event) => {
+      if (event.resourceId === id) {
+        const commandLabels: Record<string, string> = {
+          collect_info: 'Coletar Informações',
+          restart: 'Reiniciar Agente',
+          update: 'Atualizar Agente',
+          uninstall: 'Desinstalar Agente',
+        };
+
+        const commandLabel = commandLabels[event.command] || event.command;
+
+        if (event.success) {
+          toast.success(
+            `Comando "${commandLabel}" executado com sucesso!${
+              event.message ? `\n${event.message}` : ''
+            }`,
+            {
+              duration: 5000,
+            }
+          );
+        } else {
+          toast.error(
+            `Comando "${commandLabel}" falhou${event.message ? `:\n${event.message}` : ''}`,
+            {
+              duration: 7000,
+            }
+          );
+        }
+      }
+    },
+    onCommandExpired: (event) => {
+      if (event.resourceId === id) {
+        const commandLabels: Record<string, string> = {
+          collect_info: 'Coletar Informações',
+          restart: 'Reiniciar Agente',
+          update: 'Atualizar Agente',
+          uninstall: 'Desinstalar Agente',
+        };
+
+        const commandLabel = commandLabels[event.command] || event.command;
+
+        toast.error(
+          `Comando "${commandLabel}" expirou após 1 hora sem execução. O agente pode estar offline.`,
+          {
+            duration: 7000,
+          }
+        );
+      }
+    },
   });
 
   const { data: resource, isLoading } = useQuery({

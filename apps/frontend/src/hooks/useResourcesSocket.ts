@@ -39,8 +39,25 @@ interface ResourceUpdatedEvent {
   timestamp: string;
 }
 
-interface ResourceCommandEvent {
+interface ResourceCommandSentEvent {
   type: 'command-sent';
+  resourceId: string;
+  command: string;
+  timestamp: string;
+}
+
+interface ResourceCommandExecutedEvent {
+  type: 'command-executed';
+  resourceId: string;
+  command: string;
+  success: boolean;
+  message?: string;
+  executedAt: string;
+  timestamp: string;
+}
+
+interface ResourceCommandExpiredEvent {
+  type: 'command-expired';
   resourceId: string;
   command: string;
   timestamp: string;
@@ -66,7 +83,9 @@ interface UseResourcesSocketOptions {
   onStatusChanged?: (event: ResourceStatusEvent) => void;
   onRegistered?: (event: ResourceRegisteredEvent) => void;
   onUpdated?: (event: ResourceUpdatedEvent) => void;
-  onCommandSent?: (event: ResourceCommandEvent) => void;
+  onCommandSent?: (event: ResourceCommandSentEvent) => void;
+  onCommandExecuted?: (event: ResourceCommandExecutedEvent) => void;
+  onCommandExpired?: (event: ResourceCommandExpiredEvent) => void;
 }
 
 const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || window.location.origin;
@@ -165,9 +184,55 @@ export function useResourcesSocket(options: UseResourcesSocketOptions = {}) {
       options.onUpdated?.(event);
     });
 
-    socket.on('resource:command-sent', (event: ResourceCommandEvent) => {
+    socket.on('resource:command-sent', (event: ResourceCommandSentEvent) => {
       console.log('[WebSocket] Comando enviado:', event.resourceId, event.command);
+
+      // Atualizar cache com pending_command
+      updateResourceInCache(event.resourceId, {
+        pending_command: event.command,
+        pending_command_at: event.timestamp,
+      });
+
       options.onCommandSent?.(event);
+    });
+
+    socket.on('resource:command-executed', (event: ResourceCommandExecutedEvent) => {
+      const statusText = event.success ? 'executado com sucesso' : 'falhou';
+      console.log(
+        `[WebSocket] Comando ${statusText}:`,
+        event.resourceId,
+        event.command,
+        event.message || ''
+      );
+
+      // Limpar pending_command do cache
+      updateResourceInCache(event.resourceId, {
+        pending_command: undefined,
+        pending_command_at: undefined,
+      });
+
+      // Invalidar queries para atualizar UI
+      invalidateResources();
+      queryClient.invalidateQueries({ queryKey: ['resource', event.resourceId] });
+      queryClient.invalidateQueries({ queryKey: ['resource-history', event.resourceId] });
+
+      options.onCommandExecuted?.(event);
+    });
+
+    socket.on('resource:command-expired', (event: ResourceCommandExpiredEvent) => {
+      console.warn('[WebSocket] Comando expirou:', event.resourceId, event.command);
+
+      // Limpar pending_command do cache
+      updateResourceInCache(event.resourceId, {
+        pending_command: undefined,
+        pending_command_at: undefined,
+      });
+
+      // Invalidar queries para atualizar UI
+      invalidateResources();
+      queryClient.invalidateQueries({ queryKey: ['resource', event.resourceId] });
+
+      options.onCommandExpired?.(event);
     });
 
     // ==================== EVENTOS DE LICENÇAS ====================
