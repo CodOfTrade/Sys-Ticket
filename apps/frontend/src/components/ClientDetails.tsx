@@ -18,6 +18,7 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   const [expandedContract, setExpandedContract] = useState<string | null>(null);
   const [editingQuota, setEditingQuota] = useState<string | null>(null);
   const [quotaForm, setQuotaForm] = useState<Partial<CreateQuotaDto>>({});
+  const [allowUnlimitedAgents, setAllowUnlimitedAgents] = useState(client.allowUnlimitedAgents || false);
   const queryClient = useQueryClient();
 
   // Buscar contratos do cliente (usando localId se disponível)
@@ -83,6 +84,8 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
     },
     onError: () => {
       toast.error('Erro ao atualizar configuração');
+      // Reverter estado local em caso de erro
+      setAllowUnlimitedAgents(!allowUnlimitedAgents);
     },
   });
 
@@ -397,8 +400,12 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={client.allowUnlimitedAgents || false}
-                    onChange={(e) => updateClientMutation.mutate({ allowUnlimitedAgents: e.target.checked })}
+                    checked={allowUnlimitedAgents}
+                    onChange={(e) => {
+                      const newValue = e.target.checked;
+                      setAllowUnlimitedAgents(newValue);
+                      updateClientMutation.mutate({ allowUnlimitedAgents: newValue });
+                    }}
                     disabled={updateClientMutation.isPending}
                     className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                   />
