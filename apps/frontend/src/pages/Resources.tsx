@@ -156,7 +156,7 @@ export default function Resources() {
       }
       setIsSearchingClients(true);
       try {
-        const result = await clientService.search({ name: clientFilterSearch, page: 1, per_page: 10 });
+        const result = await clientService.searchByName(clientFilterSearch, 1, 10);
         setClientFilterResults(result.data || []);
       } catch (error) {
         console.error('Erro ao buscar clientes:', error);
@@ -178,7 +178,7 @@ export default function Resources() {
       }
       setIsSearchingNewResourceClients(true);
       try {
-        const result = await clientService.search({ name: newResourceClientSearch, page: 1, per_page: 10 });
+        const result = await clientService.searchByName(newResourceClientSearch, 1, 10);
         setNewResourceClientResults(result.data || []);
       } catch (error) {
         console.error('Erro ao buscar clientes:', error);
@@ -271,7 +271,7 @@ export default function Resources() {
 
     // Buscar contratos do cliente
     try {
-      const contracts = await clientService.getContracts(clientId);
+      const contracts = await clientService.getClientContracts(clientId);
       setNewResourceContracts(contracts || []);
     } catch (error) {
       console.error('Erro ao buscar contratos:', error);
