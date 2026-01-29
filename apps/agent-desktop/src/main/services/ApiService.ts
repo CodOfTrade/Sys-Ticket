@@ -101,6 +101,30 @@ export class ApiService {
   }
 
   /**
+   * Busca clientes por nome via API search endpoint
+   */
+  async searchClients(searchTerm: string): Promise<any[]> {
+    if (!searchTerm || searchTerm.length < 2) {
+      return [];
+    }
+
+    const response = await this.api.get('/v1/clients/search', {
+      params: {
+        name: searchTerm,
+        page: 1,
+        per_page: 10
+      }
+    });
+
+    // Backend retorna { data: { data: [...], meta: {...} } }
+    const result = response.data.data;
+    if (result && Array.isArray(result.data)) {
+      return result.data;
+    }
+    return [];
+  }
+
+  /**
    * Busca contratos de um cliente
    */
   async getClientContracts(clientId: string): Promise<any[]> {

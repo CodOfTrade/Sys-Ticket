@@ -408,6 +408,20 @@ function registerIpcHandlers() {
     return await apiService.getClients();
   });
 
+  // Buscar clientes via search
+  ipcMain.handle('search-clients', async (_, searchTerm: string) => {
+    try {
+      if (!apiService) {
+        console.error('ApiService não inicializado');
+        return [];
+      }
+      return await apiService.searchClients(searchTerm);
+    } catch (error: any) {
+      console.error('Erro ao buscar clientes:', error);
+      return [];
+    }
+  });
+
   // Buscar contratos de um cliente
   ipcMain.handle('get-client-contracts', async (_, clientId) => {
     return await apiService.getClientContracts(clientId);

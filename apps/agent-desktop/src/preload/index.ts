@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   testConnection: (apiUrl: string): Promise<boolean> =>
     ipcRenderer.invoke('test-connection', apiUrl),
   getClients: (): Promise<any[]> => ipcRenderer.invoke('get-clients'),
+  searchClients: (searchTerm: string): Promise<any[]> =>
+    ipcRenderer.invoke('search-clients', searchTerm),
   getClientContracts: (clientId: string): Promise<any[]> =>
     ipcRenderer.invoke('get-client-contracts', clientId),
 
@@ -52,6 +54,7 @@ declare global {
       getAppVersion: () => Promise<string>;
       testConnection: (apiUrl: string) => Promise<boolean>;
       getClients: () => Promise<any[]>;
+      searchClients: (searchTerm: string) => Promise<any[]>;
       getClientContracts: (clientId: string) => Promise<any[]>;
       onNavigate: (callback: (route: string) => void) => (() => void) | undefined;
       createTicket: (data: any) => Promise<any>;

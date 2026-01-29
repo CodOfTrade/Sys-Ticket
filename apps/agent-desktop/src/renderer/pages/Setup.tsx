@@ -16,13 +16,13 @@ export function Setup({ onComplete }: SetupProps) {
   const [connectionTested, setConnectionTested] = useState(false);
 
   // Step 2: Cliente e Contrato
-  const [clients, setClients] = useState<any[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedClientName, setSelectedClientName] = useState('');
   const [selectedContractId, setSelectedContractId] = useState('');
   const [clientSearch, setClientSearch] = useState('');
-  const [filteredClients, setFilteredClients] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [showClientDropdown, setShowClientDropdown] = useState(false);
 
   // Step 3: Informações da máquina
@@ -40,21 +40,33 @@ export function Setup({ onComplete }: SetupProps) {
     loadInitialData();
   }, []);
 
-  // Filtrar clientes conforme busca
+  // Buscar clientes via API backend (sem limite frontend)
   useEffect(() => {
-    if (clientSearch.trim() === '') {
-      setFilteredClients([]);
-      return;
-    }
+    const searchClients = async () => {
+      if (clientSearch.trim().length < 2) {
+        setSearchResults([]);
+        setShowClientDropdown(false);
+        return;
+      }
 
-    const searchLower = clientSearch.toLowerCase();
-    const filtered = clients.filter(client => {
-      const name = (client.nome || client.name || client.razao_social || '').toLowerCase();
-      return name.includes(searchLower);
-    }).slice(0, 10); // Mostrar apenas top 10
+      setIsSearching(true);
+      try {
+        const results = await window.electronAPI.searchClients(clientSearch.trim());
+        console.log('Resultados da busca:', results);
+        setSearchResults(results);
+        setShowClientDropdown(results.length > 0);
+      } catch (error) {
+        console.error('Erro ao buscar clientes:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
 
-    setFilteredClients(filtered);
-  }, [clientSearch, clients]);
+    // Debounce: 300ms para evitar muitas requisições
+    const timeoutId = setTimeout(searchClients, 300);
+    return () => clearTimeout(timeoutId);
+  }, [clientSearch]);
 
   const loadInitialData = async () => {
     try {
@@ -95,34 +107,21 @@ export function Setup({ onComplete }: SetupProps) {
     }
 
     setError(null);
-
-    // Mudar para step 2 IMEDIATAMENTE (não bloquear UI)
     setStep(2);
-
-    // Carregar clientes em background
-    setLoading(true);
-    try {
-      const clientsList = await window.electronAPI.getClients();
-      setClients(clientsList);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao buscar clientes');
-    } finally {
-      setLoading(false);
-    }
   };
 
-  const handleClientChange = async (clientId: string) => {
-    setSelectedClientId(clientId);
+  const handleSelectClient = async (client: any) => {
+    setClientSearch(client.nome || client.name || client.razao_social);
+    setShowClientDropdown(false);
+    setSelectedClientId(client.id);
+    setSelectedClientName(client.nome_fantasia || client.nome || client.name || client.razao_social || '');
     setSelectedContractId('');
 
-    // Capturar o nome do cliente selecionado
-    const client = clients.find(c => c.id === clientId);
-    setSelectedClientName(client?.nome || client?.name || client?.razao_social || '');
-
-    if (clientId) {
+    // Buscar contratos do cliente selecionado
+    if (client.id) {
       setLoading(true);
       try {
-        const contractsList = await window.electronAPI.getClientContracts(clientId);
+        const contractsList = await window.electronAPI.getClientContracts(client.id);
         setContracts(contractsList);
       } catch (err: any) {
         setError(err.message || 'Erro ao buscar contratos');
@@ -132,12 +131,6 @@ export function Setup({ onComplete }: SetupProps) {
     } else {
       setContracts([]);
     }
-  };
-
-  const handleSelectClient = (client: any) => {
-    setClientSearch(client.nome || client.name || client.razao_social);
-    setShowClientDropdown(false);
-    handleClientChange(client.id);
   };
 
   const handleClearClient = () => {
@@ -327,7 +320,52 @@ export function Setup({ onComplete }: SetupProps) {
                   </button>
                 )}
 
-                {showClientDropdown && filteredClients.length > 0 && (
+                {/* Loading State */}
+                {isSearching && clientSearch.length >= 2 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    background: 'white',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    padding: '10px',
+                    marginTop: '4px',
+                    textAlign: 'center',
+                    color: '#666'
+                  }}>
+                    Buscando...
+                  </div>
+                )}
+
+                {/* No Results */}
+                {!isSearching && clientSearch.length >= 2 && searchResults.length === 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    background: 'white',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    padding: '10px',
+                    marginTop: '4px',
+                    textAlign: 'center',
+                    color: '#666'
+                  }}>
+                    Nenhum cliente encontrado
+                  </div>
+                )}
+
+                {/* Hint Minimum Characters */}
+                {clientSearch.length > 0 && clientSearch.length < 2 && (
+                  <small style={{ position: 'absolute', top: '100%', marginTop: '4px', color: '#666', display: 'block' }}>
+                    Digite pelo menos 2 caracteres para buscar
+                  </small>
+                )}
+
+                {showClientDropdown && searchResults.length > 0 && !selectedClientId && (
                   <ul className="autocomplete-dropdown" style={{
                     position: 'absolute',
                     top: '100%',
@@ -344,7 +382,7 @@ export function Setup({ onComplete }: SetupProps) {
                     margin: '4px 0 0 0',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
                   }}>
-                    {filteredClients.map(client => (
+                    {searchResults.map(client => (
                       <li
                         key={client.id}
                         onClick={() => handleSelectClient(client)}
@@ -356,7 +394,15 @@ export function Setup({ onComplete }: SetupProps) {
                         onMouseEnter={(e) => e.currentTarget.style.background = '#f5f5f5'}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
                       >
-                        {client.nome || client.name || client.razao_social}
+                        <div style={{ fontWeight: '500' }}>
+                          {client.nome_fantasia || client.nome || client.name || client.razao_social}
+                        </div>
+                        {client.cpf_cnpj && (
+                          <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                            CNPJ: {client.cpf_cnpj}
+                            {client.cidade && ` • ${client.cidade}/${client.estado}`}
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>
