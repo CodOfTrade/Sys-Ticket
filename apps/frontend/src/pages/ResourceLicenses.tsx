@@ -105,11 +105,7 @@ export default function ResourceLicenses() {
   const [formData, setFormData] = useState<CreateLicenseDto>(initialFormData);
   const [selectedLicense, setSelectedLicense] = useState<ResourceLicense | null>(null);
   const [licenseToDelete, setLicenseToDelete] = useState<ResourceLicense | null>(null);
-  const [editActivationDate, setEditActivationDate] = useState<string>('');
   const [selectedContactId, setSelectedContactId] = useState<string>('');
-  const [editNotificationEmail, setEditNotificationEmail] = useState<string>('');
-  const [editRequesterName, setEditRequesterName] = useState<string>('');
-  const [editRequesterPhone, setEditRequesterPhone] = useState<string>('');
   const [showActivationModal, setShowActivationModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
 
