@@ -157,33 +157,61 @@ export class ContractQuotasService {
     return this.quotaRepository.save(quota);
   }
 
-  async validateQuota(contractId: string, resourceType: ResourceType): Promise<boolean> {
-    try {
-      const quota = await this.findByContractId(contractId);
+  /**
+   * Verifica se existe cota configurada para um contrato
+   */
+  async hasQuota(contractId: string): Promise<boolean> {
+    const quota = await this.quotaRepository.findOne({
+      where: { contract_id: contractId },
+    });
+    return !!quota;
+  }
 
-      const quotaField = this.getQuotaField(resourceType, 'quota');
-      const usedField = this.getQuotaField(resourceType, 'used');
+  /**
+   * Valida cota com informações detalhadas
+   */
+  async validateQuotaDetailed(contractId: string, resourceType: ResourceType): Promise<{
+    allowed: boolean;
+    reason: 'no_quota' | 'exceeded' | 'ok' | 'unlimited';
+  }> {
+    const quota = await this.quotaRepository.findOne({
+      where: { contract_id: contractId },
+    });
 
-      if (!quotaField || !usedField) {
-        return true; // Se não há quota configurada, permite
-      }
-
-      const quotaValue = quota[quotaField];
-      const usedValue = quota[usedField];
-
-      if (quotaValue === 0) {
-        return true; // Quota ilimitada
-      }
-
-      if (usedValue >= quotaValue) {
-        return quota.allow_exceed; // Só permite se allow_exceed for true
-      }
-
-      return true;
-    } catch (error) {
-      // Se não há quota configurada, permite
-      return true;
+    // Se não há cota configurada para o contrato
+    if (!quota) {
+      return { allowed: false, reason: 'no_quota' };
     }
+
+    const quotaField = this.getQuotaField(resourceType, 'quota');
+    const usedField = this.getQuotaField(resourceType, 'used');
+
+    if (!quotaField || !usedField) {
+      return { allowed: true, reason: 'ok' };
+    }
+
+    const quotaValue = quota[quotaField];
+    const usedValue = quota[usedField];
+
+    // Quota ilimitada (valor 0)
+    if (quotaValue === 0) {
+      return { allowed: true, reason: 'unlimited' };
+    }
+
+    // Cota excedida
+    if (usedValue >= quotaValue) {
+      if (quota.allow_exceed) {
+        return { allowed: true, reason: 'ok' };
+      }
+      return { allowed: false, reason: 'exceeded' };
+    }
+
+    return { allowed: true, reason: 'ok' };
+  }
+
+  async validateQuota(contractId: string, resourceType: ResourceType): Promise<boolean> {
+    const result = await this.validateQuotaDetailed(contractId, resourceType);
+    return result.allowed;
   }
 
   async incrementUsage(contractId: string, resourceType: ResourceType): Promise<void> {

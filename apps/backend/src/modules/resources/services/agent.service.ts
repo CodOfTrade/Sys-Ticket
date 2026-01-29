@@ -119,16 +119,22 @@ export class AgentService {
           );
         }
 
-        // Validar cota do contrato
-        const canRegister = await this.contractQuotasService.validateQuota(
+        // Validar cota do contrato com detalhes
+        const quotaValidation = await this.contractQuotasService.validateQuotaDetailed(
           dto.contractId,
           ResourceType.COMPUTER
         );
 
-        if (!canRegister) {
-          throw new BadRequestException(
-            'Cota de computadores excedida para este contrato. Entre em contato com o administrador.'
-          );
+        if (!quotaValidation.allowed) {
+          if (quotaValidation.reason === 'no_quota') {
+            throw new BadRequestException(
+              'Este cliente não possui cota de recursos configurada. Entre em contato com o administrador.'
+            );
+          } else if (quotaValidation.reason === 'exceeded') {
+            throw new BadRequestException(
+              'Cota de computadores excedida para este contrato. Entre em contato com o administrador.'
+            );
+          }
         }
 
         // Marcar para incrementar a cota após registro bem-sucedido

@@ -238,6 +238,8 @@ export function Setup({ onComplete }: SetupProps) {
 
       if (errorMessage.includes('não possui contrato') || errorMessage.includes('sem contrato')) {
         errorMessage = 'Este cliente não possui contrato ativo. Entre em contato com o administrador para registrar novos agentes.';
+      } else if (errorMessage.includes('não possui cota') || errorMessage.includes('cota de recursos configurada')) {
+        errorMessage = 'Este cliente não possui cota de recursos configurada. Entre em contato com o administrador para liberar o registro de agentes.';
       } else if (errorMessage.includes('Cota') || errorMessage.includes('cota') || errorMessage.includes('excedida')) {
         errorMessage = 'A cota de recursos para este contrato foi excedida. Entre em contato com o administrador.';
       } else if (errorMessage.includes('Cliente não encontrado')) {
