@@ -51,42 +51,58 @@ export class ResourcesService {
   async findAll(query: QueryResourceDto): Promise<{ data: Resource[]; total: number; page: number; perPage: number }> {
     const { page = 1, perPage = 10, search, ...filters } = query;
 
-    const where: FindOptionsWhere<Resource> = {};
+    // Usar QueryBuilder para busca mais flexível (case-insensitive e sem acentos)
+    const queryBuilder = this.resourceRepository.createQueryBuilder('resource');
 
     // Aplicar filtros
-    if (filters.client_id) where.client_id = filters.client_id;
-    if (filters.contract_id) where.contract_id = filters.contract_id;
-    if (filters.resource_type) where.resource_type = filters.resource_type;
-    if (filters.status) where.status = filters.status;
-    if (filters.resource_group) where.resource_group = filters.resource_group;
-    if (filters.location) where.location = filters.location;
-    if (filters.department) where.department = filters.department;
-    if (filters.is_online !== undefined) where.is_online = filters.is_online;
-
-    // Busca por texto
-    if (search) {
-      const searchConditions = [
-        { name: Like(`%${search}%`) },
-        { resource_code: Like(`%${search}%`) },
-        { hostname: Like(`%${search}%`) },
-        { serial_number: Like(`%${search}%`) },
-      ];
+    if (filters.client_id) {
+      queryBuilder.andWhere('resource.client_id = :clientId', { clientId: filters.client_id });
+    }
+    if (filters.contract_id) {
+      queryBuilder.andWhere('resource.contract_id = :contractId', { contractId: filters.contract_id });
+    }
+    if (filters.resource_type) {
+      queryBuilder.andWhere('resource.resource_type = :resourceType', { resourceType: filters.resource_type });
+    }
+    if (filters.status) {
+      queryBuilder.andWhere('resource.status = :status', { status: filters.status });
+    }
+    if (filters.resource_group) {
+      queryBuilder.andWhere('resource.resource_group = :resourceGroup', { resourceGroup: filters.resource_group });
+    }
+    if (filters.location) {
+      queryBuilder.andWhere('resource.location = :location', { location: filters.location });
+    }
+    if (filters.department) {
+      queryBuilder.andWhere('resource.department = :department', { department: filters.department });
+    }
+    if (filters.is_online !== undefined) {
+      queryBuilder.andWhere('resource.is_online = :isOnline', { isOnline: filters.is_online });
     }
 
-    const [data, total] = await this.resourceRepository.findAndCount({
-      where: search ? undefined : where,
-      ...(search && {
-        where: [
-          { ...where, name: Like(`%${search}%`) },
-          { ...where, resource_code: Like(`%${search}%`) },
-          { ...where, hostname: Like(`%${search}%`) },
-          { ...where, serial_number: Like(`%${search}%`) },
-        ],
-      }),
-      order: { created_at: 'DESC' },
-      skip: (page - 1) * perPage,
-      take: perPage,
-    });
+    // Busca por texto (case-insensitive e ignorando acentos)
+    if (search) {
+      const searchParam = `%${search}%`;
+      queryBuilder.andWhere(
+        `(
+          unaccent(LOWER(resource.name)) ILIKE unaccent(LOWER(:search))
+          OR unaccent(LOWER(resource.resource_code)) ILIKE unaccent(LOWER(:search))
+          OR unaccent(LOWER(COALESCE(resource.hostname, ''))) ILIKE unaccent(LOWER(:search))
+          OR unaccent(LOWER(COALESCE(resource.serial_number, ''))) ILIKE unaccent(LOWER(:search))
+          OR unaccent(LOWER(COALESCE(resource.manufacturer, ''))) ILIKE unaccent(LOWER(:search))
+          OR unaccent(LOWER(COALESCE(resource.model, ''))) ILIKE unaccent(LOWER(:search))
+        )`,
+        { search: searchParam },
+      );
+    }
+
+    // Ordenação e paginação
+    queryBuilder
+      .orderBy('resource.created_at', 'DESC')
+      .skip((page - 1) * perPage)
+      .take(perPage);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
 
     return {
       data,
