@@ -12,6 +12,8 @@ import { NotificationConfigService } from '../notifications/services/notificatio
 import { UsersService } from '../users/users.service';
 import { ClientsService } from '../clients/clients.service';
 import { ResourceLicensesService } from '../resources/services/resource-licenses.service';
+import { ResourceLicense } from '../resources/entities/resource-license.entity';
+import { SigeClient as SigeClientInterface } from '../clients/interfaces/sige-client.interface';
 import { adminNotificationTemplate, AdminNotificationData } from './templates/notification-admin.template';
 import { clientNotificationTemplate, ClientNotificationData } from './templates/notification-client.template';
 
@@ -634,8 +636,8 @@ Sys-Ticket - Este é um email automático. Por favor, não responda.
       }
 
       // Buscar dados da licença (se referência for licença)
-      let license = null;
-      let client = null;
+      let license: ResourceLicense | null = null;
+      let client: SigeClientInterface | null = null;
 
       if (notification.reference_type === 'license' && notification.reference_id) {
         try {
@@ -662,7 +664,7 @@ Sys-Ticket - Este é um email automático. Por favor, não responda.
       if (license) {
         templateData.licenseKey = license.license_key || 'N/A';
         templateData.productName = license.product_name || 'N/A';
-        templateData.clientName = client?.nome || client?.razaoSocial || 'N/A';
+        templateData.clientName = client?.nome || client?.razao_social || 'N/A';
 
         if (license.expiry_date) {
           const expiryDate = new Date(license.expiry_date);
@@ -698,7 +700,7 @@ Sys-Ticket - Este é um email automático. Por favor, não responda.
       }
 
       // Buscar licença para pegar email específico (se houver)
-      let license = null;
+      let license: ResourceLicense | null = null;
       let recipientEmail = client.email;
 
       if (notification.reference_type === 'license' && notification.reference_id) {
@@ -720,7 +722,7 @@ Sys-Ticket - Este é um email automático. Por favor, não responda.
 
       // Construir dados do template
       const templateData: ClientNotificationData = {
-        clientName: client.nomeFantasia || client.razaoSocial || client.nome,
+        clientName: client.nome_fantasia || client.razao_social || client.nome,
         title: notification.title,
         message: notification.message,
         contactPhone: '(41) 3668-6468', // Telefone da Infoservice (adicionar em variável de ambiente depois)
