@@ -4,6 +4,7 @@ import { Repository, FindOptionsWhere, Like, In, LessThan } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Resource, ResourceType, ResourceStatus } from '../entities/resource.entity';
 import { ResourceHistory, ResourceEventType } from '../entities/resource-history.entity';
+import { Ticket } from '../../tickets/entities/ticket.entity';
 import { CreateResourceDto } from '../dto/create-resource.dto';
 import { UpdateResourceDto } from '../dto/update-resource.dto';
 import { QueryResourceDto } from '../dto/query-resource.dto';
@@ -18,6 +19,8 @@ export class ResourcesService {
     private readonly resourceRepository: Repository<Resource>,
     @InjectRepository(ResourceHistory)
     private readonly historyRepository: Repository<ResourceHistory>,
+    @InjectRepository(Ticket)
+    private readonly ticketRepository: Repository<Ticket>,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -187,6 +190,49 @@ export class ResourcesService {
 
   async remove(id: string): Promise<void> {
     const resource = await this.findOne(id);
+
+    // Buscar todos os tickets associados a este recurso
+    const tickets = await this.ticketRepository.find({
+      where: { resource_id: id },
+    });
+
+    // Desassociar tickets e salvar informações do recurso no metadata
+    if (tickets.length > 0) {
+      this.logger.log(
+        `Desassociando ${tickets.length} ticket(s) do recurso ${resource.resource_code} antes de excluir`,
+      );
+
+      for (const ticket of tickets) {
+        // Salvar informações do recurso no metadata do ticket
+        const resourceInfo = {
+          deleted_resource: {
+            id: resource.id,
+            resource_code: resource.resource_code,
+            name: resource.name,
+            resource_type: resource.resource_type,
+            hostname: resource.hostname,
+            serial_number: resource.serial_number,
+            manufacturer: resource.manufacturer,
+            model: resource.model,
+            deleted_at: new Date().toISOString(),
+          },
+        };
+
+        ticket.metadata = {
+          ...(ticket.metadata || {}),
+          ...resourceInfo,
+        };
+        ticket.resource_id = null;
+
+        await this.ticketRepository.save(ticket);
+      }
+
+      this.logger.log(
+        `Tickets desassociados com sucesso. Informações do recurso salvas no metadata.`,
+      );
+    }
+
+    // Agora podemos excluir o recurso
     await this.resourceRepository.remove(resource);
   }
 
