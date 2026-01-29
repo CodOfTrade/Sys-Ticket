@@ -31,9 +31,14 @@ export function EmailTemplatesSettings() {
   const queryClient = useQueryClient();
 
   // Query para buscar todos os templates
-  const { data: templates, isLoading } = useQuery({
+  const { data: templates, isLoading, error, isError } = useQuery({
     queryKey: ['email-templates'],
-    queryFn: () => emailTemplateService.getAll(),
+    queryFn: async () => {
+      console.log('Fetching email templates...');
+      const data = await emailTemplateService.getAll();
+      console.log('Templates received:', data);
+      return data;
+    },
   });
 
   // Mutation para atualizar template
@@ -81,6 +86,27 @@ export function EmailTemplatesSettings() {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="animate-spin text-blue-600" size={32} />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <AlertCircle className="text-red-600 mb-4" size={48} />
+        <p className="text-red-600 dark:text-red-400 mb-2">Erro ao carregar templates</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          {error instanceof Error ? error.message : 'Erro desconhecido'}
+        </p>
+      </div>
+    );
+  }
+
+  if (!templates || templates.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <AlertCircle className="text-gray-400 mb-4" size={48} />
+        <p className="text-gray-600 dark:text-gray-400">Nenhum template encontrado</p>
       </div>
     );
   }
