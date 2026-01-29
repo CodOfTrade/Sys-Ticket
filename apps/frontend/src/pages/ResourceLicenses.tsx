@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search, Filter, Key, AlertTriangle, Check, X, Loader2, Eye, Building2, Calendar, DollarSign, User, FileText, Copy, Trash2, Download, RotateCcw, Clock } from 'lucide-react';
+import { Plus, Search, Filter, Key, AlertTriangle, Check, X, Loader2, Eye, Building2, Calendar, DollarSign, User, FileText, Copy, Trash2, Download, RotateCcw, Clock, Bell } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
 import { clientService } from '@/services/client.service';
@@ -82,6 +82,9 @@ const initialFormData: CreateLicenseDto = {
   vendor: '',
   cost: undefined,
   notes: '',
+  notification_email: '',
+  requester_name: '',
+  requester_phone: '',
 };
 
 export default function ResourceLicenses() {
@@ -1074,6 +1077,64 @@ export default function ResourceLicenses() {
                   placeholder="Informações adicionais sobre a licença..."
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
                 />
+              </div>
+
+              {/* Seção de Contato para Notificações */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2 mb-3">
+                  <Bell className="text-blue-600 dark:text-blue-400" size={20} />
+                  <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300">
+                    Contato para Notificações de Vencimento
+                  </h3>
+                </div>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mb-4">
+                  Configure o email e contato que receberá alertas sobre o vencimento desta licença.
+                  Se não informado, será usado o email principal do cliente.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Email de Notificação
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.notification_email || ''}
+                      onChange={(e) => setFormData({ ...formData, notification_email: e.target.value })}
+                      placeholder="Ex: ti@empresa.com ou responsavel@empresa.com"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Email específico para receber avisos de vencimento e renovação
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Nome do Responsável
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.requester_name || ''}
+                      onChange={(e) => setFormData({ ...formData, requester_name: e.target.value })}
+                      placeholder="Ex: João Silva"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Telefone de Contato
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.requester_phone || ''}
+                      onChange={(e) => setFormData({ ...formData, requester_phone: e.target.value })}
+                      placeholder="Ex: (11) 98765-4321"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Botões */}

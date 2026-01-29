@@ -152,6 +152,9 @@ export interface ResourceLicense {
   cost?: number;
   custom_fields?: Record<string, any>;
   notes?: string;
+  notification_email?: string;
+  requester_name?: string;
+  requester_phone?: string;
   created_at: string;
   updated_at: string;
   activated_at?: string;
@@ -306,6 +309,9 @@ export interface CreateLicenseDto {
   cost?: number;
   custom_fields?: Record<string, any>;
   notes?: string;
+  notification_email?: string;
+  requester_name?: string;
+  requester_phone?: string;
 }
 
 export interface UpdateLicenseDto extends Partial<CreateLicenseDto> {}
