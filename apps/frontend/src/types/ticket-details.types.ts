@@ -51,6 +51,7 @@ export enum ServiceType {
   INTERNAL = 'internal',
   REMOTE = 'remote',
   EXTERNAL = 'external',
+  OUTSOURCED = 'outsourced',
 }
 
 export enum ServiceLevel {
