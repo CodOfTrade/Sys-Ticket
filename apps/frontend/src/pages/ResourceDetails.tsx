@@ -455,7 +455,14 @@ export default function ResourceDetails() {
                       <div className="flex items-center justify-between">
                         <p className="text-sm text-yellow-800 dark:text-yellow-300 flex items-center gap-2">
                           <Loader2 size={16} className="animate-spin" />
-                          Comando pendente: <strong>{resource.pending_command}</strong>
+                          Comando pendente: <strong>
+                            {{
+                              collect_info: 'Coletar Informações',
+                              restart: 'Reiniciar Agente',
+                              update: 'Atualizar Agente',
+                              uninstall: 'Desinstalar Agente',
+                            }[resource.pending_command] || resource.pending_command}
+                          </strong>
                         </p>
                         <button
                           onClick={() => cancelCommandMutation.mutate(resource.id)}
@@ -478,7 +485,11 @@ export default function ResourceDetails() {
                       disabled={sendCommandMutation.isPending || !!resource.pending_command}
                       className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Download size={16} />
+                      {sendCommandMutation.isPending && sendCommandMutation.variables?.command === 'collect_info' ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <Download size={16} />
+                      )}
                       Coletar Info
                     </button>
                     <button
@@ -486,7 +497,11 @@ export default function ResourceDetails() {
                       disabled={sendCommandMutation.isPending || !!resource.pending_command}
                       className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 dark:text-amber-400 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <RefreshCw size={16} />
+                      {sendCommandMutation.isPending && sendCommandMutation.variables?.command === 'restart' ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <RefreshCw size={16} />
+                      )}
                       Reiniciar Agente
                     </button>
                     <button

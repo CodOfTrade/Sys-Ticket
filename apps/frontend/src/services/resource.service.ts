@@ -84,18 +84,20 @@ export const resourceService = {
   },
 
   async sendCommand(resourceId: string, command: string): Promise<{ success: boolean; message: string }> {
-    const response = await api.post<ApiResponse<{ success: boolean; message: string }>>(
+    const response = await api.post<{ success: boolean; message: string }>(
       `/v1/resources/${resourceId}/command`,
       { command }
     );
-    return response.data.data;
+    // Backend retorna { success, message } direto (TransformInterceptor não embrulha)
+    return response.data;
   },
 
   async cancelCommand(resourceId: string): Promise<{ success: boolean; message: string }> {
-    const response = await api.post<ApiResponse<{ success: boolean; message: string }>>(
+    const response = await api.post<{ success: boolean; message: string }>(
       `/v1/resources/${resourceId}/command/cancel`
     );
-    return response.data.data;
+    // Backend retorna { success, message } direto (TransformInterceptor não embrulha)
+    return response.data;
   },
 
   async getStats(clientId?: string): Promise<ResourceStats> {
