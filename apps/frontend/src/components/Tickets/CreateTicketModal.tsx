@@ -882,7 +882,8 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                     <option value={ServiceType.REMOTE}>Remoto</option>
                     <option value={ServiceType.INTERNAL}>Interno</option>
                     <option value={ServiceType.EXTERNAL}>Externo</option>
-                    <option value={ServiceType.OUTSOURCED}>Terceirizados</option>
+                    <option value={ServiceType.OUTSOURCED_N1}>Terceirizado N1</option>
+                    <option value={ServiceType.OUTSOURCED_N2}>Terceirizado N2</option>
                   </select>
                 </div>
 

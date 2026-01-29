@@ -19,7 +19,8 @@ export enum ServiceType {
   INTERNAL = 'internal', // Atendimento interno
   REMOTE = 'remote', // Atendimento remoto
   EXTERNAL = 'external', // Atendimento presencial/externo
-  OUTSOURCED = 'outsourced', // Terceirizados
+  OUTSOURCED_N1 = 'outsourced_n1', // Terceirizado N1
+  OUTSOURCED_N2 = 'outsourced_n2', // Terceirizado N2
 }
 
 @Entity('pricing_configs')

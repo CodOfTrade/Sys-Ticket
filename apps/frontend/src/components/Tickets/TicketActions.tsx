@@ -499,7 +499,7 @@ export function TicketActions({ ticket, onNavigateToApproval }: TicketActionsPro
       low: 'Baixa', medium: 'Média', high: 'Alta', urgent: 'Urgente'
     };
     const typeLabels: Record<string, string> = {
-      remote: 'Remoto', on_site: 'Externo', internal: 'Interno', external: 'Externo', outsourced: 'Terceirizado'
+      remote: 'Remoto', on_site: 'Externo', internal: 'Interno', external: 'Externo', outsourced_n1: 'Terceirizado N1', outsourced_n2: 'Terceirizado N2'
     };
     const coverageLabels: Record<string, string> = {
       contract: 'Contrato', billable: 'Avulso', warranty: 'Garantia', courtesy: 'Cortesia'

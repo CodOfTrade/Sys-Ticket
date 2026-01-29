@@ -5,7 +5,7 @@ import { api } from '@/services/api';
 
 interface PricingConfig {
   id: string;
-  service_type: 'internal' | 'remote' | 'external' | 'outsourced';
+  service_type: 'internal' | 'remote' | 'external' | 'outsourced_n1' | 'outsourced_n2';
   hourly_rate_normal: number;
   minimum_charge: number;
   minimum_charge_threshold_minutes: number;
@@ -17,7 +17,8 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
   internal: 'Atendimento Interno',
   remote: 'Atendimento Remoto',
   external: 'Atendimento Externo/Presencial',
-  outsourced: 'Terceirizados',
+  outsourced_n1: 'Terceirizado N1',
+  outsourced_n2: 'Terceirizado N2',
 };
 
 export function PricingSettings() {
