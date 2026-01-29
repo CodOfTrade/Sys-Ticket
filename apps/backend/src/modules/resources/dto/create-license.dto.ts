@@ -94,4 +94,17 @@ export class CreateLicenseDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  // Contato para notificações de vencimento
+  @IsEmail()
+  @IsOptional()
+  notification_email?: string;
+
+  @IsString()
+  @IsOptional()
+  requester_name?: string;
+
+  @IsString()
+  @IsOptional()
+  requester_phone?: string;
 }

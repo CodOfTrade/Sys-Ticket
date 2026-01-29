@@ -56,6 +56,16 @@ export class ResourceLicense {
   @Column({ type: 'varchar', length: 255, nullable: true })
   linked_email: string;
 
+  // Contato para notificações de vencimento
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  notification_email: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  requester_name: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  requester_phone: string;
+
   @Column({
     type: 'enum',
     enum: LicenseType,
