@@ -218,13 +218,21 @@ export class ResourcesService {
           },
         };
 
-        ticket.metadata = {
+        const newMetadata = {
           ...(ticket.metadata || {}),
           ...resourceInfo,
         };
-        ticket.resource_id = null;
 
-        await this.ticketRepository.save(ticket);
+        // Atualizar metadata e remover resource_id em uma única operação
+        await this.ticketRepository
+          .createQueryBuilder()
+          .update(Ticket)
+          .set({
+            metadata: newMetadata,
+            resource_id: () => 'NULL',
+          })
+          .where('id = :id', { id: ticket.id })
+          .execute();
       }
 
       this.logger.log(
