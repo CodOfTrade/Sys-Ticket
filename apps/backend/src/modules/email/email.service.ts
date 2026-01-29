@@ -722,7 +722,7 @@ Sys-Ticket - Este é um email automático. Por favor, não responda.
 
       // Construir dados do template
       const templateData: ClientNotificationData = {
-        clientName: client.nome_fantasia || client.razao_social || client.nome,
+        clientName: client.nome_fantasia || client.razao_social || client.nome || 'Cliente',
         title: notification.title,
         message: notification.message,
         contactPhone: '(41) 3668-6468', // Telefone da Infoservice (adicionar em variável de ambiente depois)
