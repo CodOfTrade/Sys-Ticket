@@ -22,6 +22,7 @@ import {
   Plus,
   X,
   Search,
+  Package,
 } from 'lucide-react';
 import { resourceService } from '@/services/resource.service';
 import { useResourcesSocket } from '@/hooks/useResourcesSocket';
@@ -29,20 +30,22 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 
-const resourceTypeIcons = {
+const resourceTypeIcons: Record<string, any> = {
   computer: HardDrive,
   printer: Printer,
   monitor: Monitor,
   server: Server,
   network_device: Network,
+  other: Package,
 };
 
-const resourceTypeLabels = {
+const resourceTypeLabels: Record<string, string> = {
   computer: 'Computador',
   printer: 'Impressora',
   monitor: 'Monitor',
   server: 'Servidor',
   network_device: 'Dispositivo de Rede',
+  other: 'Outros',
 };
 
 const statusLabels = {
