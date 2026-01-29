@@ -116,19 +116,6 @@ export function AlertConfigCard({ config, onToggle, isUpdating }: AlertConfigCar
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={config.notify_clients}
-                  onChange={(e) => onToggle(config, 'notify_clients', e.target.checked)}
-                  disabled={isUpdating}
-                  className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
-                />
-                <Bell size={14} className="text-gray-500" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Notificação (portal)
-                </span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
                   checked={config.email_clients}
                   onChange={(e) => onToggle(config, 'email_clients', e.target.checked)}
                   disabled={isUpdating}

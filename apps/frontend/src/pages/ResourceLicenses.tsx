@@ -1454,155 +1454,106 @@ export default function ResourceLicenses() {
                 </div>
               </div>
 
-              {/* Seção de Data de Ativação - Editável */}
+              {/* Seção de Data de Ativação - Com ícone edit */}
               {!selectedLicense.is_perpetual && selectedLicense.duration_type && selectedLicense.duration_value && (
                 <div className="space-y-3">
                   <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
                     <Calendar size={16} />
                     Data de Ativação
                   </h4>
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 space-y-3">
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                          Início da contagem ({selectedLicense.duration_value} {selectedLicense.duration_type === 'months' ? 'meses' : 'anos'})
-                        </label>
-                        <input
-                          type="date"
-                          value={editActivationDate}
-                          onChange={(e) => setEditActivationDate(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
+                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Calendar className="text-gray-400" size={18} />
+                      <div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Data de Ativação</p>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {selectedLicense.activation_date
+                            ? format(new Date(selectedLicense.activation_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
+                            : 'Não definida'}
+                        </p>
+                        {selectedLicense.activation_date && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Expira em: {(() => {
+                              const date = new Date(selectedLicense.activation_date + 'T00:00:00');
+                              if (selectedLicense.duration_type === 'months') {
+                                date.setMonth(date.getMonth() + (selectedLicense.duration_value || 0));
+                              } else {
+                                date.setFullYear(date.getFullYear() + (selectedLicense.duration_value || 0));
+                              }
+                              return format(date, 'dd/MM/yyyy', { locale: ptBR });
+                            })()}
+                          </p>
+                        )}
                       </div>
-                      {editActivationDate && editActivationDate !== (selectedLicense.activation_date || '') && (
-                        <button
-                          onClick={handleSaveActivationDate}
-                          disabled={updateActivationMutation.isPending}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 self-end"
-                        >
-                          {updateActivationMutation.isPending ? (
-                            <Loader2 size={16} className="animate-spin" />
-                          ) : (
-                            <Check size={16} />
-                          )}
-                          Salvar
-                        </button>
-                      )}
                     </div>
-                    {editActivationDate && (
-                      <p className="text-sm text-blue-700 dark:text-blue-300">
-                        <span className="font-medium">Expira em:</span>{' '}
-                        {(() => {
-                          const date = new Date(editActivationDate + 'T00:00:00');
-                          if (selectedLicense.duration_type === 'months') {
-                            date.setMonth(date.getMonth() + (selectedLicense.duration_value || 0));
-                          } else {
-                            date.setFullYear(date.getFullYear() + (selectedLicense.duration_value || 0));
-                          }
-                          return format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-                        })()}
-                      </p>
-                    )}
-                    {!editActivationDate && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Defina a data de ativação para calcular automaticamente a data de expiração.
-                      </p>
-                    )}
+                    <button
+                      onClick={() => setShowActivationModal(true)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                      title="Editar data de ativação"
+                    >
+                      <Edit2 size={16} />
+                    </button>
                   </div>
                 </div>
               )}
 
-              {/* Contato para Notificações - Editável */}
+              {/* Contato para Notificações - Com ícone edit */}
               <div className="space-y-3">
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
                   <Bell size={16} />
                   Contato para Notificações de Vencimento
                 </h4>
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                  <div className="space-y-3">
-                    {/* Email de Notificação */}
+
+                {/* Email */}
+                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Mail className="text-gray-400" size={18} />
                     <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                        <Mail size={14} className="inline mr-1" />
-                        Email de Notificação
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="email"
-                          value={editNotificationEmail}
-                          onChange={(e) => setEditNotificationEmail(e.target.value)}
-                          placeholder="Ex: ti@empresa.com"
-                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                        />
-                        {editNotificationEmail && (
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(editNotificationEmail);
-                              toast.success('Email copiado!');
-                            }}
-                            className="p-2 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-lg flex-shrink-0"
-                            title="Copiar email"
-                          >
-                            <Copy size={14} className="text-blue-600 dark:text-blue-400" />
-                          </button>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Email de Notificação</p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {selectedLicense.notification_email || 'Não definido'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowContactModal(true)}
+                    className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+                    title="Editar contato"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                </div>
+
+                {/* Solicitante */}
+                {(selectedLicense.requester_name || selectedLicense.requester_phone) && (
+                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <User className="text-gray-400" size={18} />
+                      <div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Solicitante</p>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {selectedLicense.requester_name || 'Não definido'}
+                        </p>
+                        {selectedLicense.requester_phone && (
+                          <p className="text-xs text-gray-500">{selectedLicense.requester_phone}</p>
                         )}
                       </div>
                     </div>
-
-                    {/* Nome do Responsável */}
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                        <User size={14} className="inline mr-1" />
-                        Nome do Responsável
-                      </label>
-                      <input
-                        type="text"
-                        value={editRequesterName}
-                        onChange={(e) => setEditRequesterName(e.target.value)}
-                        placeholder="Ex: João Silva"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                      />
-                    </div>
-
-                    {/* Telefone de Contato */}
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                        📞 Telefone de Contato
-                      </label>
-                      <input
-                        type="tel"
-                        value={editRequesterPhone}
-                        onChange={(e) => setEditRequesterPhone(e.target.value)}
-                        placeholder="Ex: (11) 98765-4321"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                      />
-                    </div>
-
-                    {/* Botão Salvar */}
-                    {(editNotificationEmail !== (selectedLicense.notification_email || '') ||
-                      editRequesterName !== (selectedLicense.requester_name || '') ||
-                      editRequesterPhone !== (selectedLicense.requester_phone || '')) && (
-                      <button
-                        onClick={handleSaveContact}
-                        disabled={updateContactMutation.isPending}
-                        className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                      >
-                        {updateContactMutation.isPending ? (
-                          <Loader2 size={16} className="animate-spin" />
-                        ) : (
-                          <Check size={16} />
-                        )}
-                        Salvar Alterações
-                      </button>
-                    )}
+                    <button
+                      onClick={() => setShowContactModal(true)}
+                      className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+                      title="Editar contato"
+                    >
+                      <Edit2 size={16} />
+                    </button>
                   </div>
+                )}
 
-                  <div className="mt-4 pt-4 border-t border-blue-300 dark:border-blue-700">
-                    <p className="text-xs text-blue-700 dark:text-blue-300">
-                      ℹ️ Este contato receberá automaticamente os avisos de vencimento desta licença por email.
-                      {!editNotificationEmail && " Se não configurado, será usado o email principal do cliente."}
-                    </p>
-                  </div>
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    ℹ️ Este contato receberá automaticamente os avisos de vencimento desta licença por email.
+                    {!selectedLicense.notification_email && " Se não configurado, será usado o email principal do cliente."}
+                  </p>
                 </div>
               </div>
 
@@ -1816,6 +1767,45 @@ export default function ResourceLicenses() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Mini-modais */}
+      {showActivationModal && selectedLicense && !selectedLicense.is_perpetual && (
+        <EditActivationDateModal
+          currentDate={selectedLicense.activation_date || ''}
+          durationValue={selectedLicense.duration_value}
+          durationType={selectedLicense.duration_type}
+          onSave={(newDate) => {
+            updateActivationMutation.mutate({
+              id: selectedLicense.id,
+              activation_date: newDate,
+            });
+            setShowActivationModal(false);
+          }}
+          onClose={() => setShowActivationModal(false)}
+          isSaving={updateActivationMutation.isPending}
+        />
+      )}
+
+      {showContactModal && selectedLicense && (
+        <EditContactModal
+          currentEmail={selectedLicense.notification_email || ''}
+          currentName={selectedLicense.requester_name || ''}
+          currentPhone={selectedLicense.requester_phone || ''}
+          onSave={(data) => {
+            updateContactMutation.mutate({
+              id: selectedLicense.id,
+              data: {
+                notification_email: data.email,
+                requester_name: data.name,
+                requester_phone: data.phone,
+              },
+            });
+            setShowContactModal(false);
+          }}
+          onClose={() => setShowContactModal(false)}
+          isSaving={updateContactMutation.isPending}
+        />
       )}
     </div>
   );
