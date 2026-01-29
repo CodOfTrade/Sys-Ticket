@@ -140,6 +140,44 @@ export class ResourcesGateway
     });
   }
 
+  @OnEvent('resource.command.executed')
+  handleResourceCommandExecuted(payload: {
+    resourceId: string;
+    command: string;
+    success: boolean;
+    message?: string;
+    executedAt: Date;
+  }) {
+    this.logger.log(
+      `Evento resource.command.executed - ID: ${payload.resourceId}, Comando: ${payload.command}, Sucesso: ${payload.success}`,
+    );
+    this.server.to('resources-room').emit('resource:command-executed', {
+      type: 'command-executed',
+      resourceId: payload.resourceId,
+      command: payload.command,
+      success: payload.success,
+      message: payload.message,
+      executedAt: payload.executedAt.toISOString(),
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  @OnEvent('resource.command.expired')
+  handleResourceCommandExpired(payload: {
+    resourceId: string;
+    command: string;
+  }) {
+    this.logger.warn(
+      `Evento resource.command.expired - ID: ${payload.resourceId}, Comando: ${payload.command}`,
+    );
+    this.server.to('resources-room').emit('resource:command-expired', {
+      type: 'command-expired',
+      resourceId: payload.resourceId,
+      command: payload.command,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   // ==================== EVENTOS DE LICENÇAS ====================
 
   @OnEvent('license.created')

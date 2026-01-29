@@ -1,20 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, Like, In } from 'typeorm';
+import { Repository, FindOptionsWhere, Like, In, LessThan } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Resource, ResourceType, ResourceStatus } from '../entities/resource.entity';
 import { ResourceHistory, ResourceEventType } from '../entities/resource-history.entity';
 import { CreateResourceDto } from '../dto/create-resource.dto';
 import { UpdateResourceDto } from '../dto/update-resource.dto';
 import { QueryResourceDto } from '../dto/query-resource.dto';
-
-// Comandos permitidos para envio remoto
-export enum RemoteCommand {
-  UNINSTALL = 'uninstall',
-  RESTART = 'restart',
-  UPDATE = 'update',
-  COLLECT_INFO = 'collect_info',
-}
+import { RemoteCommand, COMMAND_TIMEOUT_MS } from '../constants/remote-commands';
 
 @Injectable()
 export class ResourcesService {
@@ -264,6 +257,55 @@ export class ResourcesService {
   }
 
   /**
+   * Limpa comandos pendentes expirados (timeout de 1 hora)
+   */
+  async clearExpiredCommands(): Promise<void> {
+    const expiredDate = new Date(Date.now() - COMMAND_TIMEOUT_MS);
+
+    const expiredResources = await this.resourceRepository.find({
+      where: {
+        pending_command_at: LessThan(expiredDate),
+      },
+    });
+
+    if (expiredResources.length === 0) {
+      return;
+    }
+
+    this.logger.log(`Limpando ${expiredResources.length} comandos expirados`);
+
+    for (const resource of expiredResources) {
+      const expiredCommand = resource.pending_command;
+
+      // Limpar comando
+      resource.pending_command = undefined;
+      resource.pending_command_at = undefined;
+      await this.resourceRepository.save(resource);
+
+      // Registrar no histórico
+      await this.createHistory(
+        resource.id,
+        ResourceEventType.COMMAND_EXECUTED,
+        `Comando '${expiredCommand}' expirou após 1 hora sem execução`,
+        undefined,
+        { command: expiredCommand, expired: true },
+        undefined,
+        false,
+      );
+
+      // Emitir evento de expiração
+      this.eventEmitter.emit('resource.command.expired', {
+        resourceId: resource.id,
+        command: expiredCommand,
+      });
+
+      this.logger.warn(
+        `Comando '${expiredCommand}' expirado para recurso ${resource.resource_code} (ID: ${resource.id})`,
+      );
+    }
+  }
+
+  /**
    * Envia um comando remoto para o agente
    */
   async sendCommand(
@@ -392,14 +434,18 @@ export class ResourcesService {
       true,
     );
 
-    // Emitir evento de atualização
+    // Emitir evento específico de execução de comando
+    this.eventEmitter.emit('resource.command.executed', {
+      resourceId: resource.id,
+      command: executedCommand,
+      success,
+      message,
+      executedAt: new Date(),
+    });
+
+    // Também emitir evento genérico de atualização para compatibilidade
     this.eventEmitter.emit('resource.updated', {
       resourceId: resource.id,
-      changes: {
-        commandExecuted: executedCommand,
-        success,
-        message,
-      },
     });
 
     this.logger.log(

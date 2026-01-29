@@ -1,26 +1,28 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, Not, IsNull } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Resource } from '../entities/resource.entity';
+import { ResourcesService } from '../services/resources.service';
 
 @Injectable()
 export class OfflineDetectionTask {
   private readonly logger = new Logger(OfflineDetectionTask.name);
   private readonly OFFLINE_TIMEOUT_MINUTES = 10;
-  private readonly COMMAND_TIMEOUT_MINUTES = 60; // 1 hora
 
   constructor(
     @InjectRepository(Resource)
     private readonly resourceRepository: Repository<Resource>,
     private readonly eventEmitter: EventEmitter2,
+    @Inject(forwardRef(() => ResourcesService))
+    private readonly resourcesService: ResourcesService,
   ) {}
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async checkOfflineAgents() {
     await this.markOfflineAgents();
-    await this.cleanStaleCommands();
+    await this.resourcesService.clearExpiredCommands();
   }
 
   /**
@@ -68,41 +70,4 @@ export class OfflineDetectionTask {
     }
   }
 
-  /**
-   * Limpa comandos pendentes antigos (> 1 hora)
-   */
-  private async cleanStaleCommands() {
-    const cutoffTime = new Date(Date.now() - this.COMMAND_TIMEOUT_MINUTES * 60 * 1000);
-
-    // Buscar recursos com comandos pendentes antigos
-    const staleCommands = await this.resourceRepository.find({
-      where: {
-        pending_command: Not(IsNull()),
-        pending_command_at: LessThan(cutoffTime),
-      },
-      select: ['id', 'name', 'pending_command', 'pending_command_at'],
-    });
-
-    if (staleCommands.length === 0) {
-      return;
-    }
-
-    this.logger.log(`Limpando ${staleCommands.length} comando(s) pendente(s) antigo(s)`);
-
-    // Limpar comandos antigos
-    const ids = staleCommands.map(r => r.id);
-    await this.resourceRepository
-      .createQueryBuilder()
-      .update(Resource)
-      .set({
-        pending_command: undefined as any,
-        pending_command_at: undefined as any,
-      })
-      .whereInIds(ids)
-      .execute();
-
-    for (const resource of staleCommands) {
-      this.logger.log(`Comando '${resource.pending_command}' expirado em ${resource.name}`);
-    }
-  }
 }

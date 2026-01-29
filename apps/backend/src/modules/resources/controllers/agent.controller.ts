@@ -6,6 +6,7 @@ import {
   Param,
   UseGuards,
   Req,
+  Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { AgentService } from '../services/agent.service';
@@ -21,6 +22,8 @@ import { AgentTokenGuard } from '../guards/agent-token.guard';
 @ApiTags('Agent')
 @Controller({ path: 'agent', version: '1' })
 export class AgentController {
+  private readonly logger = new Logger(AgentController.name);
+
   constructor(private readonly agentService: AgentService) {}
 
   @Post('register')
@@ -167,6 +170,7 @@ export class AgentController {
   async getPendingCommand(@Param('agentId') agentId: string, @Req() req: any) {
     // Validar que o agentId do path corresponde ao token
     if (req.agentId !== agentId) {
+      this.logger.warn(`Tentativa de acesso negada: agentId ${agentId} não corresponde ao token`);
       return {
         success: false,
         message: 'Acesso negado',
@@ -175,6 +179,13 @@ export class AgentController {
     }
 
     const pendingCommand = await this.agentService.getPendingCommand(agentId);
+
+    if (pendingCommand.command) {
+      this.logger.debug(
+        `Agente ${agentId} buscou comando pendente: ${pendingCommand.command}`,
+      );
+    }
+
     return {
       success: true,
       data: pendingCommand,
@@ -203,11 +214,16 @@ export class AgentController {
   ) {
     // Validar que o agentId do path corresponde ao token
     if (req.agentId !== agentId) {
+      this.logger.warn(`Tentativa de confirmação negada: agentId ${agentId} não corresponde ao token`);
       return {
         success: false,
         message: 'Acesso negado',
       };
     }
+
+    this.logger.log(
+      `Agente ${agentId} confirmando comando '${body.command}': ${body.success ? 'Sucesso' : 'Falhou'}${body.message ? ` - ${body.message}` : ''}`,
+    );
 
     await this.agentService.confirmCommandExecution(
       agentId,

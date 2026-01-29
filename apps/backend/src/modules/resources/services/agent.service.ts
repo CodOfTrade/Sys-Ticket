@@ -497,18 +497,24 @@ export class AgentService {
 
     await this.resourceRepository.save(resource);
 
-    // Emitir evento de atualização
-    this.eventEmitter.emit('resource.updated', {
+    // Emitir evento específico de execução de comando
+    this.eventEmitter.emit('resource.command.executed', {
       resourceId: resource.id,
-      changes: {
-        commandExecuted: executedCommand,
-        success,
-        message,
-      },
+      command: executedCommand,
+      success,
+      message,
+      executedAt: new Date(),
     });
 
+    // Também emitir evento genérico de atualização para compatibilidade
+    this.eventEmitter.emit('resource.updated', {
+      resourceId: resource.id,
+    });
+
+    const statusText = success ? 'executado com sucesso' : 'falhou';
+    const messageDetail = message ? ` - ${message}` : '';
     this.logger.log(
-      `Comando '${executedCommand}' ${success ? 'executado' : 'falhou'} no recurso ${resource.resource_code}`,
+      `Comando '${executedCommand}' ${statusText} no recurso ${resource.resource_code} (ID: ${resource.id})${messageDetail}`,
     );
   }
 }
