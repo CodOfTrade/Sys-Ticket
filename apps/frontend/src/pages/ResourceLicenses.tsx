@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Key, AlertTriangle, Check, X, Loader2, Eye, Building2, Calendar, DollarSign, User, FileText, Copy, Trash2, Download, RotateCcw, Clock, Bell, Mail } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
@@ -105,6 +105,9 @@ export default function ResourceLicenses() {
   const [licenseToDelete, setLicenseToDelete] = useState<ResourceLicense | null>(null);
   const [editActivationDate, setEditActivationDate] = useState<string>('');
   const [selectedContactId, setSelectedContactId] = useState<string>('');
+  const [editNotificationEmail, setEditNotificationEmail] = useState<string>('');
+  const [editRequesterName, setEditRequesterName] = useState<string>('');
+  const [editRequesterPhone, setEditRequesterPhone] = useState<string>('');
 
   // WebSocket para atualizações em tempo real
   useResourcesSocket({ enabled: true });
@@ -196,6 +199,58 @@ export default function ResourceLicenses() {
       activation_date: editActivationDate,
     });
   };
+
+  // Mutation para atualizar campos de contato
+  const updateContactMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { notification_email?: string; requester_name?: string; requester_phone?: string } }) =>
+      resourceService.updateLicense(id, data),
+    onSuccess: (updatedLicense) => {
+      toast.success('Contato atualizado com sucesso!');
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === 'licenses',
+      });
+      setSelectedLicense(updatedLicense);
+      setEditNotificationEmail('');
+      setEditRequesterName('');
+      setEditRequesterPhone('');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Erro ao atualizar contato');
+    },
+  });
+
+  const handleSaveContact = () => {
+    if (!selectedLicense) return;
+
+    const hasChanges =
+      editNotificationEmail !== (selectedLicense.notification_email || '') ||
+      editRequesterName !== (selectedLicense.requester_name || '') ||
+      editRequesterPhone !== (selectedLicense.requester_phone || '');
+
+    if (!hasChanges) return;
+
+    updateContactMutation.mutate({
+      id: selectedLicense.id,
+      data: {
+        notification_email: editNotificationEmail || undefined,
+        requester_name: editRequesterName || undefined,
+        requester_phone: editRequesterPhone || undefined,
+      },
+    });
+  };
+
+  // useEffect para popular campos de contato quando abrir modal
+  useEffect(() => {
+    if (selectedLicense) {
+      setEditNotificationEmail(selectedLicense.notification_email || '');
+      setEditRequesterName(selectedLicense.requester_name || '');
+      setEditRequesterPhone(selectedLicense.requester_phone || '');
+    } else {
+      setEditNotificationEmail('');
+      setEditRequesterName('');
+      setEditRequesterPhone('');
+    }
+  }, [selectedLicense]);
 
   const handleContactSelect = (contactId: string) => {
     setSelectedContactId(contactId);
@@ -1453,29 +1508,32 @@ export default function ResourceLicenses() {
                 </div>
               )}
 
-              {/* Contato para Notificações */}
-              {(selectedLicense.notification_email || selectedLicense.requester_name || selectedLicense.requester_phone) && (
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                    <Bell size={16} />
-                    Contato para Notificações de Vencimento
-                  </h4>
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                    <div className="space-y-3">
-                      {selectedLicense.notification_email && (
-                        <div className="flex items-start gap-3">
-                          <Mail size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                              Email de Notificação
-                            </p>
-                            <p className="text-sm font-medium text-blue-600 dark:text-blue-400 break-all">
-                              {selectedLicense.notification_email}
-                            </p>
-                          </div>
+              {/* Contato para Notificações - Editável */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                  <Bell size={16} />
+                  Contato para Notificações de Vencimento
+                </h4>
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="space-y-3">
+                    {/* Email de Notificação */}
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                        <Mail size={14} className="inline mr-1" />
+                        Email de Notificação
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="email"
+                          value={editNotificationEmail}
+                          onChange={(e) => setEditNotificationEmail(e.target.value)}
+                          placeholder="Ex: ti@empresa.com"
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                        />
+                        {editNotificationEmail && (
                           <button
                             onClick={() => {
-                              navigator.clipboard.writeText(selectedLicense.notification_email || '');
+                              navigator.clipboard.writeText(editNotificationEmail);
                               toast.success('Email copiado!');
                             }}
                             className="p-2 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-lg flex-shrink-0"
@@ -1483,47 +1541,66 @@ export default function ResourceLicenses() {
                           >
                             <Copy size={14} className="text-blue-600 dark:text-blue-400" />
                           </button>
-                        </div>
-                      )}
-
-                      {selectedLicense.requester_name && (
-                        <div className="flex items-start gap-3">
-                          <User size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                              Nome do Responsável
-                            </p>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {selectedLicense.requester_name}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedLicense.requester_phone && (
-                        <div className="flex items-start gap-3">
-                          <span className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0">📞</span>
-                          <div className="flex-1">
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                              Telefone de Contato
-                            </p>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {selectedLicense.requester_phone}
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-blue-300 dark:border-blue-700">
-                      <p className="text-xs text-blue-700 dark:text-blue-300">
-                        ℹ️ Este contato receberá automaticamente os avisos de vencimento desta licença por email.
-                        {!selectedLicense.notification_email && " Se não configurado, será usado o email principal do cliente."}
-                      </p>
+                    {/* Nome do Responsável */}
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                        <User size={14} className="inline mr-1" />
+                        Nome do Responsável
+                      </label>
+                      <input
+                        type="text"
+                        value={editRequesterName}
+                        onChange={(e) => setEditRequesterName(e.target.value)}
+                        placeholder="Ex: João Silva"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      />
                     </div>
+
+                    {/* Telefone de Contato */}
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                        📞 Telefone de Contato
+                      </label>
+                      <input
+                        type="tel"
+                        value={editRequesterPhone}
+                        onChange={(e) => setEditRequesterPhone(e.target.value)}
+                        placeholder="Ex: (11) 98765-4321"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      />
+                    </div>
+
+                    {/* Botão Salvar */}
+                    {(editNotificationEmail !== (selectedLicense.notification_email || '') ||
+                      editRequesterName !== (selectedLicense.requester_name || '') ||
+                      editRequesterPhone !== (selectedLicense.requester_phone || '')) && (
+                      <button
+                        onClick={handleSaveContact}
+                        disabled={updateContactMutation.isPending}
+                        className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {updateContactMutation.isPending ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Check size={16} />
+                        )}
+                        Salvar Alterações
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-blue-300 dark:border-blue-700">
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      ℹ️ Este contato receberá automaticamente os avisos de vencimento desta licença por email.
+                      {!editNotificationEmail && " Se não configurado, será usado o email principal do cliente."}
+                    </p>
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Informações Financeiras */}
               {(selectedLicense.vendor || selectedLicense.cost || selectedLicense.purchase_date) && (
