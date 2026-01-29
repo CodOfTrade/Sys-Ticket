@@ -25,8 +25,8 @@ import { UsersModule } from '../users/users.module';
   ],
   controllers: [
     NotificationConfigController,
-    NotificationsController,
-    EmailTemplateController,
+    EmailTemplateController, // Mais específico primeiro
+    NotificationsController, // Genérico por último
   ],
   providers: [
     NotificationsService,
