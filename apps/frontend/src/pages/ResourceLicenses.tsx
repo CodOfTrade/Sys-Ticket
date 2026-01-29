@@ -104,6 +104,7 @@ export default function ResourceLicenses() {
   const [selectedLicense, setSelectedLicense] = useState<ResourceLicense | null>(null);
   const [licenseToDelete, setLicenseToDelete] = useState<ResourceLicense | null>(null);
   const [editActivationDate, setEditActivationDate] = useState<string>('');
+  const [selectedContactId, setSelectedContactId] = useState<string>('');
 
   // WebSocket para atualizações em tempo real
   useResourcesSocket({ enabled: true });
@@ -148,6 +149,7 @@ export default function ResourceLicenses() {
       });
       setShowCreateModal(false);
       setFormData(initialFormData);
+      setSelectedContactId('');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Erro ao criar licença');
@@ -193,6 +195,30 @@ export default function ResourceLicenses() {
       id: selectedLicense.id,
       activation_date: editActivationDate,
     });
+  };
+
+  const handleContactSelect = (contactId: string) => {
+    setSelectedContactId(contactId);
+
+    if (contactId) {
+      const contact = contacts.find(c => c.id === contactId);
+      if (contact) {
+        setFormData({
+          ...formData,
+          notification_email: contact.email || '',
+          requester_name: contact.name || '',
+          requester_phone: contact.phone || '',
+        });
+      }
+    } else {
+      // Limpar campos se desmarcar
+      setFormData({
+        ...formData,
+        notification_email: '',
+        requester_name: '',
+        requester_phone: '',
+      });
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -286,6 +312,14 @@ export default function ResourceLicenses() {
     enabled: !!formData.client_id && showCreateModal,
   });
   const contracts = contractsData || [];
+
+  // Query para contatos do cliente selecionado
+  const { data: contactsData } = useQuery({
+    queryKey: ['client-contacts', formData.client_id],
+    queryFn: () => clientService.getContacts(formData.client_id),
+    enabled: !!formData.client_id && showCreateModal,
+  });
+  const contacts = contactsData || [];
 
   // Estado para exportação
   const [isExporting, setIsExporting] = useState(false);
@@ -768,6 +802,7 @@ export default function ResourceLicenses() {
                   onClick={() => {
                     setShowCreateModal(false);
                     setFormData(initialFormData);
+                    setSelectedContactId('');
                   }}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                 >
@@ -784,7 +819,10 @@ export default function ResourceLicenses() {
                 </label>
                 <select
                   value={formData.client_id}
-                  onChange={(e) => setFormData({ ...formData, client_id: e.target.value, contract_id: '' })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, client_id: e.target.value, contract_id: '' });
+                    setSelectedContactId(''); // Limpar solicitante ao trocar de cliente
+                  }}
                   required
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
@@ -1092,6 +1130,34 @@ export default function ResourceLicenses() {
                   Se não informado, será usado o email principal do cliente.
                 </p>
 
+                {/* Seletor de Solicitante */}
+                {contacts.length > 0 && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <User size={14} className="inline mr-1" />
+                      Selecionar Solicitante Cadastrado
+                    </label>
+                    <select
+                      value={selectedContactId}
+                      onChange={(e) => handleContactSelect(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="">Nenhum (preencher manualmente)</option>
+                      {contacts.map((contact) => (
+                        <option key={contact.id} value={contact.id}>
+                          {contact.name}
+                          {contact.is_primary && ' ⭐ (Principal)'}
+                          {contact.email && ` - ${contact.email}`}
+                          {contact.department && ` - ${contact.department}`}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Selecione um contato cadastrado para preencher automaticamente os campos abaixo
+                    </p>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1144,6 +1210,7 @@ export default function ResourceLicenses() {
                   onClick={() => {
                     setShowCreateModal(false);
                     setFormData(initialFormData);
+                    setSelectedContactId('');
                   }}
                   className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
                 >
