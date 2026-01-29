@@ -185,7 +185,6 @@ export default function ResourceLicenses() {
       });
       // Atualizar o selectedLicense com os dados atualizados
       setSelectedLicense(updatedLicense);
-      setEditActivationDate('');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Erro ao atualizar data de ativação');
@@ -203,28 +202,12 @@ export default function ResourceLicenses() {
         predicate: (query) => query.queryKey[0] === 'licenses',
       });
       setSelectedLicense(updatedLicense);
-      setEditNotificationEmail('');
-      setEditRequesterName('');
-      setEditRequesterPhone('');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Erro ao atualizar contato');
     },
   });
 
-
-  // useEffect para popular campos de contato quando abrir modal
-  useEffect(() => {
-    if (selectedLicense) {
-      setEditNotificationEmail(selectedLicense.notification_email || '');
-      setEditRequesterName(selectedLicense.requester_name || '');
-      setEditRequesterPhone(selectedLicense.requester_phone || '');
-    } else {
-      setEditNotificationEmail('');
-      setEditRequesterName('');
-      setEditRequesterPhone('');
-    }
-  }, [selectedLicense]);
 
   const handleContactSelect = (contactId: string) => {
     setSelectedContactId(contactId);
@@ -714,7 +697,6 @@ export default function ResourceLicenses() {
                     key={license.id}
                     onClick={() => {
                       setSelectedLicense(license);
-                      setEditActivationDate(license.activation_date || '');
                     }}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                   >
@@ -790,7 +772,6 @@ export default function ResourceLicenses() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedLicense(license);
-                            setEditActivationDate(license.activation_date || '');
                           }}
                           className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                           title="Ver detalhes"
@@ -1281,7 +1262,6 @@ export default function ResourceLicenses() {
                 <button
                   onClick={() => {
                     setSelectedLicense(null);
-                    setEditActivationDate('');
                   }}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                 >
@@ -1661,7 +1641,6 @@ export default function ResourceLicenses() {
               <button
                 onClick={() => {
                   setSelectedLicense(null);
-                  setEditActivationDate('');
                 }}
                 className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
               >
@@ -1670,7 +1649,6 @@ export default function ResourceLicenses() {
               <button
                 onClick={() => {
                   setSelectedLicense(null);
-                  setEditActivationDate('');
                   setLicenseToDelete(selectedLicense);
                 }}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2"
