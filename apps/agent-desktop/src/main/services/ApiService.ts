@@ -36,8 +36,31 @@ export class ApiService {
     this.api.interceptors.response.use(
       (response) => response,
       (error) => {
+        // Log para debug
+        console.error('API Error:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+
+        // Extrair mensagem do erro - verificar diferentes formatos de resposta
+        let errorMessage = 'Erro desconhecido';
+        if (error.response?.data) {
+          const data = error.response.data;
+          // NestJS pode retornar message como string ou array
+          if (typeof data.message === 'string') {
+            errorMessage = data.message;
+          } else if (Array.isArray(data.message)) {
+            errorMessage = data.message.join(', ');
+          } else if (data.error) {
+            errorMessage = data.error;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
         const apiError: ApiError = {
-          message: error.response?.data?.message || error.message || 'Erro desconhecido',
+          message: errorMessage,
           statusCode: error.response?.status || 500,
         };
         throw apiError;

@@ -1,6 +1,6 @@
 {
   "name": "@sys-ticket/agent-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sys-Ticket Windows Agent - Desktop application for resource monitoring and ticket management",
   "main": "dist-electron/main/index.js",
   "author": "Sys-Ticket",

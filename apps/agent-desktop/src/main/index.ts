@@ -394,7 +394,18 @@ function registerIpcHandlers() {
 
       return response;
     } catch (error: any) {
-      throw new Error(error.message || 'Erro ao registrar agente');
+      // Log para debug
+      console.error('Erro ao registrar agente:', error);
+
+      // Extrair mensagem de erro de diferentes formatos
+      let errorMessage = 'Erro ao registrar agente';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      throw new Error(errorMessage);
     }
   });
 
