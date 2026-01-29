@@ -367,6 +367,7 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
                     <option value={ServiceType.REMOTE}>Atendimento avulso N1</option>
                     <option value={ServiceType.EXTERNAL}>Atendimento avulso N2</option>
                     <option value={ServiceType.INTERNAL}>Demanda interna</option>
+                    <option value={ServiceType.OUTSOURCED}>Terceirizados</option>
                   </select>
                 )}
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -392,6 +393,7 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
                   <option value={ServiceType.REMOTE}>Remoto</option>
                   <option value={ServiceType.EXTERNAL}>Presencial/Externo</option>
                   <option value={ServiceType.INTERNAL}>Interno</option>
+                  <option value={ServiceType.OUTSOURCED}>Terceirizados</option>
                 </select>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Como o atendimento foi realizado
@@ -475,7 +477,7 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
                   </p>
                 ) : calculatedPrice ? (
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    💰 <strong>R$ {calculatedPrice.unit_price.toFixed(2)}/h</strong> ({formData.service_type === 'remote' ? 'Remoto' : formData.service_type === 'external' ? 'Presencial' : 'Interno'}) • {calculatedPrice.duration_hours.toFixed(2)}h
+                    💰 <strong>R$ {calculatedPrice.unit_price.toFixed(2)}/h</strong> ({formData.service_type === 'remote' ? 'Remoto' : formData.service_type === 'external' ? 'Presencial' : formData.service_type === 'outsourced' ? 'Terceirizado' : 'Interno'}) • {calculatedPrice.duration_hours.toFixed(2)}h
                     {formData.manual_price_override && (
                       <span className="text-orange-600 dark:text-orange-400 ml-1">(Valor manual)</span>
                     )}

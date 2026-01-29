@@ -24,6 +24,7 @@ export enum ServiceType {
   INTERNAL = 'internal',
   REMOTE = 'remote',
   EXTERNAL = 'external',
+  OUTSOURCED = 'outsourced',
 }
 
 export interface Ticket {
