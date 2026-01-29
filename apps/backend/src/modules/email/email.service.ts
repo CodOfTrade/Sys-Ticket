@@ -1,9 +1,19 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { OnEvent } from '@nestjs/event-emitter';
 import * as nodemailer from 'nodemailer';
-import { Transporter } from 'nodemailer';
+import { Transporter} from 'nodemailer';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { SettingsService } from '../settings/settings.service';
 import { SettingKey } from '../settings/entities/system-setting.entity';
+import { Notification } from '../notifications/entities/notification.entity';
+import { NotificationConfigService } from '../notifications/services/notification-config.service';
+import { UsersService } from '../users/users.service';
+import { ClientsService } from '../clients/clients.service';
+import { ResourceLicensesService } from '../resources/services/resource-licenses.service';
+import { adminNotificationTemplate, AdminNotificationData } from './templates/notification-admin.template';
+import { clientNotificationTemplate, ClientNotificationData } from './templates/notification-client.template';
 
 export interface SendEmailDto {
   to: string | string[];
@@ -28,6 +38,16 @@ export class EmailService {
   constructor(
     private configService: ConfigService,
     private settingsService: SettingsService,
+    @Inject(forwardRef(() => NotificationConfigService))
+    private notificationConfigService: NotificationConfigService,
+    @Inject(forwardRef(() => UsersService))
+    private usersService: UsersService,
+    @Inject(forwardRef(() => ClientsService))
+    private clientsService: ClientsService,
+    @Inject(forwardRef(() => ResourceLicensesService))
+    private licensesService: ResourceLicensesService,
+    @InjectRepository(Notification)
+    private notificationRepository: Repository<Notification>,
   ) {
     this.initializeTransporter();
   }
@@ -552,5 +572,182 @@ Sys-Ticket - Este é um email automático. Por favor, não responda.
       html,
       text: plainText,
     });
+  }
+
+  /**
+   * Listener para evento de notificação criada
+   * Envia email automaticamente se configurado
+   */
+  @OnEvent('notification.created')
+  async handleNotificationCreatedForEmail(notification: Notification): Promise<void> {
+    try {
+      this.logger.log(`Processando notificação ${notification.id} para envio de email`);
+
+      // 1. Buscar configuração do alerta
+      const config = await this.notificationConfigService.findByAlertType(notification.type);
+
+      // 2. Se config não encontrada ou não ativa, ignora
+      if (!config || !config.is_active) {
+        this.logger.debug(`Config não encontrada ou inativa para tipo ${notification.type}`);
+        return;
+      }
+
+      let emailSent = false;
+
+      // 3. Enviar email para admins (se email_admins=true)
+      if (config.email_admins && notification.target_user_id) {
+        this.logger.log(`Enviando email para admin ${notification.target_user_id}`);
+        const success = await this.sendNotificationEmailToAdmin(notification);
+        if (success) emailSent = true;
+      }
+
+      // 4. Enviar email para cliente (se email_clients=true)
+      if (config.email_clients && notification.client_id) {
+        this.logger.log(`Enviando email para cliente ${notification.client_id}`);
+        const success = await this.sendNotificationEmailToClient(notification);
+        if (success) emailSent = true;
+      }
+
+      // 5. Atualizar notificação: is_email_sent=true, email_sent_at=now
+      if (emailSent) {
+        await this.notificationRepository.update(notification.id, {
+          is_email_sent: true,
+          email_sent_at: new Date(),
+        });
+        this.logger.log(`Email enviado e notificação ${notification.id} atualizada`);
+      }
+    } catch (error) {
+      this.logger.error(`Erro ao processar notificação ${notification.id} para email:`, error);
+    }
+  }
+
+  /**
+   * Envia email de notificação para admin
+   */
+  private async sendNotificationEmailToAdmin(notification: Notification): Promise<boolean> {
+    try {
+      // Buscar usuário admin
+      const user = await this.usersService.findOne(notification.target_user_id);
+      if (!user || !user.email) {
+        this.logger.warn(`Usuário ${notification.target_user_id} não encontrado ou sem email`);
+        return false;
+      }
+
+      // Buscar dados da licença (se referência for licença)
+      let license = null;
+      let client = null;
+
+      if (notification.reference_type === 'license' && notification.reference_id) {
+        try {
+          license = await this.licensesService.findOne(notification.reference_id);
+          if (license && license.client_id) {
+            client = await this.clientsService.findOne(license.client_id);
+          }
+        } catch (error) {
+          this.logger.warn(`Erro ao buscar licença ${notification.reference_id}:`, error);
+        }
+      }
+
+      // Construir dados do template
+      const baseUrl = this.configService.get<string>('BASE_URL', 'https://172.31.255.26');
+      const systemLink = `${baseUrl}/licenses/${license?.id || ''}`;
+
+      const templateData: AdminNotificationData = {
+        userName: user.name || user.email,
+        title: notification.title,
+        message: notification.message,
+        systemLink,
+      };
+
+      if (license) {
+        templateData.licenseKey = license.license_key || 'N/A';
+        templateData.productName = license.product_name || 'N/A';
+        templateData.clientName = client?.nome || client?.razaoSocial || 'N/A';
+
+        if (license.expiry_date) {
+          const expiryDate = new Date(license.expiry_date);
+          templateData.expiryDate = expiryDate.toLocaleDateString('pt-BR');
+        }
+      }
+
+      // Renderizar template HTML
+      const html = adminNotificationTemplate(templateData);
+
+      // Enviar email
+      return await this.sendEmail({
+        to: user.email,
+        subject: notification.title,
+        html,
+      });
+    } catch (error) {
+      this.logger.error(`Erro ao enviar email para admin:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Envia email de notificação para cliente
+   */
+  private async sendNotificationEmailToClient(notification: Notification): Promise<boolean> {
+    try {
+      // Buscar cliente
+      const client = await this.clientsService.findOne(notification.client_id);
+      if (!client || !client.email) {
+        this.logger.warn(`Cliente ${notification.client_id} não encontrado ou sem email`);
+        return false;
+      }
+
+      // Buscar licença para pegar email específico (se houver)
+      let license = null;
+      let recipientEmail = client.email;
+
+      if (notification.reference_type === 'license' && notification.reference_id) {
+        try {
+          license = await this.licensesService.findOne(notification.reference_id);
+
+          // Prioridade: license.notification_email > license.linked_email > client.email
+          if (license) {
+            if (license['notification_email']) {
+              recipientEmail = license['notification_email'];
+            } else if (license.linked_email) {
+              recipientEmail = license.linked_email;
+            }
+          }
+        } catch (error) {
+          this.logger.warn(`Erro ao buscar licença ${notification.reference_id}:`, error);
+        }
+      }
+
+      // Construir dados do template
+      const templateData: ClientNotificationData = {
+        clientName: client.nomeFantasia || client.razaoSocial || client.nome,
+        title: notification.title,
+        message: notification.message,
+        contactPhone: '(41) 3668-6468', // Telefone da Infoservice (adicionar em variável de ambiente depois)
+        contactEmail: 'contato@infoservice.tec.br', // Email da Infoservice
+      };
+
+      if (license) {
+        templateData.productName = license.product_name;
+
+        if (license.expiry_date) {
+          const expiryDate = new Date(license.expiry_date);
+          templateData.expiryDate = expiryDate.toLocaleDateString('pt-BR');
+        }
+      }
+
+      // Renderizar template HTML
+      const html = clientNotificationTemplate(templateData);
+
+      // Enviar email
+      return await this.sendEmail({
+        to: recipientEmail,
+        subject: notification.title,
+        html,
+      });
+    } catch (error) {
+      this.logger.error(`Erro ao enviar email para cliente:`, error);
+      return false;
+    }
   }
 }
