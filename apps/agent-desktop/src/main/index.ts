@@ -353,6 +353,15 @@ function registerIpcHandlers() {
     }
   });
 
+  // Validar se pode registrar (validação prévia de cota)
+  ipcMain.handle('validate-can-register', async (_, clientId: string, contractId: string | undefined, activationCode: string) => {
+    try {
+      return await apiService.validateCanRegister(clientId, contractId, activationCode);
+    } catch (error: any) {
+      return { canRegister: false, message: error.message || 'Erro ao validar permissão' };
+    }
+  });
+
   // Registrar agente
   ipcMain.handle('register-agent', async (_, registrationData, activationCode: string) => {
     try {

@@ -78,6 +78,68 @@ export class AgentService {
   }
 
   /**
+   * Valida se um cliente/contrato pode registrar novos agentes
+   * Usado para validação prévia antes de preencher dados da máquina
+   */
+  async validateCanRegister(
+    clientId: string,
+    contractId?: string,
+  ): Promise<{ canRegister: boolean; message: string }> {
+    // Buscar cliente
+    const sigeClient = await this.sigeClientRepository.findOne({
+      where: { sigeId: clientId },
+    });
+
+    if (!sigeClient) {
+      return {
+        canRegister: false,
+        message: 'Cliente não encontrado no sistema',
+      };
+    }
+
+    // Se cliente tem liberação ilimitada, pode registrar
+    if (sigeClient.allowUnlimitedAgents) {
+      return {
+        canRegister: true,
+        message: 'Cliente com liberação ilimitada de agentes',
+      };
+    }
+
+    // Verificar se tem contrato definido
+    if (!contractId) {
+      return {
+        canRegister: false,
+        message: 'Este cliente não possui contrato ativo. Entre em contato com o administrador para registrar novos agentes.',
+      };
+    }
+
+    // Validar cota do contrato
+    const quotaValidation = await this.contractQuotasService.validateQuotaDetailed(
+      contractId,
+      ResourceType.COMPUTER,
+    );
+
+    if (!quotaValidation.allowed) {
+      if (quotaValidation.reason === 'no_quota') {
+        return {
+          canRegister: false,
+          message: 'Este cliente não possui cota de recursos configurada. Entre em contato com o administrador para liberar o registro de agentes.',
+        };
+      } else if (quotaValidation.reason === 'exceeded') {
+        return {
+          canRegister: false,
+          message: 'A cota de computadores foi excedida para este contrato. Entre em contato com o administrador.',
+        };
+      }
+    }
+
+    return {
+      canRegister: true,
+      message: 'Cliente pode registrar novos agentes',
+    };
+  }
+
+  /**
    * Registra um novo agente ou atualiza um existente
    */
   async registerAgent(dto: RegisterAgentDto): Promise<{

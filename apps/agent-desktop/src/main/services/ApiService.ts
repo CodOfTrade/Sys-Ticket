@@ -107,6 +107,37 @@ export class ApiService {
   }
 
   /**
+   * Valida se cliente/contrato pode registrar novos agentes
+   * Usado para validação prévia antes de preencher dados da máquina
+   */
+  async validateCanRegister(
+    clientId: string,
+    contractId: string | undefined,
+    activationCode: string,
+  ): Promise<{ canRegister: boolean; message: string }> {
+    try {
+      const response = await this.api.post<{
+        success: boolean;
+        canRegister: boolean;
+        message: string;
+      }>('/v1/agent/validate-registration', { clientId, contractId }, {
+        headers: {
+          'X-Activation-Code': activationCode,
+        },
+      });
+      return {
+        canRegister: response.data.canRegister,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      return {
+        canRegister: false,
+        message: error.message || 'Erro ao validar permissão de registro',
+      };
+    }
+  }
+
+  /**
    * Registra o agente no backend
    */
   async registerAgent(data: RegistrationData, activationCode: string): Promise<RegistrationResponse> {

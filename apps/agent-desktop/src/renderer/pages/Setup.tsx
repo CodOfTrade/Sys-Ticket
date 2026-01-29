@@ -186,15 +186,29 @@ export function Setup({ onComplete }: SetupProps) {
     setError(null);
 
     try {
-      console.log('Coletando informações do sistema...');
+      // VALIDAÇÃO PRÉVIA: Verificar se cliente/contrato pode registrar agentes
+      console.log('Validando permissão de registro...');
+      const validation = await window.electronAPI.validateCanRegister(
+        selectedClientId,
+        selectedContractId || undefined,
+        activationCode.trim()
+      );
+
+      if (!validation.canRegister) {
+        setError(validation.message);
+        setLoading(false);
+        return;
+      }
+
+      console.log('Validação OK, coletando informações do sistema...');
       const info = await window.electronAPI.getSystemInfo();
       console.log('Informações coletadas:', info);
       setSystemInfo(info);
       setLoading(false); // Garantir que loading seja false ANTES de mudar step
       setStep(3);
     } catch (err: any) {
-      console.error('Erro ao coletar informações:', err);
-      setError(err.message || 'Erro ao coletar informações do sistema');
+      console.error('Erro ao validar/coletar informações:', err);
+      setError(err.message || 'Erro ao processar solicitação');
       setLoading(false);
     }
   };

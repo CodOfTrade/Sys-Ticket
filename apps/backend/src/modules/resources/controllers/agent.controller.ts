@@ -147,6 +147,45 @@ export class AgentController {
   // REGISTRO E OPERAÇÕES DO AGENTE
   // ========================================
 
+  @Post('validate-registration')
+  @Public()
+  @ApiOperation({ summary: 'Validar se cliente/contrato pode registrar novos agentes' })
+  @ApiHeader({ name: 'X-Activation-Code', description: 'Código de ativação', required: true })
+  @ApiResponse({
+    status: 200,
+    description: 'Resultado da validação',
+    schema: {
+      example: {
+        success: true,
+        canRegister: true,
+        message: 'Cliente pode registrar novos agentes',
+      },
+    },
+  })
+  async validateRegistration(
+    @Body() body: { clientId: string; contractId?: string },
+    @Headers('x-activation-code') activationCode: string,
+  ) {
+    // Validar código de ativação primeiro
+    if (!activationCode) {
+      throw new UnauthorizedException('Código de ativação não fornecido');
+    }
+
+    await this.agentActivationService.validateOrThrow(activationCode);
+
+    // Validar se pode registrar
+    const result = await this.agentService.validateCanRegister(
+      body.clientId,
+      body.contractId,
+    );
+
+    return {
+      success: true,
+      canRegister: result.canRegister,
+      message: result.message,
+    };
+  }
+
   @Post('register')
   @Public()
   @ApiOperation({ summary: 'Registrar novo agente' })

@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Registro e Ativação
   validateActivationCode: (code: string): Promise<{ valid: boolean; message: string }> =>
     ipcRenderer.invoke('validate-activation-code', code),
+  validateCanRegister: (clientId: string, contractId: string | undefined, activationCode: string): Promise<{ canRegister: boolean; message: string }> =>
+    ipcRenderer.invoke('validate-can-register', clientId, contractId, activationCode),
   registerAgent: (data: RegistrationData, activationCode: string) =>
     ipcRenderer.invoke('register-agent', data, activationCode),
 
@@ -51,6 +53,7 @@ declare global {
       getConfig: () => Promise<AgentConfig>;
       saveConfig: (config: AgentConfig) => Promise<boolean>;
       validateActivationCode: (code: string) => Promise<{ valid: boolean; message: string }>;
+      validateCanRegister: (clientId: string, contractId: string | undefined, activationCode: string) => Promise<{ canRegister: boolean; message: string }>;
       registerAgent: (data: RegistrationData, activationCode: string) => Promise<any>;
       getSystemInfo: () => Promise<SystemInfo>;
       getHostname: () => Promise<string>;
