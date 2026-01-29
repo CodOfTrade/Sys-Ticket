@@ -78,18 +78,18 @@ class NotificationService {
 
   // Configurações de alertas
   async getConfigs(): Promise<NotificationConfig[]> {
-    const response = await api.get<NotificationConfig[]>(`${this.basePath}/configs`);
-    return response.data;
+    const response = await api.get<{ success: boolean; data: NotificationConfig[] }>(`${this.basePath}/configs`);
+    return response.data.data;
   }
 
   async getConfig(id: string): Promise<NotificationConfig> {
-    const response = await api.get<NotificationConfig>(`${this.basePath}/configs/${id}`);
-    return response.data;
+    const response = await api.get<{ success: boolean; data: NotificationConfig }>(`${this.basePath}/configs/${id}`);
+    return response.data.data;
   }
 
   async updateConfig(id: string, data: UpdateNotificationConfigDto): Promise<NotificationConfig> {
-    const response = await api.patch<NotificationConfig>(`${this.basePath}/configs/${id}`, data);
-    return response.data;
+    const response = await api.patch<{ success: boolean; data: NotificationConfig }>(`${this.basePath}/configs/${id}`, data);
+    return response.data.data;
   }
 }
 
