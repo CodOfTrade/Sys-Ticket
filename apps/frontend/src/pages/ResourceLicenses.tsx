@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Key, AlertTriangle, Check, X, Loader2, Eye, Building2, Calendar, DollarSign, User, FileText, Copy, Trash2, Download, RotateCcw, Clock, Bell, Mail } from 'lucide-react';
+import { Plus, Search, Filter, Key, AlertTriangle, Check, X, Loader2, Eye, Building2, Calendar, DollarSign, User, FileText, Copy, Trash2, Download, RotateCcw, Clock, Bell, Mail, Edit2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
 import { clientService } from '@/services/client.service';
@@ -8,6 +8,8 @@ import { useResourcesSocket } from '@/hooks/useResourcesSocket';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { EditActivationDateModal } from '@/components/resources/EditActivationDateModal';
+import { EditContactModal } from '@/components/resources/EditContactModal';
 
 const licenseTypeLabels: Record<string, string> = {
   windows: 'Windows',
@@ -108,6 +110,8 @@ export default function ResourceLicenses() {
   const [editNotificationEmail, setEditNotificationEmail] = useState<string>('');
   const [editRequesterName, setEditRequesterName] = useState<string>('');
   const [editRequesterPhone, setEditRequesterPhone] = useState<string>('');
+  const [showActivationModal, setShowActivationModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   // WebSocket para atualizações em tempo real
   useResourcesSocket({ enabled: true });
