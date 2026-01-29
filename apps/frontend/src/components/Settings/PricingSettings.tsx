@@ -217,11 +217,11 @@ export function PricingSettings() {
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     >
                       <option value="minute">Por Minuto</option>
-                      <option value="hour">Por Hora Completa</option>
+                      <option value="hour">Por Hora</option>
                     </select>
                   ) : (
                     <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {config.charge_excess_per_minute ? 'Por Minuto' : 'Por Hora Completa'}
+                      {config.charge_excess_per_minute ? 'Por Minuto' : 'Por Hora'}
                     </p>
                   )}
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

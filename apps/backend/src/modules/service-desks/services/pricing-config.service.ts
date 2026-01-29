@@ -233,7 +233,7 @@ export class PricingConfigService {
       // Se passou 1 minuto do threshold, já cobra 1 hora completa
       const excessHours = Math.ceil(excessMinutes / 60);
       excessPrice = excessHours * hourlyRate;
-      description = `Base: R$ ${minimumCharge.toFixed(2)} + Excedente: ${excessHours}h × R$ ${hourlyRate.toFixed(2)}/h (hora completa)`;
+      description = `Base: R$ ${minimumCharge.toFixed(2)} + Excedente: ${excessHours}h × R$ ${hourlyRate.toFixed(2)}/h`;
     }
 
     const totalPrice = minimumCharge + excessPrice;
