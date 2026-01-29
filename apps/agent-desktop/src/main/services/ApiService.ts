@@ -4,7 +4,6 @@ import {
   RegistrationData,
   RegistrationResponse,
   HeartbeatData,
-  ApiError,
 } from '@shared/types';
 
 export class ApiService {
