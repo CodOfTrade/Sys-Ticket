@@ -20,6 +20,8 @@ export interface CreatePricingConfigDto {
   fixed_price?: number;
   contract_percentage?: number;
   minimum_charge?: number;
+  minimum_charge_threshold_minutes?: number;
+  charge_excess_per_minute?: boolean;
   round_to_minutes?: number;
   description?: string;
 }
@@ -34,6 +36,8 @@ export interface UpdatePricingConfigDto {
   fixed_price?: number;
   contract_percentage?: number;
   minimum_charge?: number;
+  minimum_charge_threshold_minutes?: number;
+  charge_excess_per_minute?: boolean;
   round_to_minutes?: number;
   active?: boolean;
   description?: string;
@@ -167,20 +171,29 @@ export class PricingConfigService {
    * Calcular preço baseado na configuração e duração
    *
    * Regras:
-   * - Se duração < minimum_charge_threshold_minutes, cobra minimum_charge
-   * - Caso contrário:
-   *   - SEMPRE arredonda para hora completa (ceiling)
-   *   - Exemplo: 1h02m = 2h, 2h30m = 3h
+   * - Se duração <= minimum_charge_threshold_minutes, cobra minimum_charge
+   * - Caso contrário, depende de charge_excess_per_minute:
    *
-   * Exemplo:
-   * - hourly_rate_normal = R$ 70
-   * - minimum_charge = R$ 70
-   * - minimum_charge_threshold_minutes = 60
+   *   charge_excess_per_minute = true (Por Minuto):
+   *   - Cobra proporcionalmente por minuto excedente
+   *   - Exemplo: 75 min (15 min excedente) = mínimo + (15/60 × valor_hora)
    *
-   * Duração 10 min → R$ 70 (valor mínimo)
-   * Duração 48 min → R$ 70 (valor mínimo)
-   * Duração 62 min (1h02m) → R$ 70 + R$ 70 = R$ 140 (arredonda para 2h total)
-   * Duração 125 min (2h05m) → R$ 70 + (2h × R$ 70) = R$ 210 (arredonda para 3h total)
+   *   charge_excess_per_minute = false (Por Hora Completa):
+   *   - Arredonda para cima - passou 1 min do mínimo, cobra 1h extra
+   *   - Exemplo: 61 min = mínimo + 1h extra
+   *   - Exemplo: 121 min = mínimo + 2h extra
+   *
+   * Exemplo com valor_hora = R$ 80, mínimo = R$ 80, threshold = 60 min:
+   *
+   * Por Minuto:
+   * - 30 min → R$ 80 (valor mínimo)
+   * - 75 min → R$ 80 + (15/60 × 80) = R$ 80 + R$ 20 = R$ 100
+   *
+   * Por Hora Completa:
+   * - 30 min → R$ 80 (valor mínimo)
+   * - 61 min → R$ 80 + R$ 80 = R$ 160 (passou 1 min = 1h extra)
+   * - 75 min → R$ 80 + R$ 80 = R$ 160 (passou 15 min = 1h extra)
+   * - 121 min → R$ 80 + R$ 160 = R$ 240 (passou 61 min = 2h extra)
    */
   calculatePrice(config: PricingConfig, durationMinutes: number): {
     basePrice: number;
@@ -192,34 +205,45 @@ export class PricingConfigService {
     const hourlyRate = Number(config.hourly_rate_normal) || 0;
     const minimumCharge = Number(config.minimum_charge) || 0;
     const thresholdMinutes = config.minimum_charge_threshold_minutes || 60;
+    const chargePerMinute = config.charge_excess_per_minute ?? false;
 
-    // Se duração < threshold, cobra valor mínimo
+    // Se duração <= threshold, cobra valor mínimo
     if (durationMinutes <= thresholdMinutes) {
       return {
         basePrice: minimumCharge,
         excessPrice: 0,
         totalPrice: minimumCharge,
         appliedRate: hourlyRate,
-        description: `Cobrança mínima aplicada (${durationMinutes} min < ${thresholdMinutes} min)`,
+        description: `Cobrança mínima aplicada (${durationMinutes} min ≤ ${thresholdMinutes} min)`,
       };
     }
 
     // Duração excedente
     const excessMinutes = durationMinutes - thresholdMinutes;
+    let excessPrice: number;
+    let description: string;
 
-    // SEMPRE arredonda para hora completa (ceiling)
-    // Exemplo: 1h02m = 2h total, então excess de 2 min vira 1h extra
-    const excessHours = Math.ceil(excessMinutes / 60);
-    const excessPrice = excessHours * hourlyRate;
+    if (chargePerMinute) {
+      // Por Minuto: cobra proporcionalmente
+      const minuteRate = hourlyRate / 60;
+      excessPrice = excessMinutes * minuteRate;
+      description = `Base: R$ ${minimumCharge.toFixed(2)} + Excedente: ${excessMinutes} min × R$ ${minuteRate.toFixed(2)}/min`;
+    } else {
+      // Por Hora Completa: arredonda para cima
+      // Se passou 1 minuto do threshold, já cobra 1 hora completa
+      const excessHours = Math.ceil(excessMinutes / 60);
+      excessPrice = excessHours * hourlyRate;
+      description = `Base: R$ ${minimumCharge.toFixed(2)} + Excedente: ${excessHours}h × R$ ${hourlyRate.toFixed(2)}/h (hora completa)`;
+    }
 
     const totalPrice = minimumCharge + excessPrice;
 
     return {
       basePrice: minimumCharge,
-      excessPrice: Math.round(excessPrice * 100) / 100, // Arredondar para 2 casas
+      excessPrice: Math.round(excessPrice * 100) / 100,
       totalPrice: Math.round(totalPrice * 100) / 100,
       appliedRate: hourlyRate,
-      description: `Base: R$ ${minimumCharge.toFixed(2)} + Excedente: ${excessHours}h × R$ ${hourlyRate.toFixed(2)}/h (arredondado)`,
+      description,
     };
   }
 }
