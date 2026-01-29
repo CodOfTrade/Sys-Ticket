@@ -196,13 +196,6 @@ export default function ResourceLicenses() {
     },
   });
 
-  const handleSaveActivationDate = () => {
-    if (!selectedLicense || !editActivationDate) return;
-    updateActivationMutation.mutate({
-      id: selectedLicense.id,
-      activation_date: editActivationDate,
-    });
-  };
 
   // Mutation para atualizar campos de contato
   const updateContactMutation = useMutation({
@@ -223,25 +216,6 @@ export default function ResourceLicenses() {
     },
   });
 
-  const handleSaveContact = () => {
-    if (!selectedLicense) return;
-
-    const hasChanges =
-      editNotificationEmail !== (selectedLicense.notification_email || '') ||
-      editRequesterName !== (selectedLicense.requester_name || '') ||
-      editRequesterPhone !== (selectedLicense.requester_phone || '');
-
-    if (!hasChanges) return;
-
-    updateContactMutation.mutate({
-      id: selectedLicense.id,
-      data: {
-        notification_email: editNotificationEmail || undefined,
-        requester_name: editRequesterName || undefined,
-        requester_phone: editRequesterPhone || undefined,
-      },
-    });
-  };
 
   // useEffect para popular campos de contato quando abrir modal
   useEffect(() => {
@@ -1770,7 +1744,8 @@ export default function ResourceLicenses() {
       )}
 
       {/* Mini-modais */}
-      {showActivationModal && selectedLicense && !selectedLicense.is_perpetual && (
+      {showActivationModal && selectedLicense && !selectedLicense.is_perpetual &&
+       selectedLicense.duration_value && selectedLicense.duration_type && (
         <EditActivationDateModal
           currentDate={selectedLicense.activation_date || ''}
           durationValue={selectedLicense.duration_value}
