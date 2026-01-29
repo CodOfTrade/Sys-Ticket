@@ -36,15 +36,18 @@ export class ApiService {
     this.api.interceptors.response.use(
       (response) => response,
       (error) => {
-        // Log para debug
-        console.error('API Error:', {
+        // Log detalhado para debug
+        console.error('API Error Details:', {
           status: error.response?.status,
+          statusText: error.response?.statusText,
           data: error.response?.data,
           message: error.message,
+          code: error.code,
         });
 
-        // Extrair mensagem do erro - verificar diferentes formatos de resposta
-        let errorMessage = 'Erro desconhecido';
+        // Extrair mensagem do erro do backend
+        let errorMessage = '';
+
         if (error.response?.data) {
           const data = error.response.data;
           // NestJS pode retornar message como string ou array
@@ -55,15 +58,25 @@ export class ApiService {
           } else if (data.error) {
             errorMessage = data.error;
           }
-        } else if (error.message) {
+        }
+
+        // Se não conseguiu extrair do backend, usar mensagem do axios
+        if (!errorMessage && error.message) {
           errorMessage = error.message;
         }
 
-        const apiError: ApiError = {
-          message: errorMessage,
-          statusCode: error.response?.status || 500,
-        };
-        throw apiError;
+        // Último fallback com informação útil
+        if (!errorMessage) {
+          errorMessage = `Erro HTTP ${error.response?.status || 'desconhecido'}`;
+        }
+
+        console.error('Extracted error message:', errorMessage);
+
+        // IMPORTANTE: Lançar instância de Error nativa, não objeto simples
+        // Isso garante que o IPC do Electron preserve a mensagem corretamente
+        const err = new Error(errorMessage);
+        (err as any).statusCode = error.response?.status || 500;
+        throw err;
       }
     );
   }

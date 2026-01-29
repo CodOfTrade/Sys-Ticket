@@ -394,17 +394,20 @@ function registerIpcHandlers() {
 
       return response;
     } catch (error: any) {
-      // Log para debug
-      console.error('Erro ao registrar agente:', error);
+      // Log detalhado para debug
+      console.error('Erro ao registrar agente:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+        statusCode: error.statusCode,
+      });
 
-      // Extrair mensagem de erro de diferentes formatos
-      let errorMessage = 'Erro ao registrar agente';
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      }
+      // Extrair mensagem de erro - o Error já vem com a mensagem do backend
+      const errorMessage = error.message || error.toString() || 'Erro ao registrar agente';
 
+      console.error('Error message to propagate:', errorMessage);
+
+      // Propagar como Error nativo para o renderer
       throw new Error(errorMessage);
     }
   });

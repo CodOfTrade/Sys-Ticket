@@ -233,9 +233,25 @@ export function Setup({ onComplete }: SetupProps) {
       alert('Agente registrado com sucesso!');
       onComplete();
     } catch (err: any) {
-      // Mapear mensagens de erro comuns para mensagens mais amigáveis
-      let errorMessage = err.message || 'Erro ao registrar agente';
+      // Log para debug
+      console.error('Erro no registro:', err);
 
+      // Extrair mensagem do erro - verificar múltiplos formatos
+      let errorMessage = 'Erro ao registrar agente';
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (err.error) {
+        errorMessage = err.error;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+
+      // Remover prefixo "Error: " se existir (vem do IPC do Electron)
+      errorMessage = errorMessage.replace(/^Error:\s*/i, '');
+
+      console.log('Error message after cleanup:', errorMessage);
+
+      // Mapear mensagens de erro comuns para mensagens mais amigáveis
       if (errorMessage.includes('não possui contrato') || errorMessage.includes('sem contrato')) {
         errorMessage = 'Este cliente não possui contrato ativo. Entre em contato com o administrador para registrar novos agentes.';
       } else if (errorMessage.includes('não possui cota') || errorMessage.includes('cota de recursos configurada')) {
