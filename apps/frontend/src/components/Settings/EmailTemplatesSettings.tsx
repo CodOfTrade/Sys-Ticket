@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { emailTemplateService, EmailTemplate } from '@/services/email-template.service';
-import { Mail, Edit, Eye, RotateCcw, Loader2, AlertCircle, Users, Building2 } from 'lucide-react';
+import { Edit, Eye, RotateCcw, Loader2, AlertCircle, Users, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { EmailTemplateEditorModal } from './EmailTemplateEditorModal';
 import { EmailTemplatePreviewModal } from './EmailTemplatePreviewModal';
@@ -26,7 +26,6 @@ const TARGET_AUDIENCE_LABELS = {
 };
 
 export function EmailTemplatesSettings() {
-  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
   const queryClient = useQueryClient();
