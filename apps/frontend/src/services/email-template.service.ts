@@ -31,7 +31,7 @@ export interface UpdateEmailTemplateDto {
 }
 
 class EmailTemplateService {
-  private basePath = '/v1/notifications/email-templates';
+  private basePath = '/v1/email-templates';
 
   async getAll(alertType?: string, audience?: string): Promise<EmailTemplate[]> {
     const params: any = {};

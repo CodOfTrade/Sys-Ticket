@@ -14,7 +14,7 @@ import { CreateEmailTemplateDto } from '../dto/create-email-template.dto';
 import { UpdateEmailTemplateDto } from '../dto/update-email-template.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
-@Controller('notifications/email-templates')
+@Controller('email-templates')
 @UseGuards(JwtAuthGuard)
 export class EmailTemplateController {
   constructor(private readonly templateService: EmailTemplateService) {}
