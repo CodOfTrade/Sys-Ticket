@@ -48,6 +48,9 @@ export class SigeClient {
   @Column({ default: true })
   ativo: boolean;
 
+  @Column({ name: 'allow_unlimited_agents', type: 'boolean', default: false })
+  allowUnlimitedAgents: boolean;
+
   @Column({ name: 'last_synced_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   lastSyncedAt: Date;
 

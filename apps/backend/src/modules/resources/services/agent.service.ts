@@ -9,6 +9,7 @@ import { Ticket, TicketStatus, TicketPriority, TicketType } from '../../tickets/
 import { ServiceDesk } from '../../service-desks/entities/service-desk.entity';
 import { SigeClient } from '../../clients/entities/sige-client.entity';
 import { ClientsService } from '../../clients/clients.service';
+import { ContractQuotasService } from './contract-quotas.service';
 import {
   RegisterAgentDto,
   HeartbeatDto,
@@ -34,6 +35,7 @@ export class AgentService {
     @Inject(forwardRef(() => ClientsService))
     private clientsService: ClientsService,
     private eventEmitter: EventEmitter2,
+    private contractQuotasService: ContractQuotasService,
   ) {}
 
   /**
@@ -93,6 +95,48 @@ export class AgentService {
         client_id: dto.clientId,
       },
     });
+
+    // Flag para controlar se deve incrementar a cota (apenas para novos registros)
+    let shouldIncrementQuota = false;
+
+    // Validação de cota apenas para novos recursos
+    if (!resource) {
+      // Buscar cliente para verificar se tem liberação ilimitada
+      const sigeClient = await this.sigeClientRepository.findOne({
+        where: { sigeId: dto.clientId },
+      });
+
+      if (!sigeClient) {
+        throw new BadRequestException('Cliente não encontrado no sistema');
+      }
+
+      // Se cliente não tem liberação ilimitada, validar cota
+      if (!sigeClient.allowUnlimitedAgents) {
+        // Verificar se tem contrato definido
+        if (!dto.contractId) {
+          throw new BadRequestException(
+            'Cliente não possui contrato ativo. Não é possível registrar novos agentes sem contrato.'
+          );
+        }
+
+        // Validar cota do contrato
+        const canRegister = await this.contractQuotasService.validateQuota(
+          dto.contractId,
+          ResourceType.COMPUTER
+        );
+
+        if (!canRegister) {
+          throw new BadRequestException(
+            'Cota de computadores excedida para este contrato. Entre em contato com o administrador.'
+          );
+        }
+
+        // Marcar para incrementar a cota após registro bem-sucedido
+        shouldIncrementQuota = true;
+      } else {
+        this.logger.log(`Cliente ${sigeClient.nome} tem liberação ilimitada de agentes`);
+      }
+    }
 
     if (resource) {
       // Atualizar agente existente
@@ -205,6 +249,17 @@ export class AgentService {
       clientId: resource.client_id,
       hostname: resource.hostname,
     });
+
+    // Incrementar uso da cota (apenas para novos registros com contrato)
+    if (shouldIncrementQuota && dto.contractId) {
+      try {
+        await this.contractQuotasService.incrementUsage(dto.contractId, ResourceType.COMPUTER);
+        this.logger.log(`Cota de computadores incrementada para contrato ${dto.contractId}`);
+      } catch (error) {
+        // Não falhar o registro se não conseguir incrementar (pode não ter cota configurada)
+        this.logger.warn(`Não foi possível incrementar cota para contrato ${dto.contractId}:`, error);
+      }
+    }
 
     return {
       agentId: resource.agent_id!,
