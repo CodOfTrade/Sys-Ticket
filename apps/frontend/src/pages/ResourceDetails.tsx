@@ -23,6 +23,7 @@ import {
   X,
   Search,
   Package,
+  Image,
 } from 'lucide-react';
 import { resourceService } from '@/services/resource.service';
 import { useResourcesSocket } from '@/hooks/useResourcesSocket';
@@ -351,6 +352,23 @@ export default function ResourceDetails() {
         {/* Informações Gerais */}
         {activeTab === 'info' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Imagem do Recurso */}
+            {resource.image_url && (
+              <div className="md:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Image size={20} className="text-blue-500" />
+                  Foto do Equipamento
+                </h3>
+                <div className="flex justify-center">
+                  <img
+                    src={resource.image_url}
+                    alt={resource.name}
+                    className="max-w-md max-h-64 object-contain rounded-lg border border-gray-200 dark:border-gray-700"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Dados Básicos
