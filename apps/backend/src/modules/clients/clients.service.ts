@@ -177,6 +177,35 @@ export class ClientsService {
   }
 
   /**
+   * Atualiza cliente no banco local
+   */
+  async updateClient(
+    id: string,
+    data: { allowUnlimitedAgents?: boolean },
+  ): Promise<SigeClientInterface> {
+    // Buscar cliente por UUID local ou SIGE ID
+    let client = await this.clientRepository.findOne({ where: { id } });
+
+    if (!client) {
+      client = await this.clientRepository.findOne({ where: { sigeId: id } });
+    }
+
+    if (!client) {
+      throw new Error(`Cliente não encontrado: ${id}`);
+    }
+
+    // Atualizar campos permitidos
+    if (data.allowUnlimitedAgents !== undefined) {
+      client.allowUnlimitedAgents = data.allowUnlimitedAgents;
+    }
+
+    await this.clientRepository.save(client);
+    this.logger.log(`Cliente ${client.nome} atualizado: allowUnlimitedAgents=${client.allowUnlimitedAgents}`);
+
+    return this.mapClientToInterface(client);
+  }
+
+  /**
    * Mapeia entidade para interface
    */
   private mapClientToInterface(client: SigeClient): SigeClientInterface {
@@ -196,6 +225,7 @@ export class ClientsService {
       estado: client.estado,
       cep: client.cep,
       ativo: client.ativo,
+      allowUnlimitedAgents: client.allowUnlimitedAgents,
     };
   }
 

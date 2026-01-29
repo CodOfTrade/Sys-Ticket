@@ -240,4 +240,16 @@ export class ClientsController {
   async findOne(@Param('id') id: string) {
     return this.clientsService.findOne(id);
   }
+
+  @Patch(':id')
+  @Public()
+  @ApiOperation({ summary: 'Atualizar cliente' })
+  @ApiResponse({ status: 200, description: 'Cliente atualizado' })
+  @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
+  async updateClient(
+    @Param('id') id: string,
+    @Body() body: { allowUnlimitedAgents?: boolean },
+  ) {
+    return this.clientsService.updateClient(id, body);
+  }
 }

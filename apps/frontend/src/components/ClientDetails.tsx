@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Client } from '@services/client.service';
+import { Client, clientService } from '@services/client.service';
 import { contractService, Contract, ContractQuota, CreateQuotaDto } from '@services/contract.service';
 import ClientRequesters from './ClientRequesters';
-import { Monitor, Server, Settings, Save, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Monitor, Server, Settings, Save, RefreshCw, ChevronDown, ChevronUp, Shield } from 'lucide-react';
 
 interface ClientDetailsProps {
   client: Client;
@@ -70,6 +70,19 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
     onSuccess: () => {
       toast.success('Uso recalculado');
       queryClient.invalidateQueries({ queryKey: ['contract-quota', expandedContract] });
+    },
+  });
+
+  // Mutation para atualizar cliente (allowUnlimitedAgents)
+  const updateClientMutation = useMutation({
+    mutationFn: (data: { allowUnlimitedAgents: boolean }) =>
+      clientService.updateClient(client.localId || client.id, data),
+    onSuccess: () => {
+      toast.success('Configuração de agentes atualizada');
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar configuração');
     },
   });
 
@@ -374,6 +387,37 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
                   )}
                 </div>
               )}
+
+              {/* Configurações de Agentes */}
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                  <Shield size={16} />
+                  Configurações de Agentes
+                </h4>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={client.allowUnlimitedAgents || false}
+                    onChange={(e) => updateClientMutation.mutate({ allowUnlimitedAgents: e.target.checked })}
+                    disabled={updateClientMutation.isPending}
+                    className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      Permitir Agentes Ilimitados
+                    </span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Ignora validação de cota de contratos para registro de agentes
+                    </p>
+                  </div>
+                  {updateClientMutation.isPending && (
+                    <svg className="animate-spin h-4 w-4 text-blue-600" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  )}
+                </label>
+              </div>
             </div>
           )}
 

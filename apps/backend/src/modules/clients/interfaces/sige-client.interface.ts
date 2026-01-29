@@ -45,6 +45,7 @@ export interface SigeClient {
   estado?: string;
   cep?: string;
   ativo?: boolean;
+  allowUnlimitedAgents?: boolean;
 }
 
 export interface SigeClientResponse {

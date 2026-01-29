@@ -42,6 +42,7 @@ export interface Client {
   estado?: string;
   cep?: string;
   ativo?: boolean;
+  allowUnlimitedAgents?: boolean; // Permite agentes ilimitados (bypass de cota)
 }
 
 export interface ClientsResponse {
@@ -101,6 +102,14 @@ export const clientService = {
   async getClientContracts(clientId: string): Promise<ClientContract[]> {
     const response = await api.get<ApiResponse<ClientContract[]>>(
       `/v1/clients/contract/client/${clientId}`
+    );
+    return response.data.data;
+  },
+
+  async updateClient(clientId: string, data: Partial<Client>): Promise<Client> {
+    const response = await api.patch<ApiResponse<Client>>(
+      `/v1/clients/${clientId}`,
+      data
     );
     return response.data.data;
   },
