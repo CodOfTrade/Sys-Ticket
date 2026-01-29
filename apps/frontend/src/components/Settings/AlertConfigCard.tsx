@@ -1,5 +1,6 @@
-import { Bell, Mail, Users, Building2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Bell, Mail, Users, Building2, ToggleLeft, ToggleRight, Edit, Eye } from 'lucide-react';
 import { NotificationConfig } from '@/services/notification.service';
+import { EmailTemplate } from '@/services/email-template.service';
 
 const ALERT_TYPE_ICONS: Record<string, string> = {
   license_expiring_30: '🟢',
@@ -23,9 +24,25 @@ interface AlertConfigCardProps {
   config: NotificationConfig;
   onToggle: (config: NotificationConfig, field: keyof NotificationConfig, value: boolean) => void;
   isUpdating: boolean;
+  adminTemplate?: EmailTemplate;
+  clientTemplate?: EmailTemplate;
+  onEditAdminTemplate?: () => void;
+  onPreviewAdminTemplate?: () => void;
+  onEditClientTemplate?: () => void;
+  onPreviewClientTemplate?: () => void;
 }
 
-export function AlertConfigCard({ config, onToggle, isUpdating }: AlertConfigCardProps) {
+export function AlertConfigCard({
+  config,
+  onToggle,
+  isUpdating,
+  adminTemplate,
+  clientTemplate,
+  onEditAdminTemplate,
+  onPreviewAdminTemplate,
+  onEditClientTemplate,
+  onPreviewClientTemplate,
+}: AlertConfigCardProps) {
   const icon = ALERT_TYPE_ICONS[config.alert_type] || '🔔';
   const description = ALERT_TYPE_DESCRIPTIONS[config.alert_type] || '';
 
@@ -88,19 +105,40 @@ export function AlertConfigCard({ config, onToggle, isUpdating }: AlertConfigCar
                   Notificação no sistema
                 </span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={config.email_admins}
-                  onChange={(e) => onToggle(config, 'email_admins', e.target.checked)}
-                  disabled={isUpdating}
-                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                />
-                <Mail size={14} className="text-gray-500" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Enviar email
-                </span>
-              </label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.email_admins}
+                    onChange={(e) => onToggle(config, 'email_admins', e.target.checked)}
+                    disabled={isUpdating}
+                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  />
+                  <Mail size={14} className="text-gray-500" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Enviar email
+                  </span>
+                </label>
+                {config.email_admins && adminTemplate && (
+                  <div className="flex items-center gap-2 ml-6">
+                    <button
+                      onClick={onEditAdminTemplate}
+                      className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                      title="Editar template"
+                    >
+                      <Edit size={12} />
+                      Editar Template
+                    </button>
+                    <button
+                      onClick={onPreviewAdminTemplate}
+                      className="p-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                      title="Preview"
+                    >
+                      <Eye size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -113,23 +151,44 @@ export function AlertConfigCard({ config, onToggle, isUpdating }: AlertConfigCar
               </span>
             </div>
             <div className="space-y-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={config.email_clients}
-                  onChange={(e) => onToggle(config, 'email_clients', e.target.checked)}
-                  disabled={isUpdating}
-                  className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
-                />
-                <Mail size={14} className="text-gray-500" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Enviar email
-                </span>
-              </label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.email_clients}
+                    onChange={(e) => onToggle(config, 'email_clients', e.target.checked)}
+                    disabled={isUpdating}
+                    className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                  />
+                  <Mail size={14} className="text-gray-500" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Enviar email
+                  </span>
+                </label>
+                {config.email_clients && clientTemplate && (
+                  <div className="flex items-center gap-2 ml-6">
+                    <button
+                      onClick={onEditClientTemplate}
+                      className="flex items-center gap-1 px-2 py-1 text-xs text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded transition-colors"
+                      title="Editar template"
+                    >
+                      <Edit size={12} />
+                      Editar Template
+                    </button>
+                    <button
+                      onClick={onPreviewClientTemplate}
+                      className="p-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                      title="Preview"
+                    >
+                      <Eye size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Emails para clientes incluem proposta de renovação
+              </p>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Emails para clientes incluem proposta de renovação
-            </p>
           </div>
         </div>
       )}

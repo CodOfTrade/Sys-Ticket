@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, DollarSign, FolderTree, Users, Bell, Sliders, Palette, CheckSquare, Mail } from 'lucide-react';
+import { Settings as SettingsIcon, DollarSign, FolderTree, Users, Bell, Sliders, Palette, CheckSquare } from 'lucide-react';
 import { PricingSettings } from '@/components/Settings/PricingSettings';
 import { LogoSettings } from '@/components/Settings/LogoSettings';
 import { ChecklistSettings } from '@/components/Settings/ChecklistSettings';
 import { ServiceCatalogSettings } from '@/components/Settings/ServiceCatalogSettings';
 import { NotificationSettings } from '@/components/Settings/NotificationSettings';
-import { EmailTemplatesSettings } from '@/components/Settings/EmailTemplatesSettings';
 
-type SettingsTab = 'pricing' | 'branding' | 'checklists' | 'catalogs' | 'users' | 'notifications' | 'email-templates' | 'general';
+type SettingsTab = 'pricing' | 'branding' | 'checklists' | 'catalogs' | 'users' | 'notifications' | 'general';
 
 export function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('pricing');
@@ -19,7 +18,6 @@ export function Settings() {
     { id: 'catalogs' as SettingsTab, label: 'Catalogos de Servico', icon: FolderTree },
     { id: 'users' as SettingsTab, label: 'Usuarios e Permissoes', icon: Users },
     { id: 'notifications' as SettingsTab, label: 'Notificacoes', icon: Bell },
-    { id: 'email-templates' as SettingsTab, label: 'Templates de Email', icon: Mail },
     { id: 'general' as SettingsTab, label: 'Geral', icon: Sliders },
   ];
 
@@ -78,7 +76,6 @@ export function Settings() {
               </div>
             )}
             {activeTab === 'notifications' && <NotificationSettings />}
-            {activeTab === 'email-templates' && <EmailTemplatesSettings />}
             {activeTab === 'general' && (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 Configuracoes Gerais - Em desenvolvimento

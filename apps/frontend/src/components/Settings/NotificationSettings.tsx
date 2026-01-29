@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, FileKey, Ticket, Server, FileText } from 'lucide-react';
 import { notificationService, NotificationConfig } from '@/services/notification.service';
+import { emailTemplateService, EmailTemplate } from '@/services/email-template.service';
 import { AlertConfigCard } from './AlertConfigCard';
+import { EmailTemplateEditorModal } from './EmailTemplateEditorModal';
+import { EmailTemplatePreviewModal } from './EmailTemplatePreviewModal';
 import toast from 'react-hot-toast';
 
 type NotificationCategory = 'license' | 'ticket' | 'resource' | 'contract';
@@ -16,6 +19,8 @@ interface CategoryTab {
 
 export function NotificationSettings() {
   const [activeCategory, setActiveCategory] = useState<NotificationCategory>('license');
+  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
   const queryClient = useQueryClient();
 
   const { data: configsData, isLoading } = useQuery({
@@ -33,6 +38,11 @@ export function NotificationSettings() {
 
   const configs = Array.isArray(configsData) ? configsData : [];
 
+  const { data: templates } = useQuery({
+    queryKey: ['email-templates'],
+    queryFn: () => emailTemplateService.getAll(),
+  });
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<NotificationConfig> }) =>
       notificationService.updateConfig(id, data),
@@ -45,11 +55,28 @@ export function NotificationSettings() {
     },
   });
 
+  const updateTemplateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { subject: string; html_body: string; text_body: string } }) =>
+      emailTemplateService.update(id, data),
+    onSuccess: () => {
+      toast.success('Template atualizado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['email-templates'] });
+      setEditingTemplate(null);
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar template');
+    },
+  });
+
   const handleToggle = (config: NotificationConfig, field: keyof NotificationConfig, value: boolean) => {
     updateMutation.mutate({
       id: config.id,
       data: { [field]: value },
     });
+  };
+
+  const findTemplate = (alertType: string, audience: 'admin' | 'client'): EmailTemplate | undefined => {
+    return templates?.find(t => t.alert_type === alertType && t.target_audience === audience);
   };
 
   // Categorias de notificações (escalável)
@@ -153,14 +180,25 @@ export function NotificationSettings() {
         {activeCategory === 'license' && (
           <>
             {licenseConfigs.length > 0 ? (
-              licenseConfigs.map((config) => (
-                <AlertConfigCard
-                  key={config.id}
-                  config={config}
-                  onToggle={handleToggle}
-                  isUpdating={updateMutation.isPending}
-                />
-              ))
+              licenseConfigs.map((config) => {
+                const adminTemplate = findTemplate(config.alert_type, 'admin');
+                const clientTemplate = findTemplate(config.alert_type, 'client');
+
+                return (
+                  <AlertConfigCard
+                    key={config.id}
+                    config={config}
+                    onToggle={handleToggle}
+                    isUpdating={updateMutation.isPending}
+                    adminTemplate={adminTemplate}
+                    clientTemplate={clientTemplate}
+                    onEditAdminTemplate={() => adminTemplate && setEditingTemplate(adminTemplate)}
+                    onPreviewAdminTemplate={() => adminTemplate && setPreviewTemplate(adminTemplate)}
+                    onEditClientTemplate={() => clientTemplate && setEditingTemplate(clientTemplate)}
+                    onPreviewClientTemplate={() => clientTemplate && setPreviewTemplate(clientTemplate)}
+                  />
+                );
+              })
             ) : (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 Nenhuma configuração de licenças encontrada
@@ -172,14 +210,25 @@ export function NotificationSettings() {
         {activeCategory === 'resource' && (
           <>
             {resourceConfigs.length > 0 ? (
-              resourceConfigs.map((config) => (
-                <AlertConfigCard
-                  key={config.id}
-                  config={config}
-                  onToggle={handleToggle}
-                  isUpdating={updateMutation.isPending}
-                />
-              ))
+              resourceConfigs.map((config) => {
+                const adminTemplate = findTemplate(config.alert_type, 'admin');
+                const clientTemplate = findTemplate(config.alert_type, 'client');
+
+                return (
+                  <AlertConfigCard
+                    key={config.id}
+                    config={config}
+                    onToggle={handleToggle}
+                    isUpdating={updateMutation.isPending}
+                    adminTemplate={adminTemplate}
+                    clientTemplate={clientTemplate}
+                    onEditAdminTemplate={() => adminTemplate && setEditingTemplate(adminTemplate)}
+                    onPreviewAdminTemplate={() => adminTemplate && setPreviewTemplate(adminTemplate)}
+                    onEditClientTemplate={() => clientTemplate && setEditingTemplate(clientTemplate)}
+                    onPreviewClientTemplate={() => clientTemplate && setPreviewTemplate(clientTemplate)}
+                  />
+                );
+              })
             ) : (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 Nenhuma configuração de recursos encontrada
@@ -243,6 +292,23 @@ export function NotificationSettings() {
           renovação de licenças. Configure o email de contato no cadastro de cada licença.
         </p>
       </div>
+
+      {/* Modais de Template */}
+      {editingTemplate && (
+        <EmailTemplateEditorModal
+          template={editingTemplate}
+          onSave={(id, data) => updateTemplateMutation.mutate({ id, data })}
+          onClose={() => setEditingTemplate(null)}
+          isSaving={updateTemplateMutation.isPending}
+        />
+      )}
+
+      {previewTemplate && (
+        <EmailTemplatePreviewModal
+          template={previewTemplate}
+          onClose={() => setPreviewTemplate(null)}
+        />
+      )}
     </div>
   );
 }
