@@ -4,6 +4,7 @@ export enum ResourceType {
   MONITOR = 'monitor',
   NETWORK_DEVICE = 'network_device',
   SERVER = 'server',
+  OTHER = 'other',
 }
 
 export enum ResourceStatus {
@@ -101,6 +102,7 @@ export interface Resource {
   custom_fields?: Record<string, any>;
   metadata?: Record<string, any>;
   notes?: string;
+  image_url?: string;
   created_at: string;
   updated_at: string;
   retired_at?: string;
@@ -267,6 +269,7 @@ export interface CreateResourceDto {
   specifications?: Record<string, any>;
   custom_fields?: Record<string, any>;
   notes?: string;
+  image_url?: string;
 }
 
 export interface UpdateResourceDto extends Partial<CreateResourceDto> {}

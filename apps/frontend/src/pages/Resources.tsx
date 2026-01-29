@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, Eye, Trash2, Monitor, Printer, Server, HardDrive, Network, Circle, Download, ChevronDown, Key, Copy, Check, X, ChevronRight, Loader2 } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Trash2, Monitor, Printer, Server, HardDrive, Network, Circle, Download, ChevronDown, Key, Copy, Check, X, ChevronRight, Loader2, Package, ImagePlus, Trash } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
 import { clientService } from '@/services/client.service';
@@ -10,20 +10,22 @@ import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
 import { ResourceType, ResourceStatus, CreateResourceDto } from '@/types/resource.types';
 
-const resourceTypeIcons = {
+const resourceTypeIcons: Record<string, any> = {
   computer: HardDrive,
   printer: Printer,
   monitor: Monitor,
   server: Server,
   network_device: Network,
+  other: Package,
 };
 
-const resourceTypeLabels = {
+const resourceTypeLabels: Record<string, string> = {
   computer: 'Computador',
   printer: 'Impressora',
   monitor: 'Monitor',
   server: 'Servidor',
   network_device: 'Dispositivo de Rede',
+  other: 'Outros',
 };
 
 const statusLabels = {
@@ -80,6 +82,8 @@ export default function Resources() {
   const [newResourceContracts, setNewResourceContracts] = useState<any[]>([]);
   const [isSearchingNewResourceClients, setIsSearchingNewResourceClients] = useState(false);
   const [showAdditionalFields, setShowAdditionalFields] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Fechar menu ao clicar fora
   useEffect(() => {
@@ -260,6 +264,41 @@ export default function Resources() {
     setNewResourceClientResults([]);
     setNewResourceContracts([]);
     setShowAdditionalFields(false);
+    setImagePreview(null);
+  };
+
+  // Handler para upload de imagem
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tamanho (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Imagem muito grande. Máximo 5MB.');
+      return;
+    }
+
+    // Validar tipo
+    if (!file.type.startsWith('image/')) {
+      toast.error('Arquivo inválido. Selecione uma imagem.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setImagePreview(base64);
+      setNewResource({ ...newResource, image_url: base64 });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setImagePreview(null);
+    setNewResource({ ...newResource, image_url: undefined });
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
   };
 
   const handleSelectNewResourceClient = async (client: any) => {
@@ -513,6 +552,7 @@ export default function Resources() {
                 <option value="monitor">Monitor</option>
                 <option value="server">Servidor</option>
                 <option value="network_device">Dispositivo de Rede</option>
+                <option value="other">Outros</option>
               </select>
             </div>
 
@@ -753,6 +793,7 @@ export default function Resources() {
                       <option value="monitor">Monitor</option>
                       <option value="server">Servidor</option>
                       <option value="network_device">Dispositivo de Rede</option>
+                      <option value="other">Outros</option>
                     </select>
                   </div>
                   <div className="relative">
@@ -812,6 +853,21 @@ export default function Resources() {
                       ))}
                     </select>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Status
+                    </label>
+                    <select
+                      value={newResource.status || ResourceStatus.ACTIVE}
+                      onChange={(e) => setNewResource({ ...newResource, status: e.target.value as ResourceStatus })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="active">Ativo</option>
+                      <option value="inactive">Inativo</option>
+                      <option value="maintenance">Manutenção</option>
+                      <option value="retired">Desativado / Descartado</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -868,6 +924,48 @@ export default function Resources() {
                       placeholder="Ex: PAT-00123"
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
+                  </div>
+                </div>
+
+                {/* Upload de Foto */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Foto do Equipamento
+                  </label>
+                  <div className="flex items-start gap-4">
+                    {imagePreview ? (
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="w-32 h-32 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                          title="Remover imagem"
+                        >
+                          <Trash size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                        <ImagePlus className="text-gray-400" size={32} />
+                        <span className="text-xs text-gray-500 mt-2">Adicionar foto</span>
+                        <input
+                          ref={imageInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <p>Formatos: JPG, PNG, GIF</p>
+                      <p>Tamanho máximo: 5MB</p>
+                    </div>
                   </div>
                 </div>
               </div>

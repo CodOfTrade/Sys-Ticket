@@ -97,4 +97,8 @@ export class CreateResourceDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsString()
+  @IsOptional()
+  image_url?: string;
 }

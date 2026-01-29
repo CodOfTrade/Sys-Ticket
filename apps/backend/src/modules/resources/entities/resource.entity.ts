@@ -19,6 +19,7 @@ export enum ResourceType {
   MONITOR = 'monitor',
   NETWORK_DEVICE = 'network_device',
   SERVER = 'server',
+  OTHER = 'other',
 }
 
 export enum ResourceStatus {
@@ -195,6 +196,10 @@ export class Resource {
 
   @Column({ type: 'text', nullable: true })
   notes: string;
+
+  // Imagem do recurso (base64 ou URL)
+  @Column({ type: 'text', nullable: true })
+  image_url: string;
 
   // Timestamps
   @CreateDateColumn()
