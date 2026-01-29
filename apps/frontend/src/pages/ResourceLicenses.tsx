@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Plus, Search, Filter, Key, AlertTriangle, Check, X, Loader2, Eye, Building2, Calendar, DollarSign, User, FileText, Copy, Trash2, Download, RotateCcw, Clock, Bell, Mail, Edit2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
-import { clientService } from '@/services/client.service';
+import { clientService, Client } from '@/services/client.service';
 import { LicenseStatus, LicenseType, CreateLicenseDto, ActivationType, DurationType, ResourceLicense, LicenseHistoryEntry } from '@/types/resource.types';
 import { useResourcesSocket } from '@/hooks/useResourcesSocket';
 import { format } from 'date-fns';
@@ -109,6 +109,12 @@ export default function ResourceLicenses() {
   const [showActivationModal, setShowActivationModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
 
+  // Client search states (seguindo padrão de CreateTicketModal)
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const clientSearchRef = useRef<HTMLDivElement>(null);
+
   // WebSocket para atualizações em tempo real
   useResourcesSocket({ enabled: true });
 
@@ -128,7 +134,14 @@ export default function ResourceLicenses() {
     queryFn: () => resourceService.getExpiringLicenses(30),
   });
 
-  // Query para clientes (para o select de filtro e modal)
+  // Busca em tempo real para modal de criar/editar
+  const { data: clientSearchResults } = useQuery({
+    queryKey: ['client-search', clientSearchTerm],
+    queryFn: () => clientService.searchByName(clientSearchTerm, 1, 10),
+    enabled: clientSearchTerm.length >= 2,
+  });
+
+  // Query para clientes (para o select de filtro apenas)
   const { data: clientsData } = useQuery({
     queryKey: ['clients-list'],
     queryFn: () => clientService.findAll(1, 100),
@@ -140,6 +153,18 @@ export default function ResourceLicenses() {
     queryFn: () => resourceService.getLicenseHistory(selectedLicense!.id),
     enabled: !!selectedLicense,
   });
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (clientSearchRef.current && !clientSearchRef.current.contains(event.target as Node)) {
+        setShowClientDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Mutation para criar licença
   const createMutation = useMutation({
@@ -231,6 +256,25 @@ export default function ResourceLicenses() {
         requester_phone: '',
       });
     }
+  };
+
+  const handleSelectClient = (client: Client) => {
+    setSelectedClient(client);
+    setFormData({
+      ...formData,
+      client_id: client.id,
+      contract_id: ''
+    });
+    setSelectedContactId('');
+    setClientSearchTerm('');
+    setShowClientDropdown(false);
+  };
+
+  const handleClearClient = () => {
+    setSelectedClient(null);
+    setFormData({ ...formData, client_id: '', contract_id: '' });
+    setSelectedContactId('');
+    setClientSearchTerm('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -822,27 +866,88 @@ export default function ResourceLicenses() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {/* Cliente */}
-              <div>
+              {/* Cliente - Busca em Tempo Real */}
+              <div className="relative" ref={clientSearchRef}>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Cliente *
                 </label>
-                <select
-                  value={formData.client_id}
-                  onChange={(e) => {
-                    setFormData({ ...formData, client_id: e.target.value, contract_id: '' });
-                    setSelectedContactId(''); // Limpar solicitante ao trocar de cliente
-                  }}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  <option value="">Selecione um cliente</option>
-                  {clientsData?.data?.map((client: any) => (
-                    <option key={client.id} value={client.id}>
-                      {client.nome || client.nome_fantasia || client.razao_social}
-                    </option>
-                  ))}
-                </select>
+
+                {selectedClient ? (
+                  // Cliente selecionado - mostrar card
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {selectedClient.nome_fantasia || selectedClient.nome}
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                        {selectedClient.cpf_cnpj && `CNPJ: ${selectedClient.cpf_cnpj}`}
+                        {selectedClient.cpf_cnpj && selectedClient.cidade && ' • '}
+                        {selectedClient.cidade && `${selectedClient.cidade}/${selectedClient.estado}`}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleClearClient}
+                      className="px-3 py-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+                      title="Limpar seleção"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  // Input de busca
+                  <>
+                    <input
+                      type="text"
+                      value={clientSearchTerm}
+                      onChange={(e) => {
+                        setClientSearchTerm(e.target.value);
+                        setShowClientDropdown(true);
+                      }}
+                      onFocus={() => setShowClientDropdown(true)}
+                      placeholder="Digite nome, CNPJ ou telefone (mín. 2 caracteres)..."
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+
+                    {/* Hint mínimo 2 caracteres */}
+                    {clientSearchTerm.length > 0 && clientSearchTerm.length < 2 && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Digite pelo menos 2 caracteres para buscar
+                      </p>
+                    )}
+
+                    {/* Dropdown com resultados */}
+                    {showClientDropdown && clientSearchTerm.length >= 2 && clientSearchResults?.data && clientSearchResults.data.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {clientSearchResults.data.map((client) => (
+                          <div
+                            key={client.id}
+                            onClick={() => handleSelectClient(client)}
+                            className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 cursor-pointer"
+                          >
+                            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                              {client.nome_fantasia || client.nome}
+                            </div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 truncate mt-0.5">
+                              {client.cpf_cnpj && `CNPJ: ${client.cpf_cnpj}`}
+                              {client.cpf_cnpj && client.cidade && ' • '}
+                              {client.cidade && `${client.cidade}/${client.estado}`}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Nenhum resultado */}
+                    {showClientDropdown && clientSearchTerm.length >= 2 && clientSearchResults?.data && clientSearchResults.data.length === 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-3">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                          Nenhum cliente encontrado
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Contrato (opcional) */}
