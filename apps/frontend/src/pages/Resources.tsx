@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, Eye, Trash2, Monitor, Printer, Server, HardDrive, Network, Circle, Download, ChevronDown } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Trash2, Monitor, Printer, Server, HardDrive, Network, Circle, Download, ChevronDown, Key, Copy, Check, X } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
 import { useResourcesSocket } from '@/hooks/useResourcesSocket';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'react-hot-toast';
 
 const resourceTypeIcons = {
   computer: HardDrive,
@@ -45,6 +46,10 @@ export default function Resources() {
   const [onlineFilter, setOnlineFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [showActivationModal, setShowActivationModal] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
+  const [codeExpiresAt, setCodeExpiresAt] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const perPage = 20;
   const downloadMenuRef = useRef<HTMLDivElement>(null);
@@ -100,6 +105,44 @@ export default function Resources() {
     },
   });
 
+  // Mutation para gerar código de ativação
+  const generateCodeMutation = useMutation({
+    mutationFn: (params: { description?: string; expiresInHours?: number; maxUses?: number }) =>
+      resourceService.generateActivationCode(params),
+    onSuccess: (data) => {
+      setGeneratedCode(data.code);
+      setCodeExpiresAt(data.expiresAt);
+      toast.success('Código de ativação gerado com sucesso');
+    },
+    onError: () => {
+      toast.error('Erro ao gerar código de ativação');
+    },
+  });
+
+  const handleGenerateCode = () => {
+    generateCodeMutation.mutate({
+      description: 'Código para instalação de agentes',
+      expiresInHours: 24,
+      maxUses: 0, // ilimitado
+    });
+  };
+
+  const handleCopyCode = () => {
+    if (generatedCode) {
+      navigator.clipboard.writeText(generatedCode);
+      setCodeCopied(true);
+      toast.success('Código copiado para a área de transferência');
+      setTimeout(() => setCodeCopied(false), 2000);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowActivationModal(false);
+    setGeneratedCode(null);
+    setCodeCopied(false);
+    setCodeExpiresAt(null);
+  };
+
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este recurso?')) {
       try {
@@ -126,6 +169,15 @@ export default function Resources() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Botão Gerar Código de Ativação */}
+          <button
+            onClick={() => setShowActivationModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+          >
+            <Key size={20} />
+            Código de Ativação
+          </button>
+
           {/* Download Agente Dropdown */}
           <div className="relative" ref={downloadMenuRef}>
             <button
@@ -451,6 +503,113 @@ export default function Resources() {
           </div>
         )}
       </div>
+
+      {/* Modal de Código de Ativação */}
+      {showActivationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <Key className="text-blue-500" size={24} />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Código de Ativação
+                </h2>
+              </div>
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6">
+              {!generatedCode ? (
+                <div className="text-center">
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    Gere um código de ativação para autorizar a instalação de agentes.
+                    O código será válido por 24 horas.
+                  </p>
+                  <button
+                    onClick={handleGenerateCode}
+                    disabled={generateCodeMutation.isPending}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {generateCodeMutation.isPending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        Gerando...
+                      </>
+                    ) : (
+                      <>
+                        <Key size={20} />
+                        Gerar Código
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Use este código no wizard de instalação do agente:
+                  </p>
+
+                  {/* Código Gerado */}
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                    <div className="flex items-center justify-center gap-3">
+                      <span className="text-2xl font-mono font-bold text-gray-900 dark:text-white tracking-wider">
+                        {generatedCode}
+                      </span>
+                      <button
+                        onClick={handleCopyCode}
+                        className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                        title="Copiar código"
+                      >
+                        {codeCopied ? (
+                          <Check className="text-green-500" size={20} />
+                        ) : (
+                          <Copy className="text-gray-500" size={20} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Informações */}
+                  <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                    <p>
+                      Válido até:{' '}
+                      <span className="font-medium text-gray-700 dark:text-gray-300">
+                        {codeExpiresAt
+                          ? format(new Date(codeExpiresAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+                          : '-'}
+                      </span>
+                    </p>
+                    <p>Uso: <span className="font-medium text-gray-700 dark:text-gray-300">Ilimitado</span></p>
+                  </div>
+
+                  {/* Botão para gerar novo código */}
+                  <button
+                    onClick={handleGenerateCode}
+                    disabled={generateCodeMutation.isPending}
+                    className="mt-6 text-blue-600 hover:text-blue-700 dark:text-blue-400 text-sm font-medium"
+                  >
+                    Gerar novo código
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                O código é necessário para instalar novos agentes. Compartilhe apenas com pessoas autorizadas.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

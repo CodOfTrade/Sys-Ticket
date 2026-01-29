@@ -344,10 +344,19 @@ function registerIpcHandlers() {
     return true;
   });
 
-  // Registrar agente
-  ipcMain.handle('register-agent', async (_, registrationData) => {
+  // Validar código de ativação
+  ipcMain.handle('validate-activation-code', async (_, code: string) => {
     try {
-      const response = await apiService.registerAgent(registrationData);
+      return await apiService.validateActivationCode(code);
+    } catch (error: any) {
+      return { valid: false, message: error.message || 'Erro ao validar código' };
+    }
+  });
+
+  // Registrar agente
+  ipcMain.handle('register-agent', async (_, registrationData, activationCode: string) => {
+    try {
+      const response = await apiService.registerAgent(registrationData, activationCode);
 
       // Salvar configuração
       const config = storageService.loadConfig();

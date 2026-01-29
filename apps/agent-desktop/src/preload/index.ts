@@ -8,9 +8,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveConfig: (config: AgentConfig): Promise<boolean> =>
     ipcRenderer.invoke('save-config', config),
 
-  // Registro
-  registerAgent: (data: RegistrationData) =>
-    ipcRenderer.invoke('register-agent', data),
+  // Registro e Ativação
+  validateActivationCode: (code: string): Promise<{ valid: boolean; message: string }> =>
+    ipcRenderer.invoke('validate-activation-code', code),
+  registerAgent: (data: RegistrationData, activationCode: string) =>
+    ipcRenderer.invoke('register-agent', data, activationCode),
 
   // Sistema
   getSystemInfo: (): Promise<SystemInfo> => ipcRenderer.invoke('get-system-info'),
@@ -48,7 +50,8 @@ declare global {
     electronAPI: {
       getConfig: () => Promise<AgentConfig>;
       saveConfig: (config: AgentConfig) => Promise<boolean>;
-      registerAgent: (data: RegistrationData) => Promise<any>;
+      validateActivationCode: (code: string) => Promise<{ valid: boolean; message: string }>;
+      registerAgent: (data: RegistrationData, activationCode: string) => Promise<any>;
       getSystemInfo: () => Promise<SystemInfo>;
       getHostname: () => Promise<string>;
       getAppVersion: () => Promise<string>;

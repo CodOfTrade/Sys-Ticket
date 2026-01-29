@@ -304,4 +304,51 @@ export const resourceService = {
     );
     return response.data.data;
   },
+
+  // ========================================
+  // CÓDIGOS DE ATIVAÇÃO
+  // ========================================
+
+  async generateActivationCode(params: {
+    description?: string;
+    expiresInHours?: number;
+    maxUses?: number;
+  }): Promise<{
+    id: string;
+    code: string;
+    description: string;
+    expiresAt: string;
+    maxUses: number;
+    timesUsed: number;
+    createdAt: string;
+  }> {
+    const response = await api.post<ApiResponse<any>>(
+      '/v1/agent/activation/generate',
+      params
+    );
+    return response.data.data;
+  },
+
+  async listActivationCodes(activeOnly = false): Promise<{
+    id: string;
+    code: string;
+    description: string;
+    expiresAt: string;
+    maxUses: number;
+    timesUsed: number;
+    isActive: boolean;
+    isValid: boolean;
+    createdByUserName?: string;
+    createdAt: string;
+  }[]> {
+    const response = await api.get<ApiResponse<any[]>>(
+      '/v1/agent/activation/codes',
+      { params: { activeOnly: activeOnly ? 'true' : undefined } }
+    );
+    return response.data.data;
+  },
+
+  async deactivateActivationCode(id: string): Promise<void> {
+    await api.delete(`/v1/agent/activation/codes/${id}`);
+  },
 };

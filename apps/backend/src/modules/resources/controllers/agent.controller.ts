@@ -2,14 +2,19 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
+  Headers,
   UseGuards,
   Req,
   Logger,
+  UnauthorizedException,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiHeader, ApiQuery } from '@nestjs/swagger';
 import { AgentService } from '../services/agent.service';
+import { AgentActivationService, CreateActivationCodeDto } from '../services/agent-activation.service';
 import {
   RegisterAgentDto,
   HeartbeatDto,
@@ -24,11 +29,128 @@ import { AgentTokenGuard } from '../guards/agent-token.guard';
 export class AgentController {
   private readonly logger = new Logger(AgentController.name);
 
-  constructor(private readonly agentService: AgentService) {}
+  constructor(
+    private readonly agentService: AgentService,
+    private readonly agentActivationService: AgentActivationService,
+  ) {}
+
+  // ========================================
+  // CÓDIGOS DE ATIVAÇÃO
+  // ========================================
+
+  @Post('activation/generate')
+  @ApiOperation({ summary: 'Gerar código de ativação para instalação de agentes' })
+  @ApiResponse({
+    status: 201,
+    description: 'Código gerado com sucesso',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          code: 'ABCD-EFGH-IJKL',
+          expiresAt: '2026-01-30T12:00:00Z',
+          maxUses: 0,
+        },
+      },
+    },
+  })
+  async generateActivationCode(
+    @Body() dto: { description?: string; expiresInHours?: number; maxUses?: number },
+    @Req() req: any,
+  ) {
+    const result = await this.agentActivationService.createCode({
+      description: dto.description,
+      expiresInHours: dto.expiresInHours || 24,
+      maxUses: dto.maxUses || 0,
+      createdByUserId: req.user?.id,
+      createdByUserName: req.user?.name,
+    });
+
+    return {
+      success: true,
+      data: {
+        id: result.id,
+        code: result.code,
+        description: result.description,
+        expiresAt: result.expires_at,
+        maxUses: result.max_uses,
+        timesUsed: result.times_used,
+        createdAt: result.created_at,
+      },
+    };
+  }
+
+  @Post('activation/validate')
+  @Public()
+  @ApiOperation({ summary: 'Validar código de ativação (usado pelo wizard do agente)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Resultado da validação',
+    schema: {
+      example: {
+        success: true,
+        valid: true,
+        message: 'Código válido',
+      },
+    },
+  })
+  async validateActivationCode(@Body() body: { code: string }) {
+    const result = await this.agentActivationService.validateCode(body.code);
+    return {
+      success: true,
+      valid: result.valid,
+      message: result.message,
+    };
+  }
+
+  @Get('activation/codes')
+  @ApiOperation({ summary: 'Listar códigos de ativação' })
+  @ApiQuery({ name: 'activeOnly', required: false, type: Boolean })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de códigos',
+  })
+  async listActivationCodes(@Query('activeOnly') activeOnly?: string) {
+    const codes = activeOnly === 'true'
+      ? await this.agentActivationService.listActiveCodes()
+      : await this.agentActivationService.listAllCodes();
+
+    return {
+      success: true,
+      data: codes.map(c => ({
+        id: c.id,
+        code: c.code,
+        description: c.description,
+        expiresAt: c.expires_at,
+        maxUses: c.max_uses,
+        timesUsed: c.times_used,
+        isActive: c.is_active,
+        isValid: c.isValid(),
+        createdByUserName: c.created_by_user_name,
+        createdAt: c.created_at,
+      })),
+    };
+  }
+
+  @Delete('activation/codes/:id')
+  @ApiOperation({ summary: 'Desativar código de ativação' })
+  @ApiResponse({ status: 200, description: 'Código desativado' })
+  async deactivateCode(@Param('id') id: string) {
+    await this.agentActivationService.deactivateCode(id);
+    return {
+      success: true,
+      message: 'Código desativado',
+    };
+  }
+
+  // ========================================
+  // REGISTRO E OPERAÇÕES DO AGENTE
+  // ========================================
 
   @Post('register')
   @Public()
   @ApiOperation({ summary: 'Registrar novo agente' })
+  @ApiHeader({ name: 'X-Activation-Code', description: 'Código de ativação', required: true })
   @ApiResponse({
     status: 201,
     description: 'Agente registrado com sucesso',
@@ -44,8 +166,23 @@ export class AgentController {
       },
     },
   })
-  async register(@Body() dto: RegisterAgentDto) {
+  async register(
+    @Body() dto: RegisterAgentDto,
+    @Headers('x-activation-code') activationCode: string,
+  ) {
+    // Validar código de ativação
+    if (!activationCode) {
+      throw new UnauthorizedException('Código de ativação não fornecido');
+    }
+
+    await this.agentActivationService.validateOrThrow(activationCode);
+
+    // Registrar agente
     const result = await this.agentService.registerAgent(dto);
+
+    // Incrementar uso do código após sucesso
+    await this.agentActivationService.useCode(activationCode);
+
     return {
       success: true,
       data: result,

@@ -8,6 +8,7 @@ import { ResourceHistory } from './entities/resource-history.entity';
 import { LicenseHistory } from './entities/license-history.entity';
 import { AgentTicket } from './entities/agent-ticket.entity';
 import { AgentChatMessage } from './entities/agent-chat-message.entity';
+import { AgentActivationCode } from './entities/agent-activation-code.entity';
 import { Ticket } from '../tickets/entities/ticket.entity';
 import { ServiceDesk } from '../service-desks/entities/service-desk.entity';
 import { SigeClient } from '../clients/entities/sige-client.entity';
@@ -17,6 +18,7 @@ import { ResourcesService } from './services/resources.service';
 import { ResourceLicensesService } from './services/resource-licenses.service';
 import { ContractQuotasService } from './services/contract-quotas.service';
 import { AgentService } from './services/agent.service';
+import { AgentActivationService } from './services/agent-activation.service';
 import { LicenseHistoryService } from './services/license-history.service';
 import { ResourcesController } from './controllers/resources.controller';
 import { ResourceLicensesController } from './controllers/resource-licenses.controller';
@@ -37,6 +39,7 @@ import { LicenseExpiryTask } from './tasks/license-expiry.task';
       LicenseHistory,
       AgentTicket,
       AgentChatMessage,
+      AgentActivationCode,
       Ticket,
       ServiceDesk,
       SigeClient,
@@ -57,6 +60,7 @@ import { LicenseExpiryTask } from './tasks/license-expiry.task';
     ResourceLicensesService,
     ContractQuotasService,
     AgentService,
+    AgentActivationService,
     LicenseHistoryService,
     ResourcesGateway,
     OfflineDetectionTask,
@@ -67,6 +71,7 @@ import { LicenseExpiryTask } from './tasks/license-expiry.task';
     ResourceLicensesService,
     ContractQuotasService,
     AgentService,
+    AgentActivationService,
     LicenseHistoryService,
   ],
 })

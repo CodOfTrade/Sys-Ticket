@@ -50,13 +50,39 @@ export class ApiService {
   }
 
   /**
+   * Valida código de ativação
+   */
+  async validateActivationCode(code: string): Promise<{ valid: boolean; message: string }> {
+    try {
+      const response = await this.api.post<{
+        success: boolean;
+        valid: boolean;
+        message: string;
+      }>('/v1/agent/activation/validate', { code });
+      return {
+        valid: response.data.valid,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      return {
+        valid: false,
+        message: error.message || 'Erro ao validar código',
+      };
+    }
+  }
+
+  /**
    * Registra o agente no backend
    */
-  async registerAgent(data: RegistrationData): Promise<RegistrationResponse> {
+  async registerAgent(data: RegistrationData, activationCode: string): Promise<RegistrationResponse> {
     const response = await this.api.post<{
       success: boolean;
       data: RegistrationResponse;
-    }>('/v1/agent/register', data);
+    }>('/v1/agent/register', data, {
+      headers: {
+        'X-Activation-Code': activationCode,
+      },
+    });
 
     if (response.data.success && response.data.data.agentToken) {
       this.setAgentToken(response.data.data.agentToken);

@@ -14,6 +14,9 @@ export function Setup({ onComplete }: SetupProps) {
   // Step 1: Dados básicos
   const [apiUrl, setApiUrl] = useState('https://172.31.255.26/api');
   const [connectionTested, setConnectionTested] = useState(false);
+  const [activationCode, setActivationCode] = useState('');
+  const [activationCodeValidated, setActivationCodeValidated] = useState(false);
+  const [validatingCode, setValidatingCode] = useState(false);
 
   // Step 2: Cliente e Contrato
   const [contracts, setContracts] = useState<any[]>([]);
@@ -100,9 +103,40 @@ export function Setup({ onComplete }: SetupProps) {
     }
   };
 
+  const handleValidateActivationCode = async () => {
+    if (!activationCode.trim()) {
+      setError('Por favor, insira o código de ativação');
+      return;
+    }
+
+    setValidatingCode(true);
+    setError(null);
+
+    try {
+      const result = await window.electronAPI.validateActivationCode(activationCode.trim());
+      if (result.valid) {
+        setActivationCodeValidated(true);
+        alert('Código de ativação válido!');
+      } else {
+        setError(result.message || 'Código de ativação inválido');
+        setActivationCodeValidated(false);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Erro ao validar código');
+      setActivationCodeValidated(false);
+    } finally {
+      setValidatingCode(false);
+    }
+  };
+
   const handleNextToStep2 = async () => {
     if (!connectionTested) {
       setError('Por favor, teste a conexão primeiro');
+      return;
+    }
+
+    if (!activationCodeValidated) {
+      setError('Por favor, valide o código de ativação');
       return;
     }
 
@@ -195,11 +229,24 @@ export function Setup({ onComplete }: SetupProps) {
         systemInfo,
       };
 
-      await window.electronAPI.registerAgent(registrationData);
+      await window.electronAPI.registerAgent(registrationData, activationCode.trim());
       alert('Agente registrado com sucesso!');
       onComplete();
     } catch (err: any) {
-      setError(err.message || 'Erro ao registrar agente');
+      // Mapear mensagens de erro comuns para mensagens mais amigáveis
+      let errorMessage = err.message || 'Erro ao registrar agente';
+
+      if (errorMessage.includes('não possui contrato') || errorMessage.includes('sem contrato')) {
+        errorMessage = 'Este cliente não possui contrato ativo. Entre em contato com o administrador para registrar novos agentes.';
+      } else if (errorMessage.includes('Cota') || errorMessage.includes('cota') || errorMessage.includes('excedida')) {
+        errorMessage = 'A cota de recursos para este contrato foi excedida. Entre em contato com o administrador.';
+      } else if (errorMessage.includes('Cliente não encontrado')) {
+        errorMessage = 'Cliente não encontrado no sistema. Verifique se o cliente está cadastrado corretamente.';
+      } else if (errorMessage.includes('ativação')) {
+        errorMessage = 'Código de ativação inválido ou expirado. Solicite um novo código ao administrador.';
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -256,10 +303,54 @@ export function Setup({ onComplete }: SetupProps) {
               {loading ? 'Testando...' : 'Testar Conexão'}
             </button>
             {connectionTested && <div className="success-message">✓ Conexão OK</div>}
+
+            {/* Código de Ativação */}
+            {connectionTested && (
+              <>
+                <div className="form-group" style={{ marginTop: '20px' }}>
+                  <label>Código de Ativação *</label>
+                  <input
+                    type="text"
+                    value={activationCode}
+                    onChange={(e) => {
+                      // Formatar automaticamente: uppercase e adicionar hífens
+                      let value = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+                      // Remover hífens extras para reprocessar
+                      value = value.replace(/-/g, '');
+                      // Adicionar hífens nos lugares corretos (XXXX-XXXX-XXXX)
+                      if (value.length > 4) {
+                        value = value.slice(0, 4) + '-' + value.slice(4);
+                      }
+                      if (value.length > 9) {
+                        value = value.slice(0, 9) + '-' + value.slice(9, 13);
+                      }
+                      setActivationCode(value);
+                      setActivationCodeValidated(false);
+                    }}
+                    placeholder="XXXX-XXXX-XXXX"
+                    disabled={validatingCode || activationCodeValidated}
+                    maxLength={14}
+                    style={{ fontFamily: 'monospace', letterSpacing: '2px', fontSize: '16px' }}
+                  />
+                  <small style={{ display: 'block', marginTop: '4px', color: '#666' }}>
+                    Solicite o código de ativação ao administrador do sistema
+                  </small>
+                </div>
+                <button
+                  onClick={handleValidateActivationCode}
+                  disabled={validatingCode || !activationCode || activationCode.length < 14 || activationCodeValidated}
+                  className="btn-secondary"
+                >
+                  {validatingCode ? 'Validando...' : activationCodeValidated ? '✓ Código Válido' : 'Validar Código'}
+                </button>
+                {activationCodeValidated && <div className="success-message">✓ Código de ativação válido</div>}
+              </>
+            )}
+
             <div className="step-actions">
               <button
                 onClick={handleNextToStep2}
-                disabled={loading || !connectionTested}
+                disabled={loading || !connectionTested || !activationCodeValidated}
                 className="btn-primary"
               >
                 Próximo →
