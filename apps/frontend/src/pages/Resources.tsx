@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, Eye, Trash2, Monitor, Printer, Server, HardDrive, Network, Circle, Download, ChevronDown, Key, Copy, Check, X } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Trash2, Monitor, Printer, Server, HardDrive, Network, Circle, Download, ChevronDown, Key, Copy, Check, X, ChevronRight, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourceService } from '@/services/resource.service';
+import { clientService } from '@/services/client.service';
 import { useResourcesSocket } from '@/hooks/useResourcesSocket';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
+import { ResourceType, ResourceStatus, CreateResourceDto } from '@/types/resource.types';
 
 const resourceTypeIcons = {
   computer: HardDrive,
@@ -54,6 +56,31 @@ export default function Resources() {
   const perPage = 20;
   const downloadMenuRef = useRef<HTMLDivElement>(null);
 
+  // Estado para filtro por cliente
+  const [clientFilter, setClientFilter] = useState<string>('');
+  const [clientFilterSearch, setClientFilterSearch] = useState('');
+  const [clientFilterName, setClientFilterName] = useState('');
+  const [showClientFilterDropdown, setShowClientFilterDropdown] = useState(false);
+  const [clientFilterResults, setClientFilterResults] = useState<any[]>([]);
+  const [isSearchingClients, setIsSearchingClients] = useState(false);
+
+  // Estado para modal de novo recurso
+  const [showNewResourceModal, setShowNewResourceModal] = useState(false);
+  const [newResource, setNewResource] = useState<Partial<CreateResourceDto>>({
+    name: '',
+    resource_type: ResourceType.COMPUTER,
+    client_id: '',
+    manufacturer: '',
+    model: '',
+    status: ResourceStatus.ACTIVE,
+  });
+  const [newResourceClientSearch, setNewResourceClientSearch] = useState('');
+  const [newResourceClientResults, setNewResourceClientResults] = useState<any[]>([]);
+  const [showNewResourceClientDropdown, setShowNewResourceClientDropdown] = useState(false);
+  const [newResourceContracts, setNewResourceContracts] = useState<any[]>([]);
+  const [isSearchingNewResourceClients, setIsSearchingNewResourceClients] = useState(false);
+  const [showAdditionalFields, setShowAdditionalFields] = useState(false);
+
   // Fechar menu ao clicar fora
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -76,9 +103,9 @@ export default function Resources() {
     },
   });
 
-  // Query para buscar recursos
+  // Query para buscar recursos (com filtro de cliente)
   const { data, isLoading } = useQuery({
-    queryKey: ['resources', { page, perPage, typeFilter, statusFilter, onlineFilter, searchTerm }],
+    queryKey: ['resources', { page, perPage, typeFilter, statusFilter, onlineFilter, searchTerm, clientFilter }],
     queryFn: () =>
       resourceService.getAll({
         page,
@@ -87,6 +114,7 @@ export default function Resources() {
         status: statusFilter as any || undefined,
         is_online: onlineFilter ? onlineFilter === 'true' : undefined,
         search: searchTerm || undefined,
+        client_id: clientFilter || undefined,
       }),
   });
 
@@ -104,6 +132,64 @@ export default function Resources() {
       queryClient.invalidateQueries({ queryKey: ['resources-stats'] });
     },
   });
+
+  // Mutation para criar recurso
+  const createResourceMutation = useMutation({
+    mutationFn: (data: CreateResourceDto) => resourceService.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resources'] });
+      queryClient.invalidateQueries({ queryKey: ['resources-stats'] });
+      toast.success('Recurso criado com sucesso');
+      handleCloseNewResourceModal();
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Erro ao criar recurso');
+    },
+  });
+
+  // Buscar clientes para o filtro
+  useEffect(() => {
+    const searchClients = async () => {
+      if (clientFilterSearch.length < 2) {
+        setClientFilterResults([]);
+        return;
+      }
+      setIsSearchingClients(true);
+      try {
+        const result = await clientService.search({ name: clientFilterSearch, page: 1, per_page: 10 });
+        setClientFilterResults(result.data || []);
+      } catch (error) {
+        console.error('Erro ao buscar clientes:', error);
+      } finally {
+        setIsSearchingClients(false);
+      }
+    };
+
+    const debounce = setTimeout(searchClients, 300);
+    return () => clearTimeout(debounce);
+  }, [clientFilterSearch]);
+
+  // Buscar clientes para o modal de novo recurso
+  useEffect(() => {
+    const searchClients = async () => {
+      if (newResourceClientSearch.length < 2) {
+        setNewResourceClientResults([]);
+        return;
+      }
+      setIsSearchingNewResourceClients(true);
+      try {
+        const result = await clientService.search({ name: newResourceClientSearch, page: 1, per_page: 10 });
+        setNewResourceClientResults(result.data || []);
+      } catch (error) {
+        console.error('Erro ao buscar clientes:', error);
+      } finally {
+        setIsSearchingNewResourceClients(false);
+      }
+    };
+
+    const debounce = setTimeout(searchClients, 300);
+    return () => clearTimeout(debounce);
+  }, [newResourceClientSearch]);
 
   // Mutation para gerar código de ativação
   const generateCodeMutation = useMutation({
@@ -141,6 +227,64 @@ export default function Resources() {
     setGeneratedCode(null);
     setCodeCopied(false);
     setCodeExpiresAt(null);
+  };
+
+  // Handlers para filtro por cliente
+  const handleSelectClientFilter = (client: any) => {
+    setClientFilter(client.sigeId || client.id);
+    setClientFilterName(client.nome || client.name || client.razaoSocial);
+    setClientFilterSearch('');
+    setShowClientFilterDropdown(false);
+    setPage(1);
+  };
+
+  const handleClearClientFilter = () => {
+    setClientFilter('');
+    setClientFilterName('');
+    setClientFilterSearch('');
+    setPage(1);
+  };
+
+  // Handlers para modal de novo recurso
+  const handleCloseNewResourceModal = () => {
+    setShowNewResourceModal(false);
+    setNewResource({
+      name: '',
+      resource_type: ResourceType.COMPUTER,
+      client_id: '',
+      manufacturer: '',
+      model: '',
+      status: ResourceStatus.ACTIVE,
+    });
+    setNewResourceClientSearch('');
+    setNewResourceClientResults([]);
+    setNewResourceContracts([]);
+    setShowAdditionalFields(false);
+  };
+
+  const handleSelectNewResourceClient = async (client: any) => {
+    const clientId = client.sigeId || client.id;
+    setNewResource({ ...newResource, client_id: clientId, contract_id: undefined });
+    setNewResourceClientSearch(client.nome || client.name || client.razaoSocial);
+    setShowNewResourceClientDropdown(false);
+    setNewResourceClientResults([]);
+
+    // Buscar contratos do cliente
+    try {
+      const contracts = await clientService.getContracts(clientId);
+      setNewResourceContracts(contracts || []);
+    } catch (error) {
+      console.error('Erro ao buscar contratos:', error);
+      setNewResourceContracts([]);
+    }
+  };
+
+  const handleCreateResource = () => {
+    if (!newResource.name || !newResource.resource_type || !newResource.client_id || !newResource.manufacturer || !newResource.model) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+    createResourceMutation.mutate(newResource as CreateResourceDto);
   };
 
   const handleDelete = async (id: string) => {
@@ -216,13 +360,13 @@ export default function Resources() {
             )}
           </div>
 
-          <Link
-            to="/resources/new"
+          <button
+            onClick={() => setShowNewResourceModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
           >
             <Plus size={20} />
             Novo Recurso
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -302,7 +446,58 @@ export default function Resources() {
 
         {/* Expanded Filters */}
         {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            {/* Filtro por Cliente */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Cliente
+              </label>
+              {clientFilterName ? (
+                <div className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                  <span className="flex-1 text-sm text-gray-900 dark:text-white truncate">{clientFilterName}</span>
+                  <button
+                    onClick={handleClearClientFilter}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                      type="text"
+                      placeholder="Buscar cliente..."
+                      value={clientFilterSearch}
+                      onChange={(e) => {
+                        setClientFilterSearch(e.target.value);
+                        setShowClientFilterDropdown(true);
+                      }}
+                      onFocus={() => setShowClientFilterDropdown(true)}
+                      className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    />
+                    {isSearchingClients && (
+                      <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 animate-spin" size={16} />
+                    )}
+                  </div>
+                  {showClientFilterDropdown && clientFilterResults.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {clientFilterResults.map((client) => (
+                        <button
+                          key={client.id}
+                          onClick={() => handleSelectClientFilter(client)}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
+                        >
+                          {client.nome || client.name || client.razaoSocial}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Tipo
@@ -503,6 +698,336 @@ export default function Resources() {
           </div>
         )}
       </div>
+
+      {/* Modal de Novo Recurso */}
+      {showNewResourceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
+              <div className="flex items-center gap-3">
+                <Plus className="text-blue-500" size={24} />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Novo Recurso
+                </h2>
+              </div>
+              <button
+                onClick={handleCloseNewResourceModal}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6 space-y-6">
+              {/* Informações Básicas */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                  Informações Básicas
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Nome do Recurso *
+                    </label>
+                    <input
+                      type="text"
+                      value={newResource.name || ''}
+                      onChange={(e) => setNewResource({ ...newResource, name: e.target.value })}
+                      placeholder="Ex: Impressora HP Recepção"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Tipo *
+                    </label>
+                    <select
+                      value={newResource.resource_type || ''}
+                      onChange={(e) => setNewResource({ ...newResource, resource_type: e.target.value as ResourceType })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="computer">Computador</option>
+                      <option value="printer">Impressora</option>
+                      <option value="monitor">Monitor</option>
+                      <option value="server">Servidor</option>
+                      <option value="network_device">Dispositivo de Rede</option>
+                    </select>
+                  </div>
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Cliente *
+                    </label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                      <input
+                        type="text"
+                        value={newResourceClientSearch}
+                        onChange={(e) => {
+                          setNewResourceClientSearch(e.target.value);
+                          setShowNewResourceClientDropdown(true);
+                          if (!e.target.value) {
+                            setNewResource({ ...newResource, client_id: '', contract_id: undefined });
+                            setNewResourceContracts([]);
+                          }
+                        }}
+                        onFocus={() => setShowNewResourceClientDropdown(true)}
+                        placeholder="Buscar cliente..."
+                        className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                      {isSearchingNewResourceClients && (
+                        <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 animate-spin" size={16} />
+                      )}
+                    </div>
+                    {showNewResourceClientDropdown && newResourceClientResults.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {newResourceClientResults.map((client) => (
+                          <button
+                            key={client.id}
+                            onClick={() => handleSelectNewResourceClient(client)}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
+                          >
+                            {client.nome || client.name || client.razaoSocial}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Contrato
+                    </label>
+                    <select
+                      value={newResource.contract_id || ''}
+                      onChange={(e) => setNewResource({ ...newResource, contract_id: e.target.value || undefined })}
+                      disabled={!newResource.client_id || newResourceContracts.length === 0}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+                    >
+                      <option value="">Selecione...</option>
+                      {newResourceContracts.map((contract) => (
+                        <option key={contract.id} value={contract.id}>
+                          {contract.numero || contract.id} - {contract.descricao || 'Contrato'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Detalhes do Equipamento */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                  Detalhes do Equipamento
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Fabricante *
+                    </label>
+                    <input
+                      type="text"
+                      value={newResource.manufacturer || ''}
+                      onChange={(e) => setNewResource({ ...newResource, manufacturer: e.target.value })}
+                      placeholder="Ex: HP, Dell, Samsung"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Modelo *
+                    </label>
+                    <input
+                      type="text"
+                      value={newResource.model || ''}
+                      onChange={(e) => setNewResource({ ...newResource, model: e.target.value })}
+                      placeholder="Ex: LaserJet Pro M404"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Número de Série
+                    </label>
+                    <input
+                      type="text"
+                      value={newResource.serial_number || ''}
+                      onChange={(e) => setNewResource({ ...newResource, serial_number: e.target.value })}
+                      placeholder="Ex: ABC123456789"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Tag de Patrimônio
+                    </label>
+                    <input
+                      type="text"
+                      value={newResource.asset_tag || ''}
+                      onChange={(e) => setNewResource({ ...newResource, asset_tag: e.target.value })}
+                      placeholder="Ex: PAT-00123"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Localização */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                  Localização
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Local
+                    </label>
+                    <input
+                      type="text"
+                      value={newResource.location || ''}
+                      onChange={(e) => setNewResource({ ...newResource, location: e.target.value })}
+                      placeholder="Ex: Matriz - Sala 101"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Departamento
+                    </label>
+                    <input
+                      type="text"
+                      value={newResource.department || ''}
+                      onChange={(e) => setNewResource({ ...newResource, department: e.target.value })}
+                      placeholder="Ex: Financeiro"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Campos Adicionais (expansíveis) */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowAdditionalFields(!showAdditionalFields)}
+                  className="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700"
+                >
+                  <ChevronRight size={16} className={`transition-transform ${showAdditionalFields ? 'rotate-90' : ''}`} />
+                  Informações Adicionais
+                </button>
+
+                {showAdditionalFields && (
+                  <div className="mt-4 space-y-4">
+                    {/* Rede */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          IP Address
+                        </label>
+                        <input
+                          type="text"
+                          value={newResource.ip_address || ''}
+                          onChange={(e) => setNewResource({ ...newResource, ip_address: e.target.value })}
+                          placeholder="Ex: 192.168.1.100"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          MAC Address
+                        </label>
+                        <input
+                          type="text"
+                          value={newResource.mac_address || ''}
+                          onChange={(e) => setNewResource({ ...newResource, mac_address: e.target.value })}
+                          placeholder="Ex: AA:BB:CC:DD:EE:FF"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Hostname
+                        </label>
+                        <input
+                          type="text"
+                          value={newResource.hostname || ''}
+                          onChange={(e) => setNewResource({ ...newResource, hostname: e.target.value })}
+                          placeholder="Ex: IMPRESSORA-01"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Garantia */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Data de Compra
+                        </label>
+                        <input
+                          type="date"
+                          value={newResource.purchase_date || ''}
+                          onChange={(e) => setNewResource({ ...newResource, purchase_date: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Fim da Garantia
+                        </label>
+                        <input
+                          type="date"
+                          value={newResource.warranty_expiry_date || ''}
+                          onChange={(e) => setNewResource({ ...newResource, warranty_expiry_date: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Observações */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Observações
+                      </label>
+                      <textarea
+                        value={newResource.notes || ''}
+                        onChange={(e) => setNewResource({ ...newResource, notes: e.target.value })}
+                        rows={3}
+                        placeholder="Observações adicionais sobre o recurso..."
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-xl sticky bottom-0">
+              <button
+                onClick={handleCloseNewResourceModal}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateResource}
+                disabled={createResourceMutation.isPending}
+                className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                {createResourceMutation.isPending ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Código de Ativação */}
       {showActivationModal && (
