@@ -28,6 +28,7 @@ export interface NotificationConfig {
   id: string;
   alert_type: string;
   alert_name: string;
+  category: string;
   notify_admins: boolean;
   email_admins: boolean;
   admin_user_ids?: string[];
