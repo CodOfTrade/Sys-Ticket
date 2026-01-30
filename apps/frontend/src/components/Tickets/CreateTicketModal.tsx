@@ -835,75 +835,34 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Catálogo de Serviço <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="service_catalog_id"
-                  value={formData.service_catalog_id}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                    errors.service_catalog_id
-                      ? 'border-red-500 dark:border-red-500'
-                      : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                >
-                  <option value="">Selecione um catálogo</option>
-                  {availableCatalogs.map((catalog) => (
-                    <option key={catalog.id} value={catalog.id}>
-                      {catalog.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.service_catalog_id && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {errors.service_catalog_id}
-                  </p>
-                )}
-              </div>
-
-              {/* Fila de Atendimento */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Fila de Atendimento
-                </label>
-                <select
-                  name="queue_id"
-                  value={formData.queue_id}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  <option value="">Nenhuma (Atribuição Manual)</option>
-                  {queues
-                    ?.filter((q) => q.is_active)
-                    .map((queue) => (
-                      <option key={queue.id} value={queue.id}>
-                        {queue.name}
-                      </option>
-                    ))}
-                </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Se selecionada e com atribuição automática habilitada, o ticket será distribuído automaticamente entre os membros da fila
-                </p>
-              </div>
-
+              {/* Catálogo e Categoria */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Prioridade <span className="text-red-500">*</span>
+                    Catálogo de Serviço <span className="text-red-500">*</span>
                   </label>
                   <select
-                    name="priority"
-                    value={formData.priority}
+                    name="service_catalog_id"
+                    value={formData.service_catalog_id}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                      errors.service_catalog_id
+                        ? 'border-red-500 dark:border-red-500'
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}
                   >
-                    <option value={TicketPriority.LOW}>Baixa</option>
-                    <option value={TicketPriority.MEDIUM}>Média</option>
-                    <option value={TicketPriority.HIGH}>Alta</option>
-                    <option value={TicketPriority.URGENT}>Urgente</option>
+                    <option value="">Selecione um catálogo</option>
+                    {availableCatalogs.map((catalog) => (
+                      <option key={catalog.id} value={catalog.id}>
+                        {catalog.name}
+                      </option>
+                    ))}
                   </select>
+                  {errors.service_catalog_id && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                      {errors.service_catalog_id}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -929,6 +888,50 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                         {cat.name}
                       </option>
                     ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Fila de Atendimento e Prioridade */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Fila de Atendimento
+                  </label>
+                  <select
+                    name="queue_id"
+                    value={formData.queue_id}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="">Nenhuma (Atribuição Manual)</option>
+                    {queues
+                      ?.filter((q) => q.is_active)
+                      .map((queue) => (
+                        <option key={queue.id} value={queue.id}>
+                          {queue.name}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Se selecionada e com atribuição automática habilitada, o ticket será distribuído automaticamente entre os membros da fila
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Prioridade <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="priority"
+                    value={formData.priority}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value={TicketPriority.LOW}>Baixa</option>
+                    <option value={TicketPriority.MEDIUM}>Média</option>
+                    <option value={TicketPriority.HIGH}>Alta</option>
+                    <option value={TicketPriority.URGENT}>Urgente</option>
                   </select>
                 </div>
               </div>
