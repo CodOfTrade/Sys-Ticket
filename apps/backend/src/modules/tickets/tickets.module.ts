@@ -28,6 +28,7 @@ import { ClientContact } from '../clients/entities/client-contact.entity';
 import { ContractsModule } from '../contracts/contracts.module';
 import { ClientsModule } from '../clients/clients.module';
 import { ServiceDesksModule } from '../service-desks/service-desks.module';
+import { SlaModule } from '../sla/sla.module';
 import { EmailModule } from '../email/email.module';
 import { SharedModule } from '../../shared/shared.module';
 import { SettingsModule } from '../settings/settings.module';
@@ -51,6 +52,7 @@ import { SettingsModule } from '../settings/settings.module';
     ContractsModule,
     ClientsModule,
     ServiceDesksModule,
+    SlaModule,
     EmailModule,
     SharedModule,
     SettingsModule,
