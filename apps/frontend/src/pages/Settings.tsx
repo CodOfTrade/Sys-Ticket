@@ -1,21 +1,17 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, DollarSign, FolderTree, Users, Bell, Sliders, Palette, CheckSquare } from 'lucide-react';
-import { PricingSettings } from '@/components/Settings/PricingSettings';
+import { Settings as SettingsIcon, Ticket, Users, Bell, Sliders, Palette } from 'lucide-react';
+import { TicketSettingsContainer } from '@/components/Settings/TicketSettingsContainer';
 import { LogoSettings } from '@/components/Settings/LogoSettings';
-import { ChecklistSettings } from '@/components/Settings/ChecklistSettings';
-import { ServiceCatalogSettings } from '@/components/Settings/ServiceCatalogSettings';
 import { NotificationSettings } from '@/components/Settings/NotificationSettings';
 
-type SettingsTab = 'pricing' | 'branding' | 'checklists' | 'catalogs' | 'users' | 'notifications' | 'general';
+type SettingsTab = 'tickets' | 'branding' | 'users' | 'notifications' | 'general';
 
 export function Settings() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('pricing');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('tickets');
 
   const tabs = [
-    { id: 'pricing' as SettingsTab, label: 'Precificacao', icon: DollarSign },
+    { id: 'tickets' as SettingsTab, label: 'Tickets', icon: Ticket },
     { id: 'branding' as SettingsTab, label: 'Identidade Visual', icon: Palette },
-    { id: 'checklists' as SettingsTab, label: 'Checklists', icon: CheckSquare },
-    { id: 'catalogs' as SettingsTab, label: 'Catalogos de Servico', icon: FolderTree },
     { id: 'users' as SettingsTab, label: 'Usuarios e Permissoes', icon: Users },
     { id: 'notifications' as SettingsTab, label: 'Notificacoes', icon: Bell },
     { id: 'general' as SettingsTab, label: 'Geral', icon: Sliders },
@@ -66,10 +62,8 @@ export function Settings() {
 
           {/* Tab Content */}
           <div className="p-6">
-            {activeTab === 'pricing' && <PricingSettings />}
+            {activeTab === 'tickets' && <TicketSettingsContainer />}
             {activeTab === 'branding' && <LogoSettings />}
-            {activeTab === 'checklists' && <ChecklistSettings />}
-            {activeTab === 'catalogs' && <ServiceCatalogSettings />}
             {activeTab === 'users' && (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 Usuarios e Permissoes - Em desenvolvimento
