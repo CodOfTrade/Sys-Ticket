@@ -33,7 +33,7 @@ export class AuthService {
     return {
       user: {
         ...userWithoutPassword,
-        service_desk_id: user.service_desk_ids?.[0] || null,
+        service_desk_id: this.getFirstServiceDeskId(user.service_desk_ids),
       },
       access_token: token,
     };
@@ -63,7 +63,7 @@ export class AuthService {
     return {
       user: {
         ...userWithoutPassword,
-        service_desk_id: user.service_desk_ids?.[0] || null,
+        service_desk_id: this.getFirstServiceDeskId(user.service_desk_ids),
       },
       access_token: token,
     };
@@ -80,12 +80,29 @@ export class AuthService {
     return userWithoutPassword;
   }
 
+  private getFirstServiceDeskId(service_desk_ids: string[] | string | null | undefined): string | null {
+    if (!service_desk_ids) return null;
+
+    // Se é array, retorna primeiro elemento
+    if (Array.isArray(service_desk_ids)) {
+      return service_desk_ids[0] || null;
+    }
+
+    // Se é string (formato PostgreSQL "{uuid}"), remove chaves
+    if (typeof service_desk_ids === 'string') {
+      const cleaned = service_desk_ids.replace(/[{}]/g, '');
+      return cleaned.split(',')[0].trim() || null;
+    }
+
+    return null;
+  }
+
   private generateToken(user: any): string {
     const payload = {
       sub: user.id,
       email: user.email,
       role: user.role,
-      service_desk_id: user.service_desk_ids?.[0] || null,
+      service_desk_id: this.getFirstServiceDeskId(user.service_desk_ids),
     };
 
     return this.jwtService.sign(payload);
