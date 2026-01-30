@@ -44,6 +44,12 @@ export interface Ticket {
   category?: string;
   tags?: string;
   service_desk_id: string;
+  queue_id?: string;
+  queue?: {
+    id: string;
+    name: string;
+    color?: string;
+  };
   assigned_to_id?: string;
   assigned_to?: {
     id: string;
@@ -107,6 +113,7 @@ export interface CreateTicketDto {
   category?: string;
   tags?: string[];
   service_desk_id: string;
+  queue_id?: string;
   assigned_to_id?: string;
   contract_id?: string;
   parent_ticket_id?: string;
