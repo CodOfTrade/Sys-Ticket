@@ -122,22 +122,12 @@ export class TimesheetsService {
     // Se não foi informado preço customizado, buscar nas configurações
     if (!customUnitPrice && ticket.service_desk_id) {
       try {
-        // Buscar configuração de preço para o tipo de serviço
-        const pricingConfig = await this.pricingConfigRepository.findOne({
-          where: {
-            service_desk_id: ticket.service_desk_id,
-            service_type: serviceType as any,
-            active: true,
-          },
-        });
-
-        if (pricingConfig) {
-          unit_price = await this.calculateHourlyRate(pricingConfig, new Date());
-        } else {
-          this.logger.warn(
-            `Configuração de preço não encontrada para ${ticket.service_desk_id} - ${serviceType}`,
-          );
-        }
+        // TODO: Buscar configuração de preço da nova estrutura (pricing_config_id + service_modality)
+        // Por enquanto, usar valor padrão
+        unit_price = 0;
+        this.logger.warn(
+          `Preço customizado não informado para ticket ${ticket.id}. Usando valor padrão.`,
+        );
       } catch (error) {
         this.logger.warn(`Erro ao buscar configuração de preço: ${error.message}`);
       }
@@ -158,29 +148,15 @@ export class TimesheetsService {
 
   /**
    * Calcula a taxa horária baseada no horário (normal, extra, noturno, etc)
+   * TODO: Atualizar para nova estrutura de precificação
    */
   private async calculateHourlyRate(
     pricingConfig: PricingConfig,
     dateTime: Date,
   ): Promise<number> {
-    const hour = dateTime.getHours();
-    const dayOfWeek = dateTime.getDay(); // 0 = Domingo, 6 = Sábado
-
-    // TODO: Verificar se é feriado (necessário integração com API de feriados ou tabela)
-    const isHoliday = false;
-
-    // Fim de semana
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      return Number(pricingConfig.hourly_rate_weekend);
-    }
-
-    // Horário noturno (após 18h)
-    if (hour >= 18 || hour < 6) {
-      return Number(pricingConfig.hourly_rate_night);
-    }
-
-    // Hora normal
-    return Number(pricingConfig.hourly_rate_normal);
+    // TODO: Implementar com nova estrutura (pricing_config + modality_configs)
+    // Por enquanto, retornar 0
+    return 0;
   }
 
   /**

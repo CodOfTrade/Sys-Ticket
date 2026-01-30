@@ -368,8 +368,10 @@ export class SigeServiceOrderService {
     };
 
     for (const appointment of appointments) {
-      const level = appointment.service_level || 'n1';
-      const key = level.toUpperCase();
+      // Determinar nível baseado no nome da pricing_config
+      const configName = appointment.pricing_config?.name || '';
+      const isN2 = configName.toUpperCase().includes('N2');
+      const key = isN2 ? 'N2' : 'N1';
 
       if (!grouped[key]) {
         grouped[key] = [];
@@ -464,8 +466,14 @@ export class SigeServiceOrderService {
     const billableApps = appointments.filter(a => a.coverage_type === ServiceCoverageType.BILLABLE);
     const contractApps = appointments.filter(a => a.coverage_type === ServiceCoverageType.CONTRACT);
 
-    const n1Apps = billableApps.filter(a => !a.service_level || a.service_level === 'n1');
-    const n2Apps = billableApps.filter(a => a.service_level === 'n2');
+    const n1Apps = billableApps.filter(a => {
+      const configName = a.pricing_config?.name || '';
+      return !configName.toUpperCase().includes('N2');
+    });
+    const n2Apps = billableApps.filter(a => {
+      const configName = a.pricing_config?.name || '';
+      return configName.toUpperCase().includes('N2');
+    });
 
     const calcHoursAndAmount = (apps: TicketAppointment[]) => ({
       hours: apps.reduce((sum, a) => sum + (a.duration_minutes / 60), 0),
