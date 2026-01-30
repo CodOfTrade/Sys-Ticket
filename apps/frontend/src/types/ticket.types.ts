@@ -134,6 +134,7 @@ export interface UpdateTicketDto {
   client_name?: string;
   requester_name?: string;
   assigned_to_id?: string;
+  queue_id?: string | null;
   service_catalog_id?: string | null;
   service_category_id?: string | null;
 }
