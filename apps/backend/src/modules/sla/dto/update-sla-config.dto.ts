@@ -1,11 +1,9 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import {
   IsString,
   IsNotEmpty,
-  IsOptional,
   IsArray,
   IsInt,
-  IsObject,
   ValidateNested,
   Min,
   Max,
@@ -31,10 +29,10 @@ export class SlaPriorityConfigDto {
   resolution: number;
 }
 
-export class BusinessHoursConfigDto {
+export class BusinessHoursPeriodDto {
   @ApiProperty({
     description: 'Horário de início (formato: HH:mm)',
-    example: '09:00',
+    example: '08:00',
   })
   @IsString()
   @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
@@ -51,7 +49,33 @@ export class BusinessHoursConfigDto {
     message: 'Formato de hora inválido. Use HH:mm',
   })
   end: string;
+}
 
+export class BusinessHoursScheduleDto {
+  @ApiProperty({
+    description: 'Dia da semana (0=Domingo, 1=Segunda, ..., 6=Sábado)',
+    example: 1,
+  })
+  @IsInt()
+  @Min(0)
+  @Max(6)
+  day_of_week: number;
+
+  @ApiProperty({
+    description: 'Períodos de expediente no dia',
+    type: [BusinessHoursPeriodDto],
+    example: [
+      { start: '08:00', end: '12:00' },
+      { start: '14:00', end: '18:00' },
+    ],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BusinessHoursPeriodDto)
+  periods: BusinessHoursPeriodDto[];
+}
+
+export class BusinessHoursConfigDto {
   @ApiProperty({
     description: 'Timezone (formato IANA)',
     example: 'America/Sao_Paulo',
@@ -59,6 +83,24 @@ export class BusinessHoursConfigDto {
   @IsString()
   @IsNotEmpty()
   timezone: string;
+
+  @ApiProperty({
+    description: 'Configuração de horários por dia da semana',
+    type: [BusinessHoursScheduleDto],
+    example: [
+      {
+        day_of_week: 1,
+        periods: [
+          { start: '08:00', end: '12:00' },
+          { start: '14:00', end: '18:00' },
+        ],
+      },
+    ],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BusinessHoursScheduleDto)
+  schedules: BusinessHoursScheduleDto[];
 }
 
 export class SlaPrioritiesConfigDto {
@@ -99,15 +141,4 @@ export class UpdateSlaConfigDto {
   @ValidateNested()
   @Type(() => BusinessHoursConfigDto)
   business_hours: BusinessHoursConfigDto;
-
-  @ApiProperty({
-    description: 'Dias da semana de trabalho (0=Domingo, 1=Segunda, ..., 6=Sábado)',
-    example: [1, 2, 3, 4, 5],
-    type: [Number],
-  })
-  @IsArray()
-  @IsInt({ each: true })
-  @Min(0, { each: true })
-  @Max(6, { each: true })
-  working_days: number[];
 }
