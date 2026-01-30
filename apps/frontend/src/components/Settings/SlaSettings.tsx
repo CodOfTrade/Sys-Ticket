@@ -379,8 +379,6 @@ export function SlaSettings() {
               </div>
             </div>
           </div>
-        </>
-      )}
 
       {/* Footer - Botão Salvar */}
       <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
