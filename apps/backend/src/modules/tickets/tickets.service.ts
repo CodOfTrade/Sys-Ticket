@@ -446,6 +446,9 @@ export class TicketsService {
       if (updateTicketDto.service_category_id !== undefined) {
         ticket.service_category = null as any;
       }
+      if (updateTicketDto.queue_id !== undefined) {
+        ticket.queue = null as any;
+      }
 
       await this.ticketsRepository.save(ticket);
 
