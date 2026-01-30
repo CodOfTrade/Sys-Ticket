@@ -3,6 +3,8 @@ import { DollarSign, FolderTree, CheckSquare, Clock, Layers } from 'lucide-react
 import { PricingSettings } from './PricingSettings';
 import { ServiceCatalogSettings } from './ServiceCatalogSettings';
 import { ChecklistSettings } from './ChecklistSettings';
+import { QueueSettings } from './QueueSettings';
+import { SlaSettings } from './SlaSettings';
 
 type TicketSettingsSubTab = 'pricing' | 'queues' | 'catalogs' | 'sla' | 'checklists';
 
@@ -50,35 +52,9 @@ export function TicketSettingsContainer() {
       {/* Sub-tab Content */}
       <div>
         {activeSubTab === 'pricing' && <PricingSettings />}
-        {activeSubTab === 'queues' && (
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-lg p-12 text-center border-2 border-dashed border-blue-300 dark:border-blue-600">
-            <Layers className="w-16 h-16 mx-auto mb-4 text-blue-500 dark:text-blue-400" />
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Configuração de Filas
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4 max-w-md mx-auto">
-              Configure filas de atendimento, estratégias de distribuição e gerencie membros.
-            </p>
-            <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-              Backend implementado ✓ | Interface em desenvolvimento...
-            </p>
-          </div>
-        )}
+        {activeSubTab === 'queues' && <QueueSettings />}
         {activeSubTab === 'catalogs' && <ServiceCatalogSettings />}
-        {activeSubTab === 'sla' && (
-          <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-800 dark:to-gray-700 rounded-lg p-12 text-center border-2 border-dashed border-orange-300 dark:border-orange-600">
-            <Clock className="w-16 h-16 mx-auto mb-4 text-orange-500 dark:text-orange-400" />
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Configuração de SLA
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4 max-w-md mx-auto">
-              Defina prazos de resposta e resolução por prioridade, configure horário comercial e dias úteis.
-            </p>
-            <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">
-              Backend implementado ✓ | Interface em desenvolvimento...
-            </p>
-          </div>
-        )}
+        {activeSubTab === 'sla' && <SlaSettings />}
         {activeSubTab === 'checklists' && <ChecklistSettings />}
       </div>
     </div>
