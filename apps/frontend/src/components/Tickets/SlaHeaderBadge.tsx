@@ -140,11 +140,6 @@ export function SlaHeaderBadge({
       ? firstResponse
       : resolution;
 
-  const worstStatusType =
-    statusPriority[firstResponse.status] >= statusPriority[resolution.status]
-      ? 'first_response'
-      : 'resolution';
-
   // Se ambos são 'none', não exibir badge
   if (firstResponse.status === 'none' && resolution.status === 'none') {
     return null;
