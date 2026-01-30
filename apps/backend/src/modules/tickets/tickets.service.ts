@@ -348,6 +348,7 @@ export class TicketsService {
           'contact',
           'service_catalog',
           'service_category',
+          'queue',
         ],
       });
 
@@ -401,6 +402,7 @@ export class TicketsService {
           'timesheets',
           'service_catalog',
           'service_category',
+          'queue',
         ],
       });
 
