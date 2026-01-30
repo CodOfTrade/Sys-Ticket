@@ -14,7 +14,7 @@ class QueueService {
   async getAll(serviceDeskId?: string): Promise<Queue[]> {
     const params = serviceDeskId ? { service_desk_id: serviceDeskId } : {};
     const response = await api.get('/v1/queues', { params });
-    return response.data;
+    return response.data.data;
   }
 
   /**
@@ -22,7 +22,7 @@ class QueueService {
    */
   async getById(id: string): Promise<Queue> {
     const response = await api.get(`/v1/queues/${id}`);
-    return response.data;
+    return response.data.data;
   }
 
   /**
@@ -30,7 +30,7 @@ class QueueService {
    */
   async create(data: CreateQueueDto): Promise<Queue> {
     const response = await api.post('/v1/queues', data);
-    return response.data;
+    return response.data.data;
   }
 
   /**
@@ -38,7 +38,7 @@ class QueueService {
    */
   async update(id: string, data: UpdateQueueDto): Promise<Queue> {
     const response = await api.patch(`/v1/queues/${id}`, data);
-    return response.data;
+    return response.data.data;
   }
 
   /**
@@ -53,7 +53,7 @@ class QueueService {
    */
   async addMember(queueId: string, userId: string): Promise<Queue> {
     const response = await api.post(`/v1/queues/${queueId}/members/${userId}`);
-    return response.data;
+    return response.data.data;
   }
 
   /**
@@ -61,7 +61,7 @@ class QueueService {
    */
   async removeMember(queueId: string, userId: string): Promise<Queue> {
     const response = await api.delete(`/v1/queues/${queueId}/members/${userId}`);
-    return response.data;
+    return response.data.data;
   }
 
   /**
@@ -69,7 +69,7 @@ class QueueService {
    */
   async getStats(queueId: string): Promise<QueueStats> {
     const response = await api.get(`/v1/queues/${queueId}/stats`);
-    return response.data;
+    return response.data.data;
   }
 
   /**
@@ -84,7 +84,7 @@ class QueueService {
       `/v1/queues/${queueId}/assign-ticket/${ticketId}`,
       data,
     );
-    return response.data;
+    return response.data.data;
   }
 }
 
