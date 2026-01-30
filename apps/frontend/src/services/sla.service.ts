@@ -13,7 +13,7 @@ class SlaService {
    */
   async getConfig(serviceDeskId: string): Promise<SlaConfigResponse> {
     const response = await api.get(`/v1/sla/service-desks/${serviceDeskId}/config`);
-    return response.data;
+    return response.data.data;
   }
 
   /**
@@ -27,7 +27,7 @@ class SlaService {
       `/v1/sla/service-desks/${serviceDeskId}/config`,
       data,
     );
-    return response.data;
+    return response.data.data;
   }
 
   /**
@@ -35,7 +35,7 @@ class SlaService {
    */
   async getTicketStats(ticketId: string): Promise<SlaTicketStats> {
     const response = await api.get(`/v1/sla/tickets/${ticketId}/stats`);
-    return response.data;
+    return response.data.data;
   }
 
   /**
@@ -53,7 +53,7 @@ class SlaService {
     const response = await api.get(`/v1/sla/service-desks/${serviceDeskId}/metrics`, {
       params,
     });
-    return response.data;
+    return response.data.data;
   }
 }
 
