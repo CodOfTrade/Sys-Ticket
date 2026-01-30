@@ -7,12 +7,27 @@ export interface SlaPriorityConfig {
 }
 
 /**
- * Configuração de horário comercial
+ * Período de expediente (horário de início e fim)
  */
-export interface BusinessHoursConfig {
+export interface BusinessHoursPeriod {
   start: string; // Formato: "HH:mm"
   end: string; // Formato: "HH:mm"
+}
+
+/**
+ * Schedule de um dia da semana com múltiplos períodos
+ */
+export interface BusinessHoursSchedule {
+  day_of_week: number; // 0=Domingo, 1=Segunda, ..., 6=Sábado
+  periods: BusinessHoursPeriod[]; // Array de períodos de expediente no dia
+}
+
+/**
+ * Configuração de horário comercial (flexível com múltiplos períodos por dia)
+ */
+export interface BusinessHoursConfig {
   timezone: string; // Ex: "America/Sao_Paulo"
+  schedules: BusinessHoursSchedule[]; // Configuração por dia da semana
 }
 
 /**
@@ -26,7 +41,7 @@ export interface SlaConfig {
     urgent: SlaPriorityConfig;
   };
   business_hours: BusinessHoursConfig;
-  working_days: number[]; // 0=Domingo, 1=Segunda, ..., 6=Sábado
+  working_days?: number[]; // Deprecated: agora usamos business_hours.schedules
 }
 
 /**
@@ -40,7 +55,7 @@ export interface UpdateSlaConfigDto {
     urgent: SlaPriorityConfig;
   };
   business_hours: BusinessHoursConfig;
-  working_days: number[];
+  working_days?: number[]; // Deprecated: agora usamos business_hours.schedules
 }
 
 /**

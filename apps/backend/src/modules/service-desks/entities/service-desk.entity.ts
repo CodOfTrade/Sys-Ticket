@@ -7,6 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { PricingConfig } from './pricing-config.entity';
+import { SlaConfig } from '../../sla/interfaces/sla-config.interface';
 
 @Entity('service_desks')
 export class ServiceDesk {
@@ -22,22 +23,31 @@ export class ServiceDesk {
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
 
+  // Informações da Empresa
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  company_trade_name: string;
+
+  @Column({ type: 'varchar', length: 18, nullable: true })
+  company_cnpj: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  company_legal_name: string;
+
+  @Column({ type: 'text', nullable: true })
+  company_address: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  company_phone: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  company_email: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  company_website: string;
+
   // Configuração de SLA
   @Column({ type: 'jsonb', nullable: true })
-  sla_config: {
-    priorities: {
-      low: { first_response: number; resolution: number };
-      medium: { first_response: number; resolution: number };
-      high: { first_response: number; resolution: number };
-      urgent: { first_response: number; resolution: number };
-    };
-    business_hours: {
-      start: string;
-      end: string;
-      timezone: string;
-    };
-    working_days: number[];
-  };
+  sla_config: SlaConfig;
 
   // Workflow de status
   @Column({ type: 'jsonb', nullable: true })

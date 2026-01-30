@@ -56,7 +56,6 @@ export class SlaService {
       createdAt,
       priorityConfig.first_response,
       slaConfig.business_hours,
-      slaConfig.working_days,
     );
 
     // Calcular data de vencimento para resolução
@@ -64,7 +63,6 @@ export class SlaService {
       createdAt,
       priorityConfig.resolution,
       slaConfig.business_hours,
-      slaConfig.working_days,
     );
 
     return {
@@ -78,12 +76,13 @@ export class SlaService {
   /**
    * Adiciona minutos úteis (business minutes) a uma data
    * Considera apenas horário comercial e dias úteis
+   * Suporta múltiplos períodos por dia (ex: 08-12 + 14-18)
    */
   addBusinessMinutes(
     startDate: Date,
     minutesToAdd: number,
     businessHours: BusinessHoursConfig,
-    workingDays: number[],
+    workingDays?: number[], // Deprecated: working_days agora vem dos schedules
   ): Date {
     if (minutesToAdd <= 0) {
       return startDate;
@@ -92,79 +91,97 @@ export class SlaService {
     let currentDate = new Date(startDate);
     let remainingMinutes = minutesToAdd;
 
-    // Parse business hours
-    const [startHour, startMinute] = businessHours.start.split(':').map(Number);
-    const [endHour, endMinute] = businessHours.end.split(':').map(Number);
-
-    const businessStartMinutes = startHour * 60 + startMinute;
-    const businessEndMinutes = endHour * 60 + endMinute;
-    const dailyBusinessMinutes = businessEndMinutes - businessStartMinutes;
-
-    // Função auxiliar para verificar se é dia útil
-    const isWorkingDay = (date: Date): boolean => {
-      return workingDays.includes(date.getDay());
-    };
+    // Limite de segurança: máximo 10000 iterações
+    let iterations = 0;
+    const MAX_ITERATIONS = 10000;
 
     // Função auxiliar para obter minutos do dia
     const getMinutesOfDay = (date: Date): number => {
       return date.getHours() * 60 + date.getMinutes();
     };
 
-    // Avançar para o próximo dia útil se necessário
-    while (!isWorkingDay(currentDate)) {
-      currentDate.setDate(currentDate.getDate() + 1);
-      currentDate.setHours(startHour, startMinute, 0, 0);
-    }
-
-    const currentMinutes = getMinutesOfDay(currentDate);
-
-    // Se estamos antes do horário comercial, avançar para o início
-    if (currentMinutes < businessStartMinutes) {
-      currentDate.setHours(startHour, startMinute, 0, 0);
-    }
-    // Se estamos depois do horário comercial, avançar para o próximo dia útil
-    else if (currentMinutes >= businessEndMinutes) {
-      currentDate.setDate(currentDate.getDate() + 1);
-      currentDate.setHours(startHour, startMinute, 0, 0);
-      // Avançar para o próximo dia útil
-      while (!isWorkingDay(currentDate)) {
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-    }
-
     // Loop principal: consumir minutos até remainingMinutes = 0
     while (remainingMinutes > 0) {
-      // Garantir que estamos em um dia útil
-      if (!isWorkingDay(currentDate)) {
+      iterations++;
+      if (iterations > MAX_ITERATIONS) {
+        this.logger.error(
+          `addBusinessMinutes excedeu ${MAX_ITERATIONS} iterações. Abortando.`,
+        );
+        break;
+      }
+
+      const dayOfWeek = currentDate.getDay();
+
+      // Buscar schedule do dia atual
+      const daySchedule = businessHours.schedules?.find((s) => s.day_of_week === dayOfWeek);
+
+      // Se não há expediente neste dia, avançar para o próximo
+      if (!daySchedule || !daySchedule.periods || daySchedule.periods.length === 0) {
         currentDate.setDate(currentDate.getDate() + 1);
-        currentDate.setHours(startHour, startMinute, 0, 0);
+        currentDate.setHours(0, 0, 0, 0);
         continue;
       }
 
       const currentMinutesOfDay = getMinutesOfDay(currentDate);
+      let consumed = false;
 
-      // Se estamos fora do horário comercial, avançar para o início do próximo dia útil
-      if (
-        currentMinutesOfDay < businessStartMinutes ||
-        currentMinutesOfDay >= businessEndMinutes
-      ) {
-        currentDate.setDate(currentDate.getDate() + 1);
-        currentDate.setHours(startHour, startMinute, 0, 0);
-        continue;
+      // Processar cada período do dia
+      for (const period of daySchedule.periods) {
+        const [startHour, startMinute] = period.start.split(':').map(Number);
+        const [endHour, endMinute] = period.end.split(':').map(Number);
+
+        const periodStartMinutes = startHour * 60 + startMinute;
+        const periodEndMinutes = endHour * 60 + endMinute;
+
+        // Se estamos antes do período, pular para o início dele
+        if (currentMinutesOfDay < periodStartMinutes) {
+          currentDate.setHours(startHour, startMinute, 0, 0);
+          const updatedMinutes = getMinutesOfDay(currentDate);
+
+          // Calcular minutos disponíveis neste período
+          const availableMinutes = periodEndMinutes - updatedMinutes;
+
+          if (remainingMinutes <= availableMinutes) {
+            // Cabe neste período
+            currentDate.setMinutes(currentDate.getMinutes() + remainingMinutes);
+            remainingMinutes = 0;
+            consumed = true;
+            break;
+          } else {
+            // Consumir todo o período e continuar para o próximo
+            remainingMinutes -= availableMinutes;
+            currentDate.setHours(endHour, endMinute, 0, 0);
+            consumed = true;
+            continue; // Tentar próximo período do mesmo dia
+          }
+        }
+
+        // Se estamos dentro do período
+        if (currentMinutesOfDay >= periodStartMinutes && currentMinutesOfDay < periodEndMinutes) {
+          const availableMinutes = periodEndMinutes - currentMinutesOfDay;
+
+          if (remainingMinutes <= availableMinutes) {
+            // Cabe neste período
+            currentDate.setMinutes(currentDate.getMinutes() + remainingMinutes);
+            remainingMinutes = 0;
+            consumed = true;
+            break;
+          } else {
+            // Consumir resto do período
+            remainingMinutes -= availableMinutes;
+            currentDate.setHours(endHour, endMinute, 0, 0);
+            consumed = true;
+            continue; // Tentar próximo período do mesmo dia
+          }
+        }
+
+        // Se estamos após este período, continuar para o próximo período
       }
 
-      // Calcular quantos minutos restam no dia útil atual
-      const minutesLeftInDay = businessEndMinutes - currentMinutesOfDay;
-
-      if (remainingMinutes <= minutesLeftInDay) {
-        // Temos minutos suficientes neste dia
-        currentDate.setMinutes(currentDate.getMinutes() + remainingMinutes);
-        remainingMinutes = 0;
-      } else {
-        // Consumir o resto do dia e avançar para o próximo dia útil
-        remainingMinutes -= minutesLeftInDay;
+      // Se não conseguiu consumir minutos em nenhum período, avançar para o próximo dia
+      if (!consumed && remainingMinutes > 0) {
         currentDate.setDate(currentDate.getDate() + 1);
-        currentDate.setHours(startHour, startMinute, 0, 0);
+        currentDate.setHours(0, 0, 0, 0);
       }
     }
 

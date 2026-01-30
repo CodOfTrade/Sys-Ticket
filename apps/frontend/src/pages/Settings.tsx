@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Settings as SettingsIcon, Ticket, Users, Bell, Sliders, Palette } from 'lucide-react';
 import { TicketSettingsContainer } from '@/components/Settings/TicketSettingsContainer';
+import { GeneralSettingsContainer } from '@/components/Settings/GeneralSettingsContainer';
 import { LogoSettings } from '@/components/Settings/LogoSettings';
 import { NotificationSettings } from '@/components/Settings/NotificationSettings';
 
@@ -70,11 +71,7 @@ export function Settings() {
               </div>
             )}
             {activeTab === 'notifications' && <NotificationSettings />}
-            {activeTab === 'general' && (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                Configuracoes Gerais - Em desenvolvimento
-              </div>
-            )}
+            {activeTab === 'general' && <GeneralSettingsContainer />}
           </div>
         </div>
       </div>

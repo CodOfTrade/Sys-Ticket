@@ -1,20 +1,16 @@
 import { useState } from 'react';
-import { DollarSign, FolderTree, CheckSquare, Layers } from 'lucide-react';
-import { PricingSettings } from './PricingSettings';
-import { ServiceCatalogSettings } from './ServiceCatalogSettings';
-import { ChecklistSettings } from './ChecklistSettings';
-import { QueueSettings } from './QueueSettings';
+import { Building, Clock } from 'lucide-react';
+import { CompanyInfoSettings } from './CompanyInfoSettings';
+import { BusinessHoursSettings } from './BusinessHoursSettings';
 
-type TicketSettingsSubTab = 'pricing' | 'queues' | 'catalogs' | 'checklists';
+type GeneralSettingsSubTab = 'company' | 'business_hours';
 
-export function TicketSettingsContainer() {
-  const [activeSubTab, setActiveSubTab] = useState<TicketSettingsSubTab>('pricing');
+export function GeneralSettingsContainer() {
+  const [activeSubTab, setActiveSubTab] = useState<GeneralSettingsSubTab>('company');
 
   const subTabs = [
-    { id: 'pricing' as TicketSettingsSubTab, label: 'Precificação', icon: DollarSign },
-    { id: 'queues' as TicketSettingsSubTab, label: 'Filas', icon: Layers },
-    { id: 'catalogs' as TicketSettingsSubTab, label: 'Catálogos de Serviço', icon: FolderTree },
-    { id: 'checklists' as TicketSettingsSubTab, label: 'Checklists', icon: CheckSquare },
+    { id: 'company' as GeneralSettingsSubTab, label: 'Informações da Empresa', icon: Building },
+    { id: 'business_hours' as GeneralSettingsSubTab, label: 'Horário Comercial', icon: Clock },
   ];
 
   return (
@@ -49,10 +45,8 @@ export function TicketSettingsContainer() {
 
       {/* Sub-tab Content */}
       <div>
-        {activeSubTab === 'pricing' && <PricingSettings />}
-        {activeSubTab === 'queues' && <QueueSettings />}
-        {activeSubTab === 'catalogs' && <ServiceCatalogSettings />}
-        {activeSubTab === 'checklists' && <ChecklistSettings />}
+        {activeSubTab === 'company' && <CompanyInfoSettings />}
+        {activeSubTab === 'business_hours' && <BusinessHoursSettings />}
       </div>
     </div>
   );

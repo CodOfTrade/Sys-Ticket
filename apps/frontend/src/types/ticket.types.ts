@@ -98,6 +98,11 @@ export interface Ticket {
     url: string;
   }>;
   paused_at?: string;
+  // Campos de SLA
+  sla_first_response_due?: string;
+  sla_resolution_due?: string;
+  first_response_at?: string;
+  sla_violated?: boolean;
 }
 
 export interface CreateTicketDto {
