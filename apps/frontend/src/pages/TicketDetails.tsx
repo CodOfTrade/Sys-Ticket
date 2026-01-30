@@ -1140,20 +1140,6 @@ export default function TicketDetails() {
                   </div>
                 </div>
 
-                {/* Anexos do Ticket */}
-                <div className="flex items-center gap-2 text-sm">
-                  <Paperclip className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <p className="text-gray-600 dark:text-gray-400">Anexos</p>
-                    <button
-                      onClick={() => setShowAttachments(!showAttachments)}
-                      className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      {ticket.attachments?.length || 0} arquivo(s)
-                    </button>
-                  </div>
-                </div>
-
                 {/* Fila de Atendimento */}
                 <div className="flex items-center gap-2 text-sm">
                   <Layers className="w-4 h-4 text-gray-400" />
@@ -1206,6 +1192,20 @@ export default function TicketDetails() {
                       className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
                     >
                       {(ticket as any).followers?.length || 0} pessoa(s)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Anexos do Ticket */}
+                <div className="flex items-center gap-2 text-sm">
+                  <Paperclip className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-gray-600 dark:text-gray-400">Anexos</p>
+                    <button
+                      onClick={() => setShowAttachments(!showAttachments)}
+                      className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      {ticket.attachments?.length || 0} arquivo(s)
                     </button>
                   </div>
                 </div>
