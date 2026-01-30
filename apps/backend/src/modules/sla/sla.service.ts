@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan, Not, In } from 'typeorm';
 import { Ticket, TicketPriority, TicketStatus } from '../tickets/entities/ticket.entity';
 import { ServiceDesk } from '../service-desks/entities/service-desk.entity';
+import { Queue } from '../queues/entities/queue.entity';
 import {
   SlaConfig,
   SlaCalculationResult,
@@ -20,7 +21,82 @@ export class SlaService {
     private readonly ticketRepository: Repository<Ticket>,
     @InjectRepository(ServiceDesk)
     private readonly serviceDeskRepository: Repository<ServiceDesk>,
+    @InjectRepository(Queue)
+    private readonly queueRepository: Repository<Queue>,
   ) {}
+
+  /**
+   * Obtém a configuração de SLA para um ticket
+   * Hierarquia: Fila > Service Desk > Padrão
+   */
+  async getSlaConfigForTicket(
+    queueId: string | null,
+    serviceDeskId: string,
+  ): Promise<SlaConfig> {
+    // 1. Se tem fila, verificar se fila tem SLA próprio
+    if (queueId) {
+      const queue = await this.queueRepository.findOne({
+        where: { id: queueId },
+      });
+
+      if (queue?.sla_config?.priorities) {
+        this.logger.debug(`Usando SLA da fila ${queue.name}`);
+        // Buscar business_hours do service_desk (horário comercial é global)
+        const serviceDesk = await this.serviceDeskRepository.findOne({
+          where: { id: serviceDeskId },
+        });
+        return {
+          priorities: queue.sla_config.priorities,
+          business_hours: serviceDesk?.sla_config?.business_hours || this.getDefaultBusinessHours(),
+        };
+      }
+    }
+
+    // 2. Fallback: usar SLA do service_desk
+    const serviceDesk = await this.serviceDeskRepository.findOne({
+      where: { id: serviceDeskId },
+    });
+
+    if (serviceDesk?.sla_config) {
+      this.logger.debug(`Usando SLA do service_desk ${serviceDesk.name}`);
+      return serviceDesk.sla_config;
+    }
+
+    // 3. Fallback final: valores padrão
+    this.logger.debug('Usando SLA padrão do sistema');
+    return this.getDefaultSlaConfig();
+  }
+
+  /**
+   * Retorna horário comercial padrão
+   */
+  private getDefaultBusinessHours(): BusinessHoursConfig {
+    return {
+      timezone: 'America/Sao_Paulo',
+      schedules: [
+        { day_of_week: 1, periods: [{ start: '08:00', end: '12:00' }, { start: '14:00', end: '18:00' }] },
+        { day_of_week: 2, periods: [{ start: '08:00', end: '12:00' }, { start: '14:00', end: '18:00' }] },
+        { day_of_week: 3, periods: [{ start: '08:00', end: '12:00' }, { start: '14:00', end: '18:00' }] },
+        { day_of_week: 4, periods: [{ start: '08:00', end: '12:00' }, { start: '14:00', end: '18:00' }] },
+        { day_of_week: 5, periods: [{ start: '08:00', end: '12:00' }, { start: '14:00', end: '18:00' }] },
+      ],
+    };
+  }
+
+  /**
+   * Retorna configuração de SLA padrão
+   */
+  private getDefaultSlaConfig(): SlaConfig {
+    return {
+      priorities: {
+        low: { first_response: 480, resolution: 2880 },
+        medium: { first_response: 240, resolution: 1440 },
+        high: { first_response: 120, resolution: 480 },
+        urgent: { first_response: 60, resolution: 240 },
+      },
+      business_hours: this.getDefaultBusinessHours(),
+    };
+  }
 
   /**
    * Calcula os prazos de SLA para um ticket

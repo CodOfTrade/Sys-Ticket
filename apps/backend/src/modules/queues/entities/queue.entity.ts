@@ -85,6 +85,18 @@ export class Queue {
   @Column({ type: 'int', default: 0 })
   display_order: number;
 
+  // Configuração de SLA específica da fila
+  // Se null, usa o SLA padrão do service_desk
+  @Column({ type: 'jsonb', nullable: true })
+  sla_config: {
+    priorities: {
+      low: { first_response: number; resolution: number };
+      medium: { first_response: number; resolution: number };
+      high: { first_response: number; resolution: number };
+      urgent: { first_response: number; resolution: number };
+    };
+  } | null;
+
   // Timestamps
   @CreateDateColumn()
   created_at: Date;

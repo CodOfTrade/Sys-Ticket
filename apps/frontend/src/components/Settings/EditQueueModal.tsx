@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Users, Palette, Settings as SettingsIcon } from 'lucide-react';
+import { X, Users, Palette, Settings as SettingsIcon, Clock } from 'lucide-react';
 import { queueService } from '@/services/queue.service';
 import { userService } from '@/services/user.service';
 import {
@@ -12,6 +12,29 @@ import {
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '@/store/auth.store';
 
+const PRIORITY_LABELS: Record<string, string> = {
+  low: 'Baixa',
+  medium: 'Normal',
+  high: 'Alta',
+  urgent: 'Urgente',
+};
+
+const PRIORITY_COLORS: Record<string, string> = {
+  low: '#10B981',
+  medium: '#3B82F6',
+  high: '#F59E0B',
+  urgent: '#EF4444',
+};
+
+const DEFAULT_SLA_CONFIG = {
+  priorities: {
+    low: { first_response: 480, resolution: 2880 },
+    medium: { first_response: 240, resolution: 1440 },
+    high: { first_response: 120, resolution: 480 },
+    urgent: { first_response: 60, resolution: 240 },
+  },
+};
+
 interface EditQueueModalProps {
   queue: Queue;
   onClose: () => void;
@@ -22,6 +45,8 @@ export function EditQueueModal({ queue, onClose, onSuccess }: EditQueueModalProp
   const { user: currentUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
+  const [useCustomSla, setUseCustomSla] = useState(!!queue.sla_config);
+  const [slaConfig, setSlaConfig] = useState(queue.sla_config || DEFAULT_SLA_CONFIG);
   const [formData, setFormData] = useState<UpdateQueueDto>({
     name: queue.name,
     description: queue.description || '',
@@ -70,7 +95,11 @@ export function EditQueueModal({ queue, onClose, onSuccess }: EditQueueModalProp
 
     try {
       setLoading(true);
-      await queueService.update(queue.id, formData);
+      const dataToSend = {
+        ...formData,
+        sla_config: useCustomSla ? slaConfig : null,
+      };
+      await queueService.update(queue.id, dataToSend);
       toast.success('Fila atualizada com sucesso');
       onSuccess();
     } catch (error: any) {
@@ -100,6 +129,30 @@ export function EditQueueModal({ queue, onClose, onSuccess }: EditQueueModalProp
     '#06B6D4', // Cyan
     '#84CC16', // Lime
   ];
+
+  const formatMinutesToHours = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (mins === 0) return `${hours}h`;
+    return `${hours}h ${mins}min`;
+  };
+
+  const updateSlaPriority = (
+    priority: keyof typeof slaConfig.priorities,
+    field: 'first_response' | 'resolution',
+    value: number
+  ) => {
+    setSlaConfig((prev) => ({
+      ...prev,
+      priorities: {
+        ...prev.priorities,
+        [priority]: {
+          ...prev.priorities[priority],
+          [field]: value,
+        },
+      },
+    }));
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -320,6 +373,91 @@ export function EditQueueModal({ queue, onClose, onSuccess }: EditQueueModalProp
                   <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
                     Deixe vazio para ilimitado
                   </p>
+                </div>
+              )}
+            </div>
+
+            {/* SLA Personalizado */}
+            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useCustomSla}
+                  onChange={(e) => setUseCustomSla(e.target.checked)}
+                  className="rounded text-orange-600 focus:ring-2 focus:ring-orange-500"
+                />
+                <Clock className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                <span className="font-medium text-orange-900 dark:text-orange-100">
+                  Usar SLA personalizado para esta fila
+                </span>
+              </label>
+              <p className="text-xs text-orange-800 dark:text-orange-200 mt-2 ml-6">
+                Se desativado, usará o SLA padrão do sistema
+              </p>
+
+              {useCustomSla && (
+                <div className="mt-4 ml-6 space-y-4">
+                  {Object.entries(slaConfig.priorities).map(([priority, config]) => (
+                    <div
+                      key={priority}
+                      className="border-l-4 pl-3 py-2"
+                      style={{ borderColor: PRIORITY_COLORS[priority] }}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-medium text-gray-900 dark:text-white text-sm">
+                          {PRIORITY_LABELS[priority]}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                            1ª Resposta (min)
+                          </label>
+                          <div className="flex gap-1 items-center">
+                            <input
+                              type="number"
+                              min="1"
+                              value={config.first_response}
+                              onChange={(e) =>
+                                updateSlaPriority(
+                                  priority as keyof typeof slaConfig.priorities,
+                                  'first_response',
+                                  parseInt(e.target.value) || 0
+                                )
+                              }
+                              className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            />
+                            <span className="text-xs text-gray-500">
+                              {formatMinutesToHours(config.first_response)}
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                            Resolução (min)
+                          </label>
+                          <div className="flex gap-1 items-center">
+                            <input
+                              type="number"
+                              min="1"
+                              value={config.resolution}
+                              onChange={(e) =>
+                                updateSlaPriority(
+                                  priority as keyof typeof slaConfig.priorities,
+                                  'resolution',
+                                  parseInt(e.target.value) || 0
+                                )
+                              }
+                              className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            />
+                            <span className="text-xs text-gray-500">
+                              {formatMinutesToHours(config.resolution)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

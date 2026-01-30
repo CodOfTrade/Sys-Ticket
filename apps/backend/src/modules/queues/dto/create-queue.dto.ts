@@ -107,4 +107,26 @@ export class CreateQueueDto {
   @IsOptional()
   @Min(0)
   display_order?: number;
+
+  @ApiPropertyOptional({
+    description: 'Configuração de SLA específica da fila. Se null, usa o SLA padrão do service_desk.',
+    example: {
+      priorities: {
+        low: { first_response: 480, resolution: 2880 },
+        medium: { first_response: 240, resolution: 1440 },
+        high: { first_response: 120, resolution: 480 },
+        urgent: { first_response: 60, resolution: 240 },
+      },
+    },
+  })
+  @IsObject()
+  @IsOptional()
+  sla_config?: {
+    priorities: {
+      low: { first_response: number; resolution: number };
+      medium: { first_response: number; resolution: number };
+      high: { first_response: number; resolution: number };
+      urgent: { first_response: number; resolution: number };
+    };
+  } | null;
 }
