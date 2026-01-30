@@ -57,7 +57,7 @@ export function CompanyInfoSettings() {
 
       // Buscar info da empresa
       try {
-        const response = await api.get(`/service-desks/${currentUser.service_desk_id}/company-info`);
+        const response = await api.get(`/v1/service-desks/${currentUser.service_desk_id}/company-info`);
         if (response.data?.data) {
           setFormData(response.data.data);
         }
@@ -202,7 +202,7 @@ export function CompanyInfoSettings() {
       setSaving(true);
 
       // Salvar info da empresa
-      await api.patch(`/service-desks/${currentUser.service_desk_id}/company-info`, formData);
+      await api.patch(`/v1/service-desks/${currentUser.service_desk_id}/company-info`, formData);
 
       // Salvar horário comercial (junto com SLA priorities existentes)
       const slaConfigToSave = {
