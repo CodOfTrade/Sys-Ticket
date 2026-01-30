@@ -57,7 +57,7 @@ export class UpdateTicketAppointmentsStructure1738298100000 implements Migration
     for (const appointment of appointments) {
       // Buscar um pricing_config adequado para este appointment
       // Tentar encontrar baseado no nome (heurística)
-      let pricingConfig = null;
+      let pricingConfig: any[] | null = null;
 
       // Tentar encontrar por modalidade correspondente no nome
       if (appointment.service_modality === 'internal') {
