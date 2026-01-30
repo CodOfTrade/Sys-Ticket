@@ -34,6 +34,7 @@ import {
   ClipboardCheck,
   Send,
   RotateCcw,
+  Layers,
 } from 'lucide-react';
 import { ticketService, TicketFollower } from '@/services/ticket.service';
 import { ticketAttachmentsService } from '@/services/ticket-attachments.service';
@@ -51,6 +52,7 @@ import { clientService, Client, ClientContract } from '@/services/client.service
 import { userService, User as UserType } from '@/services/user.service';
 import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
 import { serviceCatalogService, ServiceCatalog, ServiceCategory } from '@/services/service-catalog.service';
+import { queueService } from '@/services/queue.service';
 
 type TabType = 'appointments' | 'communication' | 'valuation' | 'checklists' | 'approval' | 'history';
 
@@ -171,6 +173,7 @@ export default function TicketDetails() {
   const [activeTab, setActiveTab] = useState<TabType>('appointments');
   const [showAttachments, setShowAttachments] = useState(false);
   const [showFollowers, setShowFollowers] = useState(false);
+  const [showQueueModal, setShowQueueModal] = useState(false);
   const [isEditingFields, setIsEditingFields] = useState(false);
 
   // Estados para modais de edição
@@ -215,6 +218,7 @@ export default function TicketDetails() {
   const [showServiceCatalogModal, setShowServiceCatalogModal] = useState(false);
   const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedQueueId, setSelectedQueueId] = useState<string | null>(null);
 
   // Buscar detalhes do ticket
   const { data: ticket, isLoading, error } = useQuery({
@@ -268,6 +272,13 @@ export default function TicketDetails() {
     queryKey: ['service-categories', selectedCatalogId],
     queryFn: () => serviceCatalogService.getCategoriesByCatalog(selectedCatalogId!),
     enabled: !!selectedCatalogId && showServiceCatalogModal,
+  });
+
+  // Buscar filas de atendimento
+  const { data: queues = [] } = useQuery({
+    queryKey: ['queues', ticket?.service_desk_id],
+    queryFn: () => queueService.getAll(ticket?.service_desk_id),
+    enabled: !!ticket?.service_desk_id,
   });
 
   // Buscar comentários para verificar mensagens não lidas
@@ -445,6 +456,23 @@ export default function TicketDetails() {
     },
   });
 
+  // Mutation para atualizar fila
+  const updateQueueMutation = useMutation({
+    mutationFn: (queueId: string | null) => {
+      return ticketService.update(id!, { queue_id: queueId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', id] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      setShowQueueModal(false);
+      alert('Fila atualizada com sucesso!');
+    },
+    onError: (error: any) => {
+      console.error('Erro ao atualizar fila:', error);
+      alert('Erro ao atualizar fila: ' + (error.response?.data?.message || error.message));
+    },
+  });
+
   // Mutation para adicionar seguidor
   const addFollowerMutation = useMutation({
     mutationFn: (data: { email: string; name?: string }) => ticketService.addFollower(id!, data),
@@ -492,6 +520,13 @@ export default function TicketDetails() {
       setSelectedCategoryId(ticket.service_category_id || null);
     }
   }, [showServiceCatalogModal, ticket]);
+
+  // Inicializar valor da fila quando abrir modal
+  useEffect(() => {
+    if (showQueueModal && ticket) {
+      setSelectedQueueId(ticket.queue_id || null);
+    }
+  }, [showQueueModal, ticket]);
 
   // Fechar dropdowns ao clicar fora
   useEffect(() => {
@@ -1119,6 +1154,48 @@ export default function TicketDetails() {
                   </div>
                 </div>
 
+                {/* Fila de Atendimento */}
+                <div className="flex items-center gap-2 text-sm">
+                  <Layers className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-gray-600 dark:text-gray-400">Fila</p>
+                    {ticket.queue ? (
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="px-2 py-0.5 rounded text-xs font-medium"
+                          style={{
+                            backgroundColor: `${ticket.queue.color}20`,
+                            color: ticket.queue.color
+                          }}
+                        >
+                          {ticket.queue.name}
+                        </span>
+                        {!isTicketLocked && (
+                          <button
+                            onClick={() => setShowQueueModal(true)}
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                            title="Editar fila"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => !isTicketLocked && setShowQueueModal(true)}
+                        className={`text-sm ${
+                          isTicketLocked
+                            ? 'text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                            : 'text-blue-600 dark:text-blue-400 hover:underline'
+                        }`}
+                        disabled={isTicketLocked}
+                      >
+                        Sem fila - Clique para atribuir
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Seguidores do Ticket */}
                 <div className="flex items-center gap-2 text-sm">
                   <Users className="w-4 h-4 text-gray-400" />
@@ -1635,6 +1712,79 @@ export default function TicketDetails() {
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {updateServiceCatalogMutation.isPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edição de Fila */}
+      {showQueueModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
+              <Layers className="w-6 h-6 text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Fila de Atendimento
+              </h3>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Fila
+                </label>
+                <select
+                  value={selectedQueueId || ''}
+                  onChange={(e) => setSelectedQueueId(e.target.value || null)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Nenhuma (Remover da fila)</option>
+                  {queues
+                    .filter((q: any) => q.is_active)
+                    .map((queue: any) => (
+                      <option key={queue.id} value={queue.id}>
+                        {queue.name}
+                      </option>
+                    ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {selectedQueueId ? (
+                    <>
+                      {queues.find((q: any) => q.id === selectedQueueId)?.auto_assignment_config?.enabled
+                        ? 'Esta fila tem atribuição automática habilitada'
+                        : 'Esta fila não tem atribuição automática'}
+                    </>
+                  ) : (
+                    'Selecione uma fila para atribuir o ticket'
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowQueueModal(false);
+                  setSelectedQueueId(ticket?.queue_id || null);
+                }}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => updateQueueMutation.mutate(selectedQueueId)}
+                disabled={updateQueueMutation.isPending}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {updateQueueMutation.isPending ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     Salvando...
