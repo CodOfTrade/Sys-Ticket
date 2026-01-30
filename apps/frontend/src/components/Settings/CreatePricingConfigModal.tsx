@@ -156,7 +156,7 @@ export function CreatePricingConfigModal({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      internal_hourly_rate: parseFloat(e.target.value),
+                      internal_hourly_rate: parseFloat(e.target.value) || 0,
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -174,7 +174,7 @@ export function CreatePricingConfigModal({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      internal_minimum_charge: parseFloat(e.target.value),
+                      internal_minimum_charge: parseFloat(e.target.value) || 0,
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -191,7 +191,7 @@ export function CreatePricingConfigModal({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      internal_threshold: parseInt(e.target.value),
+                      internal_threshold: parseInt(e.target.value) || 60,
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -234,7 +234,7 @@ export function CreatePricingConfigModal({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      remote_hourly_rate: parseFloat(e.target.value),
+                      remote_hourly_rate: parseFloat(e.target.value) || 0,
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -252,7 +252,7 @@ export function CreatePricingConfigModal({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      remote_minimum_charge: parseFloat(e.target.value),
+                      remote_minimum_charge: parseFloat(e.target.value) || 0,
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -269,7 +269,7 @@ export function CreatePricingConfigModal({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      remote_threshold: parseInt(e.target.value),
+                      remote_threshold: parseInt(e.target.value) || 60,
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -314,7 +314,7 @@ export function CreatePricingConfigModal({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      external_hourly_rate: parseFloat(e.target.value),
+                      external_hourly_rate: parseFloat(e.target.value) || 0,
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -332,7 +332,7 @@ export function CreatePricingConfigModal({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      external_minimum_charge: parseFloat(e.target.value),
+                      external_minimum_charge: parseFloat(e.target.value) || 0,
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -349,7 +349,7 @@ export function CreatePricingConfigModal({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      external_threshold: parseInt(e.target.value),
+                      external_threshold: parseInt(e.target.value) || 60,
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
