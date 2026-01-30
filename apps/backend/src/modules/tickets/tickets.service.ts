@@ -141,6 +141,25 @@ export class TicketsService {
           }
         }
 
+        // Processar followers (se fornecidos)
+        if (followers && followers.length > 0) {
+          for (const follower of followers) {
+            try {
+              // Verificar se é UUID (user_id) ou email
+              const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(follower);
+
+              await this.addFollower(
+                savedTicket.id,
+                isUUID ? { user_id: follower } : { email: follower },
+                createdById,
+              );
+            } catch (error) {
+              this.logger.warn(`Erro ao adicionar follower ${follower} ao ticket ${ticketNumber}:`, error.message);
+              // Continua mesmo se falhar para um follower específico
+            }
+          }
+        }
+
         // Registrar no histórico
         await this.ticketHistoryService.recordCreated(
           savedTicket.id,
