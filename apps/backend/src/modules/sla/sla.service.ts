@@ -117,6 +117,13 @@ export class SlaService {
     }
 
     const priorityConfig = slaConfig.priorities[priority];
+
+    this.logger.debug(
+      `Calculando SLA - Prioridade: ${priority}, ` +
+      `Config encontrada: ${JSON.stringify(priorityConfig)}, ` +
+      `Todas prioridades disponíveis: ${Object.keys(slaConfig.priorities).join(', ')}`
+    );
+
     if (!priorityConfig) {
       this.logger.warn(`Configuração de SLA não encontrada para prioridade: ${priority}`);
       return {
