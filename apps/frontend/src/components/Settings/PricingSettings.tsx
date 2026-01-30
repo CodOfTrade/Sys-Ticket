@@ -3,11 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import pricingConfigService from '@/services/pricing-config.service';
-import {
-  PricingConfig,
-  ServiceModality,
-  SERVICE_MODALITY_LABELS,
-} from '@/types/ticket-details.types';
+import { ServiceModality } from '@/types/ticket-details.types';
 import { ModalityConfigSection } from './ModalityConfigSection';
 import { CreatePricingConfigModal } from './CreatePricingConfigModal';
 

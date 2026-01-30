@@ -127,7 +127,8 @@
       "Bash(grep:*)",
       "Bash(npm run build:win:*)",
       "Bash(ls:*)",
-      "Bash(ping:*)"
+      "Bash(ping:*)",
+      "Bash(git rm:*)"
     ]
   }
 }
