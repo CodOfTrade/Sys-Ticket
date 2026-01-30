@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Building, Save, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { toast } from 'react-hot-toast';
-import { api } from '@/lib/api';
+import { api } from '@/services/api';
 
 interface CompanyInfo {
   company_trade_name?: string;

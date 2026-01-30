@@ -4,8 +4,6 @@ import { slaService } from '@/services/sla.service';
 import {
   UpdateSlaConfigDto,
   SlaPriorityConfig,
-  BusinessHoursSchedule,
-  BusinessHoursPeriod,
   WEEKDAY_LABELS,
 } from '@/types/sla.types';
 import { useAuthStore } from '@/store/auth.store';
