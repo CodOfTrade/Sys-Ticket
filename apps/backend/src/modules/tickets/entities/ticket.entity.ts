@@ -194,16 +194,16 @@ export class Ticket {
   contract_coverage: ContractCoverage;
 
   // SLA
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   sla_first_response_due: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   sla_resolution_due: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   first_response_at: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   resolved_at: Date;
 
   @Column({ type: 'boolean', default: false })
