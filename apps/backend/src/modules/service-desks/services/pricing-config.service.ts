@@ -6,42 +6,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { PricingConfig, ServiceType, PricingType } from '../entities/pricing-config.entity';
-
-export interface CreatePricingConfigDto {
-  service_desk_id: string;
-  service_type: ServiceType;
-  pricing_type?: PricingType;
-  hourly_rate_normal: number;
-  hourly_rate_extra?: number;
-  hourly_rate_weekend?: number;
-  hourly_rate_holiday?: number;
-  hourly_rate_night?: number;
-  fixed_price?: number;
-  contract_percentage?: number;
-  minimum_charge?: number;
-  minimum_charge_threshold_minutes?: number;
-  charge_excess_per_minute?: boolean;
-  round_to_minutes?: number;
-  description?: string;
-}
-
-export interface UpdatePricingConfigDto {
-  pricing_type?: PricingType;
-  hourly_rate_normal?: number;
-  hourly_rate_extra?: number;
-  hourly_rate_weekend?: number;
-  hourly_rate_holiday?: number;
-  hourly_rate_night?: number;
-  fixed_price?: number;
-  contract_percentage?: number;
-  minimum_charge?: number;
-  minimum_charge_threshold_minutes?: number;
-  charge_excess_per_minute?: boolean;
-  round_to_minutes?: number;
-  active?: boolean;
-  description?: string;
-}
+import { PricingConfig } from '../entities/pricing-config.entity';
+import { PricingModalityConfig } from '../entities/pricing-modality-config.entity';
+import { CreatePricingConfigDto } from '../dto/create-pricing-config.dto';
+import { UpdatePricingConfigDto } from '../dto/update-pricing-config.dto';
 
 @Injectable()
 export class PricingConfigService {
@@ -50,32 +18,41 @@ export class PricingConfigService {
   constructor(
     @InjectRepository(PricingConfig)
     private pricingConfigRepository: Repository<PricingConfig>,
+    @InjectRepository(PricingModalityConfig)
+    private modalityConfigRepository: Repository<PricingModalityConfig>,
   ) {}
 
   /**
-   * Cria nova configuração de preço
+   * Cria nova classificação de atendimento
    */
   async create(createDto: CreatePricingConfigDto): Promise<PricingConfig> {
     try {
-      // Verificar se já existe configuração para este service_desk + service_type
+      // Verificar se já existe classificação com este nome nesta mesa de serviço
       const existing = await this.pricingConfigRepository.findOne({
         where: {
           service_desk_id: createDto.service_desk_id,
-          service_type: createDto.service_type as any,
+          name: createDto.name,
         },
       });
 
       if (existing) {
         throw new BadRequestException(
-          `Já existe configuração para ${createDto.service_type} nesta mesa de serviço`,
+          `Já existe uma classificação com o nome "${createDto.name}" nesta mesa de serviço`,
         );
       }
 
-      const config = this.pricingConfigRepository.create(createDto);
+      const config = this.pricingConfigRepository.create({
+        service_desk_id: createDto.service_desk_id,
+        name: createDto.name,
+        description: createDto.description,
+        active: createDto.active ?? true,
+        modality_configs: createDto.modality_configs,
+      });
+
       const saved = await this.pricingConfigRepository.save(config);
 
       this.logger.log(
-        `Configuração de preço criada: ${saved.service_type} - R$ ${saved.hourly_rate_normal}/h`,
+        `Classificação de atendimento criada: "${saved.name}" com ${saved.modality_configs.length} modalidades`,
       );
 
       return saved;
@@ -83,92 +60,124 @@ export class PricingConfigService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      this.logger.error('Erro ao criar configuração de preço', error);
-      throw new BadRequestException('Erro ao criar configuração de preço');
+      this.logger.error('Erro ao criar classificação de atendimento', error);
+      throw new BadRequestException('Erro ao criar classificação de atendimento');
     }
   }
 
   /**
-   * Lista todas as configurações
+   * Lista todas as classificações
    */
   async findAll(serviceDeskId?: string): Promise<PricingConfig[]> {
-    const where = serviceDeskId ? { service_desk_id: serviceDeskId } : {};
+    const where: any = {};
+    if (serviceDeskId) {
+      where.service_desk_id = serviceDeskId;
+    }
 
     return this.pricingConfigRepository.find({
       where,
-      relations: ['service_desk'],
-      order: { service_type: 'ASC' },
+      relations: ['modality_configs'],
+      order: { name: 'ASC' },
     });
   }
 
   /**
-   * Busca uma configuração por ID
+   * Busca uma classificação por ID
    */
   async findOne(id: string): Promise<PricingConfig> {
     const config = await this.pricingConfigRepository.findOne({
       where: { id },
-      relations: ['service_desk'],
+      relations: ['modality_configs'],
     });
 
     if (!config) {
-      throw new NotFoundException(`Configuração ${id} não encontrada`);
+      throw new NotFoundException(`Classificação ${id} não encontrada`);
     }
 
     return config;
   }
 
   /**
-   * Busca configuração por mesa e tipo de serviço
-   */
-  async findByServiceDeskAndType(
-    serviceDeskId: string,
-    serviceType: string,
-  ): Promise<PricingConfig | null> {
-    return this.pricingConfigRepository.findOne({
-      where: {
-        service_desk_id: serviceDeskId,
-        service_type: serviceType as any,
-        active: true,
-      },
-    });
-  }
-
-  /**
-   * Atualiza configuração
+   * Atualiza classificação
    */
   async update(id: string, updateDto: UpdatePricingConfigDto): Promise<PricingConfig> {
     try {
       const config = await this.findOne(id);
 
-      Object.assign(config, updateDto);
+      // Atualizar campos básicos
+      if (updateDto.name !== undefined) {
+        config.name = updateDto.name;
+      }
+      if (updateDto.description !== undefined) {
+        config.description = updateDto.description;
+      }
+      if (updateDto.active !== undefined) {
+        config.active = updateDto.active;
+      }
 
+      // Atualizar configurações de modalidades se fornecidas
+      if (updateDto.modality_configs && updateDto.modality_configs.length > 0) {
+        for (const modalityDto of updateDto.modality_configs) {
+          // Encontrar modalidade existente
+          const existingModality = config.modality_configs.find(
+            (m) => m.modality === modalityDto.modality,
+          );
+
+          if (existingModality) {
+            // Atualizar valores
+            if (modalityDto.hourly_rate !== undefined) {
+              existingModality.hourly_rate = modalityDto.hourly_rate;
+            }
+            if (modalityDto.minimum_charge !== undefined) {
+              existingModality.minimum_charge = modalityDto.minimum_charge;
+            }
+            if (modalityDto.minimum_charge_threshold_minutes !== undefined) {
+              existingModality.minimum_charge_threshold_minutes =
+                modalityDto.minimum_charge_threshold_minutes;
+            }
+            if (modalityDto.charge_excess_per_minute !== undefined) {
+              existingModality.charge_excess_per_minute =
+                modalityDto.charge_excess_per_minute;
+            }
+            if (modalityDto.round_to_minutes !== undefined) {
+              existingModality.round_to_minutes = modalityDto.round_to_minutes;
+            }
+
+            // Salvar modalidade
+            await this.modalityConfigRepository.save(existingModality);
+          }
+        }
+      }
+
+      // Salvar config
       const updated = await this.pricingConfigRepository.save(config);
 
-      this.logger.log(`Configuração de preço ${id} atualizada`);
+      this.logger.log(`Classificação de atendimento "${config.name}" atualizada`);
 
-      return updated;
+      // Recarregar com relações
+      return this.findOne(id);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Erro ao atualizar configuração ${id}`, error);
-      throw new BadRequestException('Erro ao atualizar configuração');
+      this.logger.error(`Erro ao atualizar classificação ${id}`, error);
+      throw new BadRequestException('Erro ao atualizar classificação');
     }
   }
 
   /**
-   * Remove configuração
+   * Remove classificação
    */
   async remove(id: string): Promise<void> {
     const config = await this.findOne(id);
 
     await this.pricingConfigRepository.remove(config);
 
-    this.logger.log(`Configuração de preço ${id} removida`);
+    this.logger.log(`Classificação de atendimento "${config.name}" removida`);
   }
 
   /**
-   * Calcular preço baseado na configuração e duração
+   * Calcular preço baseado na configuração de modalidade e duração
    *
    * Regras:
    * - Se duração <= minimum_charge_threshold_minutes, cobra minimum_charge
@@ -183,66 +192,51 @@ export class PricingConfigService {
    *   - Exemplo: 61 min = mínimo + 1h extra
    *   - Exemplo: 121 min = mínimo + 2h extra
    *
-   * Exemplo com valor_hora = R$ 80, mínimo = R$ 80, threshold = 60 min:
-   *
-   * Por Minuto:
-   * - 30 min → R$ 80 (valor mínimo)
-   * - 75 min → R$ 80 + (15/60 × 80) = R$ 80 + R$ 20 = R$ 100
-   *
-   * Por Hora Completa:
-   * - 30 min → R$ 80 (valor mínimo)
-   * - 61 min → R$ 80 + R$ 80 = R$ 160 (passou 1 min = 1h extra)
-   * - 75 min → R$ 80 + R$ 80 = R$ 160 (passou 15 min = 1h extra)
-   * - 121 min → R$ 80 + R$ 160 = R$ 240 (passou 61 min = 2h extra)
+   * @param modalityConfig - Configuração da modalidade específica (interno, remoto ou externo)
+   * @param durationMinutes - Duração em minutos
+   * @returns Objeto com unit_price, total_amount e description
    */
-  calculatePrice(config: PricingConfig, durationMinutes: number): {
-    basePrice: number;
-    excessPrice: number;
-    totalPrice: number;
-    appliedRate: number;
+  calculatePrice(
+    modalityConfig: PricingModalityConfig,
+    durationMinutes: number,
+  ): {
+    unit_price: number;
+    total_amount: number;
     description: string;
   } {
-    const hourlyRate = Number(config.hourly_rate_normal) || 0;
-    const minimumCharge = Number(config.minimum_charge) || 0;
-    const thresholdMinutes = config.minimum_charge_threshold_minutes || 60;
-    const chargePerMinute = config.charge_excess_per_minute ?? false;
+    const hourlyRate = Number(modalityConfig.hourly_rate) || 0;
+    const minimumCharge = Number(modalityConfig.minimum_charge) || 0;
+    const thresholdMinutes = modalityConfig.minimum_charge_threshold_minutes || 60;
+    const chargePerMinute = modalityConfig.charge_excess_per_minute ?? false;
+
+    let totalAmount: number;
+    let description: string;
 
     // Se duração <= threshold, cobra valor mínimo
     if (durationMinutes <= thresholdMinutes) {
-      return {
-        basePrice: minimumCharge,
-        excessPrice: 0,
-        totalPrice: minimumCharge,
-        appliedRate: hourlyRate,
-        description: `Cobrança mínima aplicada (${durationMinutes} min ≤ ${thresholdMinutes} min)`,
-      };
-    }
-
-    // Duração excedente
-    const excessMinutes = durationMinutes - thresholdMinutes;
-    let excessPrice: number;
-    let description: string;
-
-    if (chargePerMinute) {
-      // Por Minuto: cobra proporcionalmente
-      const minuteRate = hourlyRate / 60;
-      excessPrice = excessMinutes * minuteRate;
-      description = `Base: R$ ${minimumCharge.toFixed(2)} + Excedente: ${excessMinutes} min × R$ ${minuteRate.toFixed(2)}/min`;
+      totalAmount = minimumCharge;
+      description = `${durationMinutes} min → R$ ${minimumCharge.toFixed(2)} (valor mínimo)`;
     } else {
-      // Por Hora Completa: arredonda para cima
-      // Se passou 1 minuto do threshold, já cobra 1 hora completa
-      const excessHours = Math.ceil(excessMinutes / 60);
-      excessPrice = excessHours * hourlyRate;
-      description = `Base: R$ ${minimumCharge.toFixed(2)} + Excedente: ${excessHours}h × R$ ${hourlyRate.toFixed(2)}/h`;
-    }
+      // Duração excedente
+      const excessMinutes = durationMinutes - thresholdMinutes;
 
-    const totalPrice = minimumCharge + excessPrice;
+      if (chargePerMinute) {
+        // Por Minuto: cobra proporcionalmente
+        const excessCost = (excessMinutes / 60) * hourlyRate;
+        totalAmount = minimumCharge + excessCost;
+        description = `${thresholdMinutes} min → R$ ${minimumCharge.toFixed(2)} (mínimo) + ${excessMinutes} min → R$ ${excessCost.toFixed(2)} = R$ ${totalAmount.toFixed(2)}`;
+      } else {
+        // Por Hora Completa: arredonda para cima
+        const excessHours = Math.ceil(excessMinutes / 60);
+        const excessCost = excessHours * hourlyRate;
+        totalAmount = minimumCharge + excessCost;
+        description = `${thresholdMinutes} min → R$ ${minimumCharge.toFixed(2)} (mínimo) + ${excessHours}h → R$ ${excessCost.toFixed(2)} = R$ ${totalAmount.toFixed(2)}`;
+      }
+    }
 
     return {
-      basePrice: minimumCharge,
-      excessPrice: Math.round(excessPrice * 100) / 100,
-      totalPrice: Math.round(totalPrice * 100) / 100,
-      appliedRate: hourlyRate,
+      unit_price: hourlyRate,
+      total_amount: Math.round(totalAmount * 100) / 100,
       description,
     };
   }

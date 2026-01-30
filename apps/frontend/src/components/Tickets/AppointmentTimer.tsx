@@ -3,13 +3,16 @@ import { Play, Square, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { appointmentsService } from '@/services/ticket-details.service';
 import { clientService } from '@/services/client.service';
+import pricingConfigService from '@/services/pricing-config.service';
 import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
 import {
   AppointmentType,
   ServiceCoverageType,
-  ServiceType,
-  ServiceLevel,
+  ServiceModality,
+  SERVICE_MODALITY_LABELS,
+  PricingConfig,
 } from '@/types/ticket-details.types';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AppointmentTimerProps {
   ticketId: string;
@@ -18,18 +21,18 @@ interface AppointmentTimerProps {
 
 export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [showStopModal, setShowStopModal] = useState(false);
   const [formData, setFormData] = useState({
     coverage_type: ServiceCoverageType.BILLABLE, // Avulso por padrão
-    service_level: ServiceLevel.N1, // N1 por padrão (para contratos)
-    service_type: ServiceType.REMOTE, // Remoto por padrão (para avulso)
-    modality: ServiceType.REMOTE, // NOVO: Modalidade separada
-    contract_id: '', // NOVO: ID do contrato selecionado
+    pricing_config_id: '', // ID da classificação escolhida
+    service_modality: ServiceModality.REMOTE, // Modalidade (interno, remoto, externo)
+    contract_id: '', // ID do contrato selecionado
     is_warranty: false,
     manual_price_override: false,
     manual_unit_price: 0,
     description: '',
-    send_as_response: false, // NOVO: Enviar como resposta ao cliente
+    send_as_response: false, // Enviar como resposta ao cliente
   });
 
   // Estado para preço calculado
@@ -48,6 +51,16 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
     refetchInterval: 5000, // Atualizar a cada 5 segundos
   });
 
+  // Buscar classificações de precificação
+  const { data: pricingConfigs = [] } = useQuery({
+    queryKey: ['pricing-configs', user?.service_desk_id],
+    queryFn: () => pricingConfigService.getAll(user?.service_desk_id),
+    enabled: !!user?.service_desk_id,
+  });
+
+  // Filtrar apenas classificações ativas
+  const activePricingConfigs = pricingConfigs.filter((config: PricingConfig) => config.active);
+
   // Calcular preço automaticamente quando campos mudarem (no modal de parar)
   useEffect(() => {
     const calculatePrice = async () => {
@@ -55,7 +68,7 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
       if (!showStopModal || !activeTimer) return;
 
       // Validar campos obrigatórios
-      if (!formData.modality || !formData.coverage_type) return;
+      if (!formData.pricing_config_id || !formData.service_modality || !formData.coverage_type) return;
 
       // Se for CONTRATO, zerar o valor (não há cobrança)
       if (formData.coverage_type === ServiceCoverageType.CONTRACT) {
@@ -89,7 +102,8 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
           ticket_id: ticketId,
           start_time: startHour,
           end_time: endHour,
-          service_type: formData.modality, // Modalidade (Remoto/Presencial/Interno)
+          pricing_config_id: formData.pricing_config_id,
+          service_modality: formData.service_modality,
           coverage_type: formData.coverage_type,
           is_warranty: formData.is_warranty,
           manual_price_override: formData.manual_price_override,
@@ -109,7 +123,8 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
     showStopModal,
     activeTimer,
     ticketId,
-    formData.modality,
+    formData.pricing_config_id,
+    formData.service_modality,
     formData.coverage_type,
     formData.is_warranty,
     formData.manual_price_override,
@@ -143,14 +158,14 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
     mutationFn: () =>
       appointmentsService.stopTimer({
         appointment_id: activeTimer!.id,
+        pricing_config_id: formData.pricing_config_id, // OBRIGATÓRIO
+        service_modality: formData.service_modality, // OBRIGATÓRIO
         coverage_type: formData.coverage_type,
-        service_level: formData.service_level,
-        service_type: formData.service_type,
         is_warranty: formData.is_warranty,
         manual_price_override: formData.manual_price_override,
         manual_unit_price: formData.manual_price_override ? formData.manual_unit_price : undefined,
         description: formData.description || undefined,
-        send_as_response: formData.send_as_response, // NOVO: Enviar como resposta ao cliente
+        send_as_response: formData.send_as_response,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['active-timer'] });
@@ -163,9 +178,8 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
   const resetForm = () => {
     setFormData({
       coverage_type: ServiceCoverageType.BILLABLE,
-      service_level: ServiceLevel.N1,
-      service_type: ServiceType.REMOTE,
-      modality: ServiceType.REMOTE,
+      pricing_config_id: '',
+      service_modality: ServiceModality.REMOTE,
       contract_id: '',
       is_warranty: false,
       manual_price_override: false,
@@ -326,12 +340,12 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
                 </p>
               </div>
 
-              {/* 5. Tipo de contrato (muda baseado no tipo de atendimento) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Tipo de contrato <span className="text-red-500">*</span>
-                </label>
-                {formData.coverage_type === ServiceCoverageType.CONTRACT ? (
+              {/* Tipo de Cobertura: Contrato vs Avulso */}
+              {formData.coverage_type === ServiceCoverageType.CONTRACT ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Contrato <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={formData.contract_id}
                     onChange={(e) =>
@@ -354,53 +368,61 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
                       <option value="" disabled>Nenhum contrato encontrado</option>
                     )}
                   </select>
-                ) : (
-                  <select
-                    value={formData.service_type}
-                    onChange={(e) =>
-                      setFormData({ ...formData, service_type: e.target.value as ServiceType })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    required
-                  >
-                    <option value="">Selecione</option>
-                    <option value={ServiceType.REMOTE}>Atendimento avulso N1</option>
-                    <option value={ServiceType.EXTERNAL}>Atendimento avulso N2</option>
-                    <option value={ServiceType.INTERNAL}>Demanda interna</option>
-                    <option value={ServiceType.OUTSOURCED_N1}>Terceirizado N1</option>
-                    <option value={ServiceType.OUTSOURCED_N2}>Terceirizado N2</option>
-                  </select>
-                )}
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {formData.coverage_type === ServiceCoverageType.CONTRACT
-                    ? 'Contratos vinculados ao cliente'
-                    : 'Tipos de atendimento avulso'}
-                </p>
-              </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Contratos vinculados ao cliente
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Classificação do Atendimento (dinâmico - baseado em pricing_configs) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Classificação do atendimento <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.pricing_config_id}
+                      onChange={(e) => {
+                        setFormData({ ...formData, pricing_config_id: e.target.value });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    >
+                      <option value="">Selecione uma classificação...</option>
+                      {activePricingConfigs.map((config: PricingConfig) => (
+                        <option key={config.id} value={config.id}>
+                          {config.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Ex: Atendimento avulso N1, Atendimento avulso N2, Demanda interna, etc
+                    </p>
+                  </div>
 
-              {/* 6. Modalidade (NOVO - campo separado) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Modalidade <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.modality}
-                  onChange={(e) =>
-                    setFormData({ ...formData, modality: e.target.value as ServiceType })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  required
-                >
-                  <option value={ServiceType.REMOTE}>Remoto</option>
-                  <option value={ServiceType.EXTERNAL}>Presencial/Externo</option>
-                  <option value={ServiceType.INTERNAL}>Interno</option>
-                  <option value={ServiceType.OUTSOURCED_N1}>Terceirizado N1</option>
-                  <option value={ServiceType.OUTSOURCED_N2}>Terceirizado N2</option>
-                </select>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Como o atendimento foi realizado
-                </p>
-              </div>
+                  {/* Modalidade (FIXA - 3 opções) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Modalidade <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.service_modality}
+                      onChange={(e) => {
+                        setFormData({ ...formData, service_modality: e.target.value as ServiceModality });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    >
+                      <option value="">Selecione uma modalidade...</option>
+                      <option value={ServiceModality.INTERNAL}>{SERVICE_MODALITY_LABELS[ServiceModality.INTERNAL]}</option>
+                      <option value={ServiceModality.REMOTE}>{SERVICE_MODALITY_LABELS[ServiceModality.REMOTE]}</option>
+                      <option value={ServiceModality.EXTERNAL}>{SERVICE_MODALITY_LABELS[ServiceModality.EXTERNAL]}</option>
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Define o valor por hora e as regras de cobrança
+                    </p>
+                  </div>
+                </>
+              )}
 
               {/* 6. Checkboxes: Garantia e Valor manual */}
               <div className="space-y-3">
@@ -479,7 +501,7 @@ export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) 
                   </p>
                 ) : calculatedPrice ? (
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    💰 <strong>R$ {calculatedPrice.unit_price.toFixed(2)}/h</strong> ({formData.service_type === 'remote' ? 'Remoto' : formData.service_type === 'external' ? 'Presencial' : formData.service_type === 'outsourced_n1' ? 'Terceirizado N1' : formData.service_type === 'outsourced_n2' ? 'Terceirizado N2' : 'Interno'}) • {calculatedPrice.duration_hours.toFixed(2)}h
+                    💰 <strong>R$ {calculatedPrice.unit_price.toFixed(2)}/h</strong> ({formData.service_modality ? SERVICE_MODALITY_LABELS[formData.service_modality as ServiceModality] : 'N/A'}) • {calculatedPrice.duration_hours.toFixed(2)}h
                     {formData.manual_price_override && (
                       <span className="text-orange-600 dark:text-orange-400 ml-1">(Valor manual)</span>
                     )}

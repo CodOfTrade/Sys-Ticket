@@ -10,9 +10,10 @@ import {
   StartTimerDto,
   StopTimerDto,
   UpdateAppointmentDto,
+  CalculatePriceDto,
 } from '../dto/create-appointment.dto';
 import { PricingConfigService } from '../../service-desks/services/pricing-config.service';
-import { ServiceType, PricingConfig } from '../../service-desks/entities/pricing-config.entity';
+import { ServiceModality } from '../../service-desks/enums/service-modality.enum';
 import { TicketHistoryService } from './ticket-history.service';
 import { HistoryAction } from '../entities/ticket-history.entity';
 
@@ -27,8 +28,6 @@ export class TicketAppointmentsService {
     private commentRepository: Repository<TicketComment>,
     @InjectRepository(Ticket)
     private ticketsRepository: Repository<Ticket>,
-    @InjectRepository(PricingConfig)
-    private pricingRepository: Repository<PricingConfig>,
     @InjectRepository(TicketAttachment)
     private attachmentRepository: Repository<TicketAttachment>,
     private pricingConfigService: PricingConfigService,
@@ -50,8 +49,11 @@ export class TicketAppointmentsService {
       is_timer_based: false,
     });
 
-    // Calcular valor total
-    if (dto.unit_price) {
+    // Calcular preço automaticamente se fornecido pricing_config_id e service_modality
+    if (dto.pricing_config_id && dto.service_modality) {
+      await this.calculateAndApplyPrice(appointment);
+    } else if (dto.unit_price) {
+      // Fallback: usar unit_price manual se fornecido
       const hours = duration / 60;
       appointment.total_amount = hours * dto.unit_price;
     }
@@ -106,7 +108,6 @@ export class TicketAppointmentsService {
       created_by_id: userId,
       type: dto.type,
       coverage_type: dto.coverage_type,
-      service_type: dto.service_type || ServiceType.REMOTE,
       appointment_date: new Date().toISOString().split('T')[0],
       start_time: new Date().toTimeString().slice(0, 5),
       end_time: new Date().toTimeString().slice(0, 5),
@@ -158,14 +159,12 @@ export class TicketAppointmentsService {
     appointment.duration_minutes = duration;
 
     // Atualizar campos do formulário (obrigatórios)
-    appointment.service_type = dto.service_type;
+    appointment.pricing_config_id = dto.pricing_config_id;
+    appointment.service_modality = dto.service_modality;
     appointment.coverage_type = dto.coverage_type;
     appointment.send_as_response = dto.send_as_response || false;
 
     // Novos campos opcionais
-    if (dto.service_level) {
-      appointment.service_level = dto.service_level;
-    }
     if (dto.is_warranty !== undefined) {
       appointment.is_warranty = dto.is_warranty;
     }
@@ -236,41 +235,50 @@ export class TicketAppointmentsService {
         return;
       }
 
-      // Buscar configuração de pricing para o service_desk e service_type
-      const serviceDeskId = appointment.ticket?.service_desk_id;
-      if (!serviceDeskId) {
-        this.logger.warn(`Ticket ${appointment.ticket_id} não possui service_desk_id`);
+      // Verificar se tem pricing_config_id e service_modality
+      if (!appointment.pricing_config_id || !appointment.service_modality) {
+        this.logger.warn(
+          `Apontamento ${appointment.id} sem pricing_config_id ou service_modality - não é possível calcular preço`,
+        );
         return;
       }
 
-      const serviceType = appointment.service_type || ServiceType.REMOTE;
-      const pricingConfig = await this.pricingConfigService.findByServiceDeskAndType(
-        serviceDeskId,
-        serviceType,
+      // Buscar pricing config com modalidades
+      const pricingConfig = await this.pricingConfigService.findOne(
+        appointment.pricing_config_id,
       );
 
       if (!pricingConfig) {
         this.logger.warn(
-          `Nenhuma configuração de preço encontrada para service_desk ${serviceDeskId} e tipo ${serviceType}`,
+          `Configuração de preço ${appointment.pricing_config_id} não encontrada`,
+        );
+        return;
+      }
+
+      // Encontrar a configuração da modalidade específica
+      const modalityConfig = pricingConfig.modality_configs.find(
+        (m) => m.modality === appointment.service_modality,
+      );
+
+      if (!modalityConfig) {
+        this.logger.warn(
+          `Configuração de modalidade ${appointment.service_modality} não encontrada para pricing_config ${appointment.pricing_config_id}`,
         );
         return;
       }
 
       // Calcular preço
       const pricing = this.pricingConfigService.calculatePrice(
-        pricingConfig,
+        modalityConfig,
         appointment.duration_minutes,
       );
 
       // Aplicar no apontamento
-      appointment.unit_price = pricing.appliedRate;
-      appointment.total_amount = pricing.totalPrice;
-
-      // TODO: Aplicar multiplicador de nível (N1, N2) se necessário
-      // Isso dependerá de configuração adicional no pricing_config
+      appointment.unit_price = pricing.unit_price;
+      appointment.total_amount = pricing.total_amount;
 
       this.logger.log(
-        `Preço calculado para apontamento ${appointment.id}: R$ ${pricing.totalPrice.toFixed(2)} (${pricing.description})`,
+        `Preço calculado para apontamento ${appointment.id}: R$ ${pricing.total_amount.toFixed(2)} (${pricing.description})`,
       );
     } catch (error) {
       this.logger.error(`Erro ao calcular preço do apontamento ${appointment.id}`, error);
@@ -287,10 +295,10 @@ export class TicketAppointmentsService {
   ): Promise<void> {
     try {
       // Formatar labels
-      const serviceTypeLabels = {
-        [ServiceType.INTERNAL]: 'Interno',
-        [ServiceType.REMOTE]: 'Remoto',
-        [ServiceType.EXTERNAL]: 'Externo/Presencial',
+      const serviceModalityLabels = {
+        [ServiceModality.INTERNAL]: 'Interno',
+        [ServiceModality.REMOTE]: 'Remoto',
+        [ServiceModality.EXTERNAL]: 'Presencial externo',
       };
 
       const coverageTypeLabels = {
@@ -312,7 +320,11 @@ export class TicketAppointmentsService {
       let content = `**Apontamento registrado:**\n\n`;
       content += `📅 **Data:** ${dateFormatted}\n`;
       content += `⏰ **Horário:** ${appointment.start_time} às ${appointment.end_time} (${durationText})\n`;
-      content += `📍 **Classificação:** ${serviceTypeLabels[appointment.service_type]}\n`;
+
+      if (appointment.service_modality) {
+        content += `📍 **Modalidade:** ${serviceModalityLabels[appointment.service_modality]}\n`;
+      }
+
       content += `📋 **Tipo:** ${coverageTypeLabels[appointment.coverage_type]}\n`;
 
       if (appointment.description) {
@@ -369,7 +381,7 @@ export class TicketAppointmentsService {
   async findAll(ticketId: string) {
     const appointments = await this.appointmentRepository.find({
       where: { ticket_id: ticketId },
-      relations: ['user', 'created_by'],
+      relations: ['user', 'created_by', 'pricing_config', 'pricing_config.modality_configs'],
       order: { appointment_date: 'DESC', start_time: 'DESC' },
     });
 
@@ -394,7 +406,7 @@ export class TicketAppointmentsService {
   async findOne(id: string) {
     const appointment = await this.appointmentRepository.findOne({
       where: { id },
-      relations: ['user', 'ticket'],
+      relations: ['user', 'ticket', 'pricing_config', 'pricing_config.modality_configs'],
     });
 
     if (!appointment) {
@@ -428,12 +440,11 @@ export class TicketAppointmentsService {
       const startTime = dto.start_time || appointment.start_time;
       const endTime = dto.end_time || appointment.end_time;
       appointment.duration_minutes = this.calculateDuration(startTime, endTime);
-    }
 
-    // Recalcular valor total
-    if (dto.unit_price || (dto.start_time || dto.end_time)) {
-      const hours = appointment.duration_minutes / 60;
-      appointment.total_amount = hours * (dto.unit_price || appointment.unit_price);
+      // Recalcular preço com nova duração
+      if (appointment.pricing_config_id && appointment.service_modality) {
+        await this.calculateAndApplyPrice(appointment);
+      }
     }
 
     return this.appointmentRepository.save(appointment);
@@ -464,16 +475,7 @@ export class TicketAppointmentsService {
   /**
    * Calcular preço estimado de um apontamento (para preview no frontend)
    */
-  async calculatePriceEstimate(dto: {
-    ticket_id: string;
-    start_time: string;
-    end_time: string;
-    service_type: ServiceType;
-    coverage_type: ServiceCoverageType;
-    is_warranty?: boolean;
-    manual_price_override?: boolean;
-    manual_unit_price?: number;
-  }): Promise<{
+  async calculatePriceEstimate(dto: CalculatePriceDto): Promise<{
     duration_minutes: number;
     duration_hours: number;
     unit_price: number;
@@ -506,58 +508,44 @@ export class TicketAppointmentsService {
       };
     }
 
-    // Buscar ticket para pegar service_desk_id
-    const ticket = await this.ticketsRepository.findOne({
-      where: { id: dto.ticket_id },
-      relations: ['service_desk'],
-    });
+    // Buscar pricing config
+    try {
+      const pricingConfig = await this.pricingConfigService.findOne(dto.pricing_config_id);
 
-    if (!ticket || !ticket.service_desk_id) {
-      this.logger.warn(`Ticket ${dto.ticket_id} não encontrado ou sem service_desk_id`);
-      return {
-        duration_minutes: durationMinutes,
-        duration_hours: durationHours,
-        unit_price: 0,
-        total_amount: 0,
-        description: 'Configuração de preços não encontrada',
-      };
-    }
-
-    // Buscar configuração de pricing
-    const serviceType = dto.service_type || ServiceType.REMOTE;
-    const pricingConfig = await this.pricingRepository.findOne({
-      where: {
-        service_desk_id: ticket.service_desk_id,
-        service_type: serviceType,
-      },
-    });
-
-    if (!pricingConfig) {
-      this.logger.warn(
-        `Configuração de preços não encontrada para service_desk ${ticket.service_desk_id} e service_type ${serviceType}`,
+      // Encontrar modalidade
+      const modalityConfig = pricingConfig.modality_configs.find(
+        (m) => m.modality === dto.service_modality,
       );
+
+      if (!modalityConfig) {
+        throw new BadRequestException(
+          `Configuração de modalidade ${dto.service_modality} não encontrada`,
+        );
+      }
+
+      // Calcular preço
+      const pricing = this.pricingConfigService.calculatePrice(
+        modalityConfig,
+        durationMinutes,
+      );
+
+      return {
+        duration_minutes: durationMinutes,
+        duration_hours: durationHours,
+        unit_price: pricing.unit_price,
+        total_amount: pricing.total_amount,
+        description: pricing.description,
+      };
+    } catch (error) {
+      this.logger.error('Erro ao calcular preço estimado', error);
       return {
         duration_minutes: durationMinutes,
         duration_hours: durationHours,
         unit_price: 0,
         total_amount: 0,
-        description: 'Configuração de preços não encontrada',
+        description: 'Erro ao calcular preço',
       };
     }
-
-    // Calcular preço usando a mesma lógica de calculatePrice
-    const pricing = this.pricingConfigService.calculatePrice(
-      pricingConfig,
-      durationMinutes,
-    );
-
-    return {
-      duration_minutes: durationMinutes,
-      duration_hours: durationHours,
-      unit_price: pricing.appliedRate,
-      total_amount: pricing.totalPrice,
-      description: pricing.description,
-    };
   }
 
   /**

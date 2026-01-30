@@ -47,18 +47,68 @@ export enum ServiceCoverageType {
   INTERNAL = 'internal',
 }
 
-export enum ServiceType {
+// ===== NOVA ESTRUTURA DE PRECIFICAÇÃO =====
+
+/**
+ * Modalidades de atendimento (FIXAS)
+ */
+export enum ServiceModality {
   INTERNAL = 'internal',
   REMOTE = 'remote',
   EXTERNAL = 'external',
-  OUTSOURCED_N1 = 'outsourced_n1',
-  OUTSOURCED_N2 = 'outsourced_n2',
 }
 
-export enum ServiceLevel {
-  N1 = 'n1',
-  N2 = 'n2',
+/**
+ * Labels para exibição das modalidades
+ */
+export const SERVICE_MODALITY_LABELS: Record<ServiceModality, string> = {
+  [ServiceModality.INTERNAL]: 'Interno',
+  [ServiceModality.REMOTE]: 'Remoto',
+  [ServiceModality.EXTERNAL]: 'Presencial externo',
+};
+
+/**
+ * Configuração de precificação para uma modalidade específica
+ */
+export interface PricingModalityConfig {
+  id: string;
+  pricing_config_id: string;
+  modality: ServiceModality;
+  hourly_rate: number;
+  minimum_charge: number;
+  minimum_charge_threshold_minutes: number;
+  charge_excess_per_minute: boolean;
+  round_to_minutes: number | null;
+  created_at: string;
+  updated_at: string;
 }
+
+/**
+ * Classificação de atendimento (CADASTRÁVEL)
+ * Ex: "Atendimento avulso N1", "Suporte DBA", etc
+ */
+export interface PricingConfig {
+  id: string;
+  service_desk_id: string;
+  name: string;
+  description: string | null;
+  active: boolean;
+  modality_configs: PricingModalityConfig[]; // Sempre 3 itens (internal, remote, external)
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Helper para obter config de uma modalidade específica
+ */
+export function getModalityConfig(
+  pricingConfig: PricingConfig,
+  modality: ServiceModality,
+): PricingModalityConfig | undefined {
+  return pricingConfig.modality_configs.find((m) => m.modality === modality);
+}
+
+// ===== APONTAMENTOS =====
 
 export interface TicketAppointment {
   id: string;
@@ -74,8 +124,12 @@ export interface TicketAppointment {
   duration_minutes: number;
   type: AppointmentType;
   coverage_type: ServiceCoverageType;
-  service_type?: ServiceType;
-  service_level?: ServiceLevel;
+
+  // NOVA ESTRUTURA
+  pricing_config_id?: string;
+  pricing_config?: PricingConfig;
+  service_modality?: ServiceModality;
+
   description?: string;
   unit_price: number;
   total_amount: number;
@@ -105,6 +159,8 @@ export interface TicketAppointment {
   created_at: Date;
   updated_at: Date;
 }
+
+// ===== VALORIZAÇÃO =====
 
 export enum ValuationType {
   PRODUCT = 'product',
@@ -152,7 +208,8 @@ export interface TicketValuation {
   created_by_id: string;
 }
 
-// Tipos de campos do checklist
+// ===== CHECKLISTS =====
+
 export enum ChecklistFieldType {
   TEXT = 'text',
   PARAGRAPH = 'paragraph',
@@ -255,7 +312,7 @@ export interface TicketChecklist {
   };
 }
 
-// DTOs para criação
+// ===== DTOs =====
 
 export interface CreateCommentDto {
   content: string;
@@ -272,7 +329,8 @@ export interface CreateAppointmentDto {
   end_time: string;
   type?: AppointmentType;
   coverage_type?: ServiceCoverageType;
-  service_type?: ServiceType;
+  pricing_config_id?: string;
+  service_modality?: ServiceModality;
   description?: string;
   unit_price?: number;
   travel_distance_km?: number;
@@ -286,20 +344,31 @@ export interface StartTimerDto {
   ticket_id: string;
   type?: AppointmentType;
   coverage_type?: ServiceCoverageType;
-  service_type?: ServiceType;
 }
 
 export interface StopTimerDto {
   appointment_id: string;
-  service_type: ServiceType; // Interno, Remoto ou Externo
-  coverage_type: ServiceCoverageType; // Contrato ou Avulso
-  service_level?: ServiceLevel; // N1 ou N2
-  is_warranty?: boolean; // Garantia (zera valor)
-  manual_price_override?: boolean; // Permitir editar valor manualmente
-  manual_unit_price?: number; // Valor por hora manual
+  pricing_config_id: string; // OBRIGATÓRIO
+  service_modality: ServiceModality; // OBRIGATÓRIO
+  coverage_type: ServiceCoverageType;
+  is_warranty?: boolean;
+  manual_price_override?: boolean;
+  manual_unit_price?: number;
   description?: string;
   send_as_response?: boolean;
   attachment_ids?: string[];
+}
+
+export interface CalculatePriceDto {
+  ticket_id: string;
+  start_time: string;
+  end_time: string;
+  pricing_config_id: string;
+  service_modality: ServiceModality;
+  coverage_type: ServiceCoverageType;
+  is_warranty?: boolean;
+  manual_price_override?: boolean;
+  manual_unit_price?: number;
 }
 
 export interface CreateValuationDto {
@@ -329,4 +398,39 @@ export interface UpdateChecklistItemDto {
   is_completed?: boolean;
   value?: any;
   notes?: string;
+}
+
+// ===== DTOs de Pricing Config =====
+
+export interface CreatePricingModalityConfigDto {
+  modality: ServiceModality;
+  hourly_rate: number;
+  minimum_charge?: number;
+  minimum_charge_threshold_minutes?: number;
+  charge_excess_per_minute?: boolean;
+  round_to_minutes?: number;
+}
+
+export interface UpdatePricingModalityConfigDto {
+  modality?: ServiceModality;
+  hourly_rate?: number;
+  minimum_charge?: number;
+  minimum_charge_threshold_minutes?: number;
+  charge_excess_per_minute?: boolean;
+  round_to_minutes?: number;
+}
+
+export interface CreatePricingConfigDto {
+  service_desk_id: string;
+  name: string;
+  description?: string;
+  active?: boolean;
+  modality_configs: CreatePricingModalityConfigDto[]; // Deve ter 3 itens
+}
+
+export interface UpdatePricingConfigDto {
+  name?: string;
+  description?: string;
+  active?: boolean;
+  modality_configs?: UpdatePricingModalityConfigDto[];
 }

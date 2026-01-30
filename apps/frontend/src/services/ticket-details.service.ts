@@ -83,7 +83,8 @@ export const appointmentsService = {
     ticket_id: string;
     start_time: string;
     end_time: string;
-    service_type: string;
+    pricing_config_id: string;
+    service_modality: string;
     coverage_type: string;
     is_warranty?: boolean;
     manual_price_override?: boolean;

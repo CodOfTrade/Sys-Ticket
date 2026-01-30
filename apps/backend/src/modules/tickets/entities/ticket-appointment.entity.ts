@@ -9,7 +9,8 @@ import {
 } from 'typeorm';
 import { Ticket } from './ticket.entity';
 import { User } from '../../users/entities/user.entity';
-import { ServiceType } from '../../service-desks/entities/pricing-config.entity';
+import { PricingConfig } from '../../service-desks/entities/pricing-config.entity';
+import { ServiceModality } from '../../service-desks/enums/service-modality.enum';
 
 export enum AppointmentType {
   SERVICE = 'service', // Atendimento
@@ -25,10 +26,8 @@ export enum ServiceCoverageType {
   INTERNAL = 'internal', // Interno (não faturável)
 }
 
-export enum ServiceLevel {
-  N1 = 'n1', // Nível 1: Externo, Remoto e Público Interno
-  N2 = 'n2', // Nível 2: Externo, Remoto e Interno
-}
+// ServiceLevel removido - N1/N2 agora faz parte do nome da classificação
+// Ex: "Atendimento avulso N1", "Atendimento avulso N2", etc
 
 @Entity('ticket_appointments')
 export class TicketAppointment {
@@ -80,23 +79,31 @@ export class TicketAppointment {
   })
   coverage_type: ServiceCoverageType;
 
-  // Tipo de serviço para pricing (INTERNAL, REMOTE, EXTERNAL)
-  @Column({
-    type: 'enum',
-    enum: ServiceType,
-    default: ServiceType.REMOTE,
-    nullable: true,
-  })
-  service_type: ServiceType;
+  // ===== NOVA ESTRUTURA DE PRECIFICAÇÃO =====
 
-  // Nível de atendimento (N1, N2) para precificação diferenciada
+  /**
+   * ID da classificação de atendimento escolhida
+   * FK para pricing_configs
+   * Ex: "Atendimento avulso N1", "Suporte DBA", etc
+   */
+  @Column({ type: 'uuid', nullable: true })
+  pricing_config_id: string;
+
+  @ManyToOne(() => PricingConfig)
+  @JoinColumn({ name: 'pricing_config_id' })
+  pricing_config: PricingConfig;
+
+  /**
+   * Modalidade do atendimento (INTERNO, REMOTO ou EXTERNO)
+   * Usado para buscar a configuração de preço específica
+   * dentro do pricing_config
+   */
   @Column({
     type: 'enum',
-    enum: ServiceLevel,
-    default: ServiceLevel.N1,
+    enum: ServiceModality,
     nullable: true,
   })
-  service_level: ServiceLevel;
+  service_modality: ServiceModality;
 
   // Descrição do trabalho realizado
   @Column({ type: 'text', nullable: true })

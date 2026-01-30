@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tantml:react-query';
 import { Clock, Plus, Trash2, Edit2, Calendar, DollarSign, Paperclip, Download, Eye } from 'lucide-react';
 import { appointmentsService } from '@/services/ticket-details.service';
 import { clientService } from '@/services/client.service';
 import { ticketAttachmentsService } from '@/services/ticket-attachments.service';
+import pricingConfigService from '@/services/pricing-config.service';
 import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
-import { AppointmentType, ServiceCoverageType, ServiceType, ServiceLevel, CreateAppointmentDto } from '@/types/ticket-details.types';
+import {
+  AppointmentType,
+  ServiceCoverageType,
+  ServiceModality,
+  SERVICE_MODALITY_LABELS,
+  PricingConfig,
+  CreateAppointmentDto
+} from '@/types/ticket-details.types';
+import { useAuth } from '@/hooks/useAuth';
 
 interface TicketAppointmentsProps {
   ticketId: string;
@@ -43,6 +52,7 @@ interface ExistingAttachment {
 
 export function TicketAppointments({ ticketId, clientId, readOnly = false }: TicketAppointmentsProps) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<string | null>(null);
   // Separar anexos existentes (do banco) de novos arquivos (File objects)
@@ -55,10 +65,9 @@ export function TicketAppointments({ ticketId, clientId, readOnly = false }: Tic
     end_time: '09:00',
     type: AppointmentType.SERVICE,
     coverage_type: ServiceCoverageType.BILLABLE, // Avulso por padrão
-    service_type: ServiceType.REMOTE,
-    service_level: ServiceLevel.N1,
-    modality: ServiceType.REMOTE, // NOVO: Modalidade separada
-    contract_id: '', // NOVO: ID do contrato selecionado
+    pricing_config_id: '', // ID da classificação escolhida
+    service_modality: ServiceModality.REMOTE, // Modalidade (interno, remoto, externo)
+    contract_id: '', // ID do contrato selecionado
     is_warranty: false,
     manual_price_override: false,
     manual_unit_price: 0,
@@ -74,6 +83,16 @@ export function TicketAppointments({ ticketId, clientId, readOnly = false }: Tic
   } | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 
+  // Buscar classificações de precificação
+  const { data: pricingConfigs = [] } = useQuery({
+    queryKey: ['pricing-configs', user?.service_desk_id],
+    queryFn: () => pricingConfigService.getAll(user?.service_desk_id),
+    enabled: !!user?.service_desk_id,
+  });
+
+  // Filtrar apenas classificações ativas
+  const activePricingConfigs = pricingConfigs.filter((config: PricingConfig) => config.active);
+
   // Calcular preço automaticamente quando campos mudarem
   useEffect(() => {
     const calculatePrice = async () => {
@@ -81,7 +100,7 @@ export function TicketAppointments({ ticketId, clientId, readOnly = false }: Tic
       if (!showCreateModal || !formData.ticket_id) return;
 
       // Validar campos obrigatórios
-      if (!formData.start_time || !formData.end_time || !formData.modality) return;
+      if (!formData.start_time || !formData.end_time || !formData.pricing_config_id || !formData.service_modality) return;
 
       // Se for CONTRATO, zerar o valor (não há cobrança)
       if (formData.coverage_type === ServiceCoverageType.CONTRACT) {
@@ -104,7 +123,8 @@ export function TicketAppointments({ ticketId, clientId, readOnly = false }: Tic
           ticket_id: formData.ticket_id,
           start_time: formData.start_time,
           end_time: formData.end_time,
-          service_type: formData.modality, // Modalidade (Remoto/Presencial/Interno)
+          pricing_config_id: formData.pricing_config_id,
+          service_modality: formData.service_modality,
           coverage_type: formData.coverage_type,
           is_warranty: formData.is_warranty,
           manual_price_override: formData.manual_price_override,
@@ -125,7 +145,8 @@ export function TicketAppointments({ ticketId, clientId, readOnly = false }: Tic
     formData.ticket_id,
     formData.start_time,
     formData.end_time,
-    formData.modality,
+    formData.pricing_config_id,
+    formData.service_modality,
     formData.coverage_type,
     formData.is_warranty,
     formData.manual_price_override,
@@ -205,9 +226,8 @@ export function TicketAppointments({ ticketId, clientId, readOnly = false }: Tic
       end_time: appointment.end_time,
       type: appointment.type,
       coverage_type: appointment.coverage_type,
-      service_type: appointment.service_type,
-      service_level: appointment.service_level || ServiceLevel.N1,
-      modality: appointment.service_type,
+      pricing_config_id: appointment.pricing_config_id || '',
+      service_modality: appointment.service_modality || ServiceModality.REMOTE,
       contract_id: appointment.contract_id || '',
       is_warranty: appointment.is_warranty || false,
       manual_price_override: appointment.manual_price_override || false,
@@ -229,9 +249,8 @@ export function TicketAppointments({ ticketId, clientId, readOnly = false }: Tic
       end_time: '09:00',
       type: AppointmentType.SERVICE,
       coverage_type: ServiceCoverageType.BILLABLE,
-      service_type: ServiceType.REMOTE,
-      service_level: ServiceLevel.N1,
-      modality: ServiceType.REMOTE,
+      pricing_config_id: '',
+      service_modality: ServiceModality.REMOTE,
       contract_id: '',
       is_warranty: false,
       manual_price_override: false,
@@ -291,7 +310,8 @@ export function TicketAppointments({ ticketId, clientId, readOnly = false }: Tic
           ticket_id: formData.ticket_id,
           type: formData.type,
           coverage_type: formData.coverage_type,
-          service_type: formData.modality, // Modalidade vai para service_type
+          pricing_config_id: formData.pricing_config_id,
+          service_modality: formData.service_modality,
           send_as_response: formData.send_as_response,
         };
         console.log('Criando apontamento:', createDto);
@@ -565,12 +585,12 @@ export function TicketAppointments({ ticketId, clientId, readOnly = false }: Tic
                   </p>
                 </div>
 
-                {/* Classificação do atendimento (dinâmico) */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Classificação do atendimento <span className="text-red-500">*</span>
-                  </label>
-                  {formData.coverage_type === ServiceCoverageType.CONTRACT ? (
+                {/* Tipo de Cobertura: Contrato vs Avulso */}
+                {formData.coverage_type === ServiceCoverageType.CONTRACT ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Contrato <span className="text-red-500">*</span>
+                    </label>
                     <select
                       value={formData.contract_id}
                       onChange={(e) =>
@@ -593,53 +613,61 @@ export function TicketAppointments({ ticketId, clientId, readOnly = false }: Tic
                         <option value="" disabled>Nenhum contrato ativo encontrado</option>
                       )}
                     </select>
-                  ) : (
-                    <select
-                      value={formData.service_type}
-                      onChange={(e) =>
-                        setFormData({ ...formData, service_type: e.target.value as ServiceType })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      required
-                    >
-                      <option value="">Selecione</option>
-                      <option value={ServiceType.REMOTE}>Atendimento avulso N1</option>
-                      <option value={ServiceType.EXTERNAL}>Atendimento avulso N2</option>
-                      <option value={ServiceType.INTERNAL}>Demanda interna</option>
-                      <option value={ServiceType.OUTSOURCED_N1}>Terceirizado N1</option>
-                      <option value={ServiceType.OUTSOURCED_N2}>Terceirizado N2</option>
-                    </select>
-                  )}
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {formData.coverage_type === ServiceCoverageType.CONTRACT
-                      ? 'Contratos ativos disponíveis para este cliente'
-                      : 'Tipos de atendimento avulso cadastrados'}
-                  </p>
-                </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Contratos ativos disponíveis para este cliente
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Classificação do Atendimento (dinâmico - baseado em pricing_configs) */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Classificação do atendimento <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={formData.pricing_config_id}
+                        onChange={(e) => {
+                          setFormData({ ...formData, pricing_config_id: e.target.value });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        required
+                      >
+                        <option value="">Selecione uma classificação...</option>
+                        {activePricingConfigs.map((config: PricingConfig) => (
+                          <option key={config.id} value={config.id}>
+                            {config.name}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Ex: Atendimento avulso N1, Atendimento avulso N2, Demanda interna, etc
+                      </p>
+                    </div>
 
-                {/* Modalidade (NOVO - campo separado) */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Modalidade <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.modality}
-                    onChange={(e) =>
-                      setFormData({ ...formData, modality: e.target.value as ServiceType })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    required
-                  >
-                    <option value={ServiceType.REMOTE}>Remoto</option>
-                    <option value={ServiceType.EXTERNAL}>Presencial/Externo</option>
-                    <option value={ServiceType.INTERNAL}>Interno</option>
-                    <option value={ServiceType.OUTSOURCED_N1}>Terceirizado N1</option>
-                    <option value={ServiceType.OUTSOURCED_N2}>Terceirizado N2</option>
-                  </select>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Como o atendimento foi realizado
-                  </p>
-                </div>
+                    {/* Modalidade (FIXA - 3 opções) */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Modalidade <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={formData.service_modality}
+                        onChange={(e) => {
+                          setFormData({ ...formData, service_modality: e.target.value as ServiceModality });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        required
+                      >
+                        <option value="">Selecione uma modalidade...</option>
+                        <option value={ServiceModality.INTERNAL}>{SERVICE_MODALITY_LABELS[ServiceModality.INTERNAL]}</option>
+                        <option value={ServiceModality.REMOTE}>{SERVICE_MODALITY_LABELS[ServiceModality.REMOTE]}</option>
+                        <option value={ServiceModality.EXTERNAL}>{SERVICE_MODALITY_LABELS[ServiceModality.EXTERNAL]}</option>
+                      </select>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Define o valor por hora e as regras de cobrança
+                      </p>
+                    </div>
+                  </>
+                )}
 
                 {/* Checkboxes de Garantia e Valor Manual */}
                 <div className="space-y-3">
@@ -716,7 +744,7 @@ export function TicketAppointments({ ticketId, clientId, readOnly = false }: Tic
                     </p>
                   ) : calculatedPrice ? (
                     <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      💰 <strong>R$ {calculatedPrice.unit_price.toFixed(2)}/h</strong> ({formData.modality === 'remote' ? 'Remoto' : formData.modality === 'external' ? 'Presencial' : formData.modality === 'outsourced_n1' ? 'Terceirizado N1' : formData.modality === 'outsourced_n2' ? 'Terceirizado N2' : 'Interno'}) • {calculatedPrice.duration_hours.toFixed(2)}h
+                      💰 <strong>R$ {calculatedPrice.unit_price.toFixed(2)}/h</strong> ({formData.service_modality ? SERVICE_MODALITY_LABELS[formData.service_modality as ServiceModality] : 'N/A'}) • {calculatedPrice.duration_hours.toFixed(2)}h
                       {formData.manual_price_override && (
                         <span className="text-orange-600 dark:text-orange-400 ml-1">(Valor manual)</span>
                       )}

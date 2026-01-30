@@ -19,6 +19,8 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { PricingConfigService } from '../services/pricing-config.service';
+import { CreatePricingConfigDto } from '../dto/create-pricing-config.dto';
+import { UpdatePricingConfigDto } from '../dto/update-pricing-config.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Public } from '../../auth/decorators/public.decorator';
 import { UserRole } from '../../users/entities/user.entity';
@@ -32,8 +34,8 @@ export class PricingConfigController {
   @Get()
   @Public()
   @ApiOperation({
-    summary: 'Listar configurações de preço',
-    description: 'Retorna lista de configurações de preço por tipo de atendimento',
+    summary: 'Listar classificações de atendimento',
+    description: 'Retorna lista de classificações de atendimento com suas modalidades',
   })
   @ApiQuery({
     name: 'service_desk_id',
@@ -42,7 +44,7 @@ export class PricingConfigController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Lista de configurações retornada com sucesso',
+    description: 'Lista de classificações retornada com sucesso',
   })
   async findAll(@Query('service_desk_id') serviceDeskId?: string) {
     const configs = await this.pricingConfigService.findAll(serviceDeskId);
@@ -51,17 +53,17 @@ export class PricingConfigController {
 
   @Get(':id')
   @ApiOperation({
-    summary: 'Buscar configuração de preço por ID',
-    description: 'Retorna uma configuração específica',
+    summary: 'Buscar classificação de atendimento por ID',
+    description: 'Retorna uma classificação específica com suas modalidades',
   })
-  @ApiParam({ name: 'id', description: 'UUID da configuração' })
+  @ApiParam({ name: 'id', description: 'UUID da classificação' })
   @ApiResponse({
     status: 200,
-    description: 'Configuração encontrada com sucesso',
+    description: 'Classificação encontrada com sucesso',
   })
   @ApiResponse({
     status: 404,
-    description: 'Configuração não encontrada',
+    description: 'Classificação não encontrada',
   })
   async findOne(@Param('id') id: string) {
     const config = await this.pricingConfigService.findOne(id);
@@ -71,19 +73,19 @@ export class PricingConfigController {
   @Post()
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @ApiOperation({
-    summary: 'Criar configuração de preço',
-    description: 'Cria uma nova configuração de preço (requer permissão)',
+    summary: 'Criar classificação de atendimento',
+    description: 'Cria uma nova classificação de atendimento com 3 modalidades (interno, remoto, externo)',
   })
   @ApiResponse({
     status: 201,
-    description: 'Configuração criada com sucesso',
+    description: 'Classificação criada com sucesso',
   })
   @ApiResponse({
     status: 400,
-    description: 'Dados inválidos ou configuração já existe',
+    description: 'Dados inválidos ou classificação já existe',
   })
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createDto: any) {
+  async create(@Body() createDto: CreatePricingConfigDto) {
     const config = await this.pricingConfigService.create(createDto);
     return { success: true, data: config };
   }
@@ -91,19 +93,19 @@ export class PricingConfigController {
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @ApiOperation({
-    summary: 'Atualizar configuração de preço',
-    description: 'Atualiza uma configuração existente (requer permissão)',
+    summary: 'Atualizar classificação de atendimento',
+    description: 'Atualiza uma classificação existente e/ou suas modalidades (requer permissão)',
   })
-  @ApiParam({ name: 'id', description: 'UUID da configuração' })
+  @ApiParam({ name: 'id', description: 'UUID da classificação' })
   @ApiResponse({
     status: 200,
-    description: 'Configuração atualizada com sucesso',
+    description: 'Classificação atualizada com sucesso',
   })
   @ApiResponse({
     status: 404,
-    description: 'Configuração não encontrada',
+    description: 'Classificação não encontrada',
   })
-  async update(@Param('id') id: string, @Body() updateDto: any) {
+  async update(@Param('id') id: string, @Body() updateDto: UpdatePricingConfigDto) {
     const config = await this.pricingConfigService.update(id, updateDto);
     return { success: true, data: config };
   }
@@ -111,17 +113,17 @@ export class PricingConfigController {
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({
-    summary: 'Remover configuração de preço',
-    description: 'Remove uma configuração (requer permissão de admin)',
+    summary: 'Remover classificação de atendimento',
+    description: 'Remove uma classificação e suas modalidades (requer permissão de admin)',
   })
-  @ApiParam({ name: 'id', description: 'UUID da configuração' })
+  @ApiParam({ name: 'id', description: 'UUID da classificação' })
   @ApiResponse({
     status: 204,
-    description: 'Configuração removida com sucesso',
+    description: 'Classificação removida com sucesso',
   })
   @ApiResponse({
     status: 404,
-    description: 'Configuração não encontrada',
+    description: 'Classificação não encontrada',
   })
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string) {

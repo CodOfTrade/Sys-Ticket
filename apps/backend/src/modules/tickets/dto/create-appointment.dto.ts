@@ -12,9 +12,8 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   AppointmentType,
   ServiceCoverageType,
-  ServiceLevel,
 } from '../entities/ticket-appointment.entity';
-import { ServiceType } from '../../service-desks/entities/pricing-config.entity';
+import { ServiceModality } from '../../service-desks/enums/service-modality.enum';
 
 export class CreateAppointmentDto {
   @ApiProperty({ description: 'ID do ticket' })
@@ -55,15 +54,19 @@ export class CreateAppointmentDto {
   @IsOptional()
   coverage_type?: ServiceCoverageType;
 
+  @ApiProperty({ description: 'ID da classificação de atendimento', required: false })
+  @IsUUID()
+  @IsOptional()
+  pricing_config_id?: string;
+
   @ApiProperty({
-    description: 'Tipo de serviço para pricing (INTERNAL, REMOTE, EXTERNAL)',
-    enum: ServiceType,
-    default: ServiceType.REMOTE,
+    description: 'Modalidade de atendimento (INTERNAL, REMOTE, EXTERNAL)',
+    enum: ServiceModality,
     required: false,
   })
-  @IsEnum(ServiceType)
+  @IsEnum(ServiceModality)
   @IsOptional()
-  service_type?: ServiceType;
+  service_modality?: ServiceModality;
 
   @ApiProperty({ description: 'Descrição do trabalho realizado', required: false })
   @IsString()
@@ -123,16 +126,6 @@ export class StartTimerDto {
   @IsEnum(ServiceCoverageType)
   @IsOptional()
   coverage_type?: ServiceCoverageType;
-
-  @ApiProperty({
-    description: 'Tipo de serviço para pricing (INTERNAL, REMOTE, EXTERNAL)',
-    enum: ServiceType,
-    default: ServiceType.REMOTE,
-    required: false,
-  })
-  @IsEnum(ServiceType)
-  @IsOptional()
-  service_type?: ServiceType;
 }
 
 export class StopTimerDto {
@@ -141,13 +134,18 @@ export class StopTimerDto {
   @IsNotEmpty()
   appointment_id: string;
 
-  @ApiProperty({
-    description: 'Tipo de serviço para pricing (INTERNAL, REMOTE, EXTERNAL)',
-    enum: ServiceType,
-  })
-  @IsEnum(ServiceType)
+  @ApiProperty({ description: 'ID da classificação de atendimento' })
+  @IsUUID()
   @IsNotEmpty()
-  service_type: ServiceType;
+  pricing_config_id: string;
+
+  @ApiProperty({
+    description: 'Modalidade de atendimento (INTERNAL, REMOTE, EXTERNAL)',
+    enum: ServiceModality,
+  })
+  @IsEnum(ServiceModality)
+  @IsNotEmpty()
+  service_modality: ServiceModality;
 
   @ApiProperty({
     description: 'Tipo de cobertura/faturamento',
@@ -156,16 +154,6 @@ export class StopTimerDto {
   @IsEnum(ServiceCoverageType)
   @IsNotEmpty()
   coverage_type: ServiceCoverageType;
-
-  @ApiProperty({
-    description: 'Nível de atendimento (N1, N2)',
-    enum: ServiceLevel,
-    default: ServiceLevel.N1,
-    required: false,
-  })
-  @IsEnum(ServiceLevel)
-  @IsOptional()
-  service_level?: ServiceLevel;
 
   @ApiProperty({ description: 'É garantia (zera o valor)', required: false })
   @IsBoolean()
@@ -244,13 +232,18 @@ export class CalculatePriceDto {
   @IsNotEmpty()
   end_time: string;
 
-  @ApiProperty({
-    description: 'Tipo de serviço para pricing (INTERNAL, REMOTE, EXTERNAL)',
-    enum: ServiceType,
-  })
-  @IsEnum(ServiceType)
+  @ApiProperty({ description: 'ID da classificação de atendimento' })
+  @IsUUID()
   @IsNotEmpty()
-  service_type: ServiceType;
+  pricing_config_id: string;
+
+  @ApiProperty({
+    description: 'Modalidade de atendimento (INTERNAL, REMOTE, EXTERNAL)',
+    enum: ServiceModality,
+  })
+  @IsEnum(ServiceModality)
+  @IsNotEmpty()
+  service_modality: ServiceModality;
 
   @ApiProperty({
     description: 'Tipo de cobertura/faturamento',
