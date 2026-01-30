@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { Clock, Save, AlertCircle, Info } from 'lucide-react';
 import { slaService } from '@/services/sla.service';
 import {
-  SlaConfig,
   UpdateSlaConfigDto,
   SlaPriorityConfig,
-  BusinessHoursConfig,
   WEEKDAY_LABELS,
 } from '@/types/sla.types';
 import { useAuthStore } from '@/store/auth.store';

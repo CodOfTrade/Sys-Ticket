@@ -49,10 +49,10 @@ export function CreateQueueModal({ onClose, onSuccess }: CreateQueueModalProps) 
       const data = await userService.getAll();
       // Filter only agents and admins from current service desk
       const filtered = data.filter(
-        u => (u.role === 'agent' || u.role === 'admin') &&
+        (u: any) => (u.role === 'agent' || u.role === 'admin') &&
              u.service_desk_id === currentUser?.service_desk_id
       );
-      setUsers(filtered as QueueMember[]);
+      setUsers(filtered);
     } catch (error: any) {
       console.error('Erro ao buscar usuários:', error);
       toast.error('Erro ao carregar usuários');
@@ -182,7 +182,7 @@ export function CreateQueueModal({ onClose, onSuccess }: CreateQueueModalProps) 
                 ))}
               </select>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {DISTRIBUTION_STRATEGY_DESCRIPTIONS[formData.distribution_strategy]}
+                {formData.distribution_strategy && DISTRIBUTION_STRATEGY_DESCRIPTIONS[formData.distribution_strategy]}
               </p>
             </div>
 

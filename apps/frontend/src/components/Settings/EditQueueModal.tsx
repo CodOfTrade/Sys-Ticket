@@ -50,10 +50,10 @@ export function EditQueueModal({ queue, onClose, onSuccess }: EditQueueModalProp
       const data = await userService.getAll();
       // Filter only agents and admins from current service desk
       const filtered = data.filter(
-        u => (u.role === 'agent' || u.role === 'admin') &&
+        (u: any) => (u.role === 'agent' || u.role === 'admin') &&
              u.service_desk_id === currentUser?.service_desk_id
       );
-      setUsers(filtered as QueueMember[]);
+      setUsers(filtered);
     } catch (error: any) {
       console.error('Erro ao buscar usuários:', error);
       toast.error('Erro ao carregar usuários');
