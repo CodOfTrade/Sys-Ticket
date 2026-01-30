@@ -91,33 +91,45 @@ export class CreateNewPricingStructure1738298000000 implements MigrationInterfac
     );
 
     // 4. Adicionar novas colunas à tabela pricing_configs
-    await queryRunner.addColumn(
-      'pricing_configs',
-      new TableColumn({
-        name: 'name',
-        type: 'varchar',
-        length: '100',
-        isNullable: true, // Temporariamente nullable para migration
-      }),
-    );
+    // Verificar se coluna 'name' já existe
+    const hasNameColumn = await queryRunner.hasColumn('pricing_configs', 'name');
+    if (!hasNameColumn) {
+      await queryRunner.addColumn(
+        'pricing_configs',
+        new TableColumn({
+          name: 'name',
+          type: 'varchar',
+          length: '100',
+          isNullable: true, // Temporariamente nullable para migration
+        }),
+      );
+    }
 
-    await queryRunner.addColumn(
-      'pricing_configs',
-      new TableColumn({
-        name: 'description',
-        type: 'text',
-        isNullable: true,
-      }),
-    );
+    // Verificar se coluna 'description' já existe
+    const hasDescriptionColumn = await queryRunner.hasColumn('pricing_configs', 'description');
+    if (!hasDescriptionColumn) {
+      await queryRunner.addColumn(
+        'pricing_configs',
+        new TableColumn({
+          name: 'description',
+          type: 'text',
+          isNullable: true,
+        }),
+      );
+    }
 
-    await queryRunner.addColumn(
-      'pricing_configs',
-      new TableColumn({
-        name: 'active',
-        type: 'boolean',
-        default: true,
-      }),
-    );
+    // Verificar se coluna 'active' já existe
+    const hasActiveColumn = await queryRunner.hasColumn('pricing_configs', 'active');
+    if (!hasActiveColumn) {
+      await queryRunner.addColumn(
+        'pricing_configs',
+        new TableColumn({
+          name: 'active',
+          type: 'boolean',
+          default: true,
+        }),
+      );
+    }
 
     // 5. Migrar dados antigos para nova estrutura
     // Para cada pricing_config existente, criar 3 modality_configs (internal, remote, external)
