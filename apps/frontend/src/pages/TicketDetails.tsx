@@ -53,6 +53,7 @@ import { userService, User as UserType } from '@/services/user.service';
 import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
 import { serviceCatalogService, ServiceCatalog, ServiceCategory } from '@/services/service-catalog.service';
 import { queueService } from '@/services/queue.service';
+import { SlaIndicator } from '@/components/Tickets/SlaIndicator';
 
 type TabType = 'appointments' | 'communication' | 'valuation' | 'checklists' | 'approval' | 'history';
 
@@ -1137,6 +1138,34 @@ export default function TicketDetails() {
                         <span className={isTicketLocked ? 'text-gray-500 dark:text-gray-400' : ''}> / {ticket.service_category.name}</span>
                       )}
                     </p>
+                  </div>
+                </div>
+
+                {/* SLA - Primeira Resposta */}
+                <div className="flex items-start gap-2 text-sm">
+                  <Clock className="w-4 h-4 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <SlaIndicator
+                      dueDate={ticket.sla_first_response_due}
+                      completedAt={ticket.first_response_at}
+                      type="first_response"
+                      showLabel={true}
+                      compact={false}
+                    />
+                  </div>
+                </div>
+
+                {/* SLA - Resolução */}
+                <div className="flex items-start gap-2 text-sm">
+                  <Clock className="w-4 h-4 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <SlaIndicator
+                      dueDate={ticket.sla_resolution_due}
+                      completedAt={ticket.resolved_at}
+                      type="resolution"
+                      showLabel={true}
+                      compact={false}
+                    />
                   </div>
                 </div>
 

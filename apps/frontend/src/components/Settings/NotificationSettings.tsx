@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, FileKey, Ticket, Server, FileText } from 'lucide-react';
+import { Loader2, FileKey, Ticket, Server, FileText, Volume2 } from 'lucide-react';
 import { notificationService, NotificationConfig } from '@/services/notification.service';
 import { emailTemplateService, EmailTemplate } from '@/services/email-template.service';
 import { AlertConfigCard } from './AlertConfigCard';
 import { EmailTemplateEditorModal } from './EmailTemplateEditorModal';
 import { EmailTemplatePreviewModal } from './EmailTemplatePreviewModal';
+import { SoundSettings } from './SoundSettings';
 import toast from 'react-hot-toast';
 
-type NotificationCategory = 'license' | 'ticket' | 'resource' | 'contract';
+type NotificationCategory = 'sounds' | 'license' | 'ticket' | 'resource' | 'contract';
 
 interface CategoryTab {
   id: NotificationCategory;
@@ -18,7 +19,7 @@ interface CategoryTab {
 }
 
 export function NotificationSettings() {
-  const [activeCategory, setActiveCategory] = useState<NotificationCategory>('license');
+  const [activeCategory, setActiveCategory] = useState<NotificationCategory>('sounds');
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
   const queryClient = useQueryClient();
@@ -82,8 +83,14 @@ export function NotificationSettings() {
   // Categorias de notificações (escalável)
   const categoryTabs: CategoryTab[] = [
     {
+      id: 'sounds',
+      label: 'Sons e SLA',
+      icon: Volume2,
+      enabled: true,
+    },
+    {
       id: 'license',
-      label: 'Licenças',
+      label: 'Licencas',
       icon: FileKey,
       enabled: true,
     },
@@ -143,7 +150,8 @@ export function NotificationSettings() {
             const Icon = tab.icon;
             const isActive = activeCategory === tab.id;
             const categoryConfigs = getConfigsByCategory(tab.id);
-            const hasConfigs = categoryConfigs.length > 0;
+            // A aba "sounds" sempre está habilitada pois não depende de configs do servidor
+            const hasConfigs = tab.id === 'sounds' || categoryConfigs.length > 0;
 
             return (
               <button
@@ -177,6 +185,10 @@ export function NotificationSettings() {
 
       {/* Content por categoria */}
       <div className="space-y-4">
+        {activeCategory === 'sounds' && (
+          <SoundSettings />
+        )}
+
         {activeCategory === 'license' && (
           <>
             {licenseConfigs.length > 0 ? (
@@ -285,13 +297,15 @@ export function NotificationSettings() {
         </div>
       )}
 
-      {/* Info Box */}
-      <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-        <p className="text-sm text-blue-800 dark:text-blue-300">
-          <strong>💡 Dica:</strong> Emails para clientes incluem automaticamente informações para
-          renovação de licenças. Configure o email de contato no cadastro de cada licença.
-        </p>
-      </div>
+      {/* Info Box - apenas para outras categorias que não são sounds */}
+      {activeCategory !== 'sounds' && (
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            <strong>Dica:</strong> Emails para clientes incluem automaticamente informacoes para
+            renovacao de licencas. Configure o email de contato no cadastro de cada licenca.
+          </p>
+        </div>
+      )}
 
       {/* Modais de Template */}
       {editingTemplate && (

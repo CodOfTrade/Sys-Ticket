@@ -7,6 +7,7 @@ import { notificationService, Notification } from '@services/notification.servic
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -21,6 +22,9 @@ export function Header({ onMenuClick }: HeaderProps) {
   const notificationsRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { playSound } = useNotificationSound();
+  const previousNotificationCountRef = useRef<number>(0);
+  const lastNotificationIdRef = useRef<string | null>(null);
 
   // Buscar notificações
   const { data: notificationsData, isLoading: loadingNotifications } = useQuery({
@@ -41,6 +45,30 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   // Contar não lidas
   const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  // Tocar som quando chegam novas notificações
+  useEffect(() => {
+    if (notifications.length === 0) return;
+
+    const latestNotification = notifications[0];
+    const currentCount = notifications.length;
+
+    // Verificar se é uma nova notificação (ID diferente ou count aumentou)
+    if (
+      latestNotification &&
+      (latestNotification.id !== lastNotificationIdRef.current ||
+        currentCount > previousNotificationCountRef.current)
+    ) {
+      // Tocar som para nova notificação
+      if (lastNotificationIdRef.current !== null) {
+        // Só tocar se não for a primeira carga
+        playSound({ notificationType: latestNotification.type });
+      }
+
+      lastNotificationIdRef.current = latestNotification.id;
+      previousNotificationCountRef.current = currentCount;
+    }
+  }, [notifications, playSound]);
 
   // Mutation para marcar como lida
   const markAsReadMutation = useMutation({
@@ -87,14 +115,22 @@ export function Header({ onMenuClick }: HeaderProps) {
     if (notification.reference_type === 'license' && notification.reference_id) {
       setShowNotifications(false);
       navigate(`/licenses?highlight=${notification.reference_id}`);
+    } else if (notification.reference_type === 'ticket' && notification.reference_id) {
+      setShowNotifications(false);
+      navigate(`/tickets/${notification.reference_id}`);
     }
   };
 
   const getNotificationIcon = (type: string) => {
+    // SLA
+    if (type.includes('sla_first_response_breach') || type.includes('sla_resolution_breach')) return '🚨';
+    if (type.includes('sla_first_response_warning') || type.includes('sla_resolution_warning')) return '⏰';
+    // Licenças
     if (type.includes('expired')) return '🔴';
     if (type.includes('expiring_7')) return '🟠';
     if (type.includes('expiring_15')) return '🟡';
     if (type.includes('expiring_30')) return '🟢';
+    // Recursos
     if (type.includes('offline')) return '⚫';
     return '🔔';
   };

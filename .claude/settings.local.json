@@ -131,7 +131,9 @@
       "Bash(git rm:*)",
       "WebFetch(domain:guia-de-uso.tiflux.com)",
       "Bash(npm run migration:run:*)",
-      "Bash(npx nest build)"
+      "Bash(npx nest build)",
+      "Bash(not a function\" pois retornava objeto ao invés de array.\n\nSolução: Atualizado todos os métodos para retornar response.data.data:\n- getAll\\(\\), getById\\(\\), create\\(\\), update\\(\\)\n- addMember\\(\\), removeMember\\(\\), getStats\\(\\), assignTicket\\(\\)\n\nSeguindo o padrão usado em service-catalog.service.ts\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(move \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\notificacao-01.mp3\" \"d:\\\\Arquivos do Usuário\\\\OneDrive\\\\3 - Pessoal José\\\\Programaçao\\\\Sys-Ticket\\\\apps\\\\frontend\\\\public\\\\sounds\\\\notification.mp3\")"
     ]
   }
 }

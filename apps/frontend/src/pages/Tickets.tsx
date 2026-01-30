@@ -6,6 +6,7 @@ import { ticketService } from '@/services/ticket.service';
 import { TicketStatus, TicketPriority } from '@/types/ticket.types';
 import { StatusBadge } from '@/components/Tickets/StatusBadge';
 import { PriorityBadge } from '@/components/Tickets/PriorityBadge';
+import { SlaBadge } from '@/components/Tickets/SlaBadge';
 import { UnreadIndicator } from '@/components/Tickets/UnreadIndicator';
 import { ActiveTimerIndicator } from '@/components/Tickets/ActiveTimerIndicator';
 import { CreateTicketModal } from '@/components/Tickets/CreateTicketModal';
@@ -214,6 +215,9 @@ export default function Tickets() {
                     Prioridade
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    SLA
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Atribuído
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -253,6 +257,15 @@ export default function Tickets() {
                     </td>
                     <td className="px-4 py-3">
                       <PriorityBadge priority={ticket.priority} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <SlaBadge
+                        firstResponseDue={ticket.sla_first_response_due}
+                        resolutionDue={ticket.sla_resolution_due}
+                        firstResponseAt={ticket.first_response_at}
+                        resolvedAt={ticket.resolved_at}
+                        slaViolated={ticket.sla_violated}
+                      />
                     </td>
                     <td className="px-4 py-3">
                       {ticket.assigned_to ? (

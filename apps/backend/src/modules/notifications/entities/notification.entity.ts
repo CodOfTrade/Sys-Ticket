@@ -11,12 +11,19 @@ import { User } from '../../users/entities/user.entity';
 import { SigeClient } from '../../clients/entities/sige-client.entity';
 
 export enum NotificationType {
+  // Licenças
   LICENSE_EXPIRING_30 = 'license_expiring_30',
   LICENSE_EXPIRING_15 = 'license_expiring_15',
   LICENSE_EXPIRING_7 = 'license_expiring_7',
   LICENSE_EXPIRED = 'license_expired',
+  // Recursos
   RESOURCE_OFFLINE_1H = 'resource_offline_1h',
   RESOURCE_OFFLINE_24H = 'resource_offline_24h',
+  // SLA
+  SLA_FIRST_RESPONSE_WARNING = 'sla_first_response_warning',
+  SLA_FIRST_RESPONSE_BREACH = 'sla_first_response_breach',
+  SLA_RESOLUTION_WARNING = 'sla_resolution_warning',
+  SLA_RESOLUTION_BREACH = 'sla_resolution_breach',
 }
 
 @Entity('notifications')
