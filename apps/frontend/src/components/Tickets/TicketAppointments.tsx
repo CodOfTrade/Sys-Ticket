@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tantml:react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, Plus, Trash2, Edit2, Calendar, DollarSign, Paperclip, Download, Eye } from 'lucide-react';
 import { appointmentsService } from '@/services/ticket-details.service';
 import { clientService } from '@/services/client.service';
@@ -14,7 +14,7 @@ import {
   PricingConfig,
   CreateAppointmentDto
 } from '@/types/ticket-details.types';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/store/auth.store';
 
 interface TicketAppointmentsProps {
   ticketId: string;
@@ -52,7 +52,7 @@ interface ExistingAttachment {
 
 export function TicketAppointments({ ticketId, clientId, readOnly = false }: TicketAppointmentsProps) {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<string | null>(null);
   // Separar anexos existentes (do banco) de novos arquivos (File objects)

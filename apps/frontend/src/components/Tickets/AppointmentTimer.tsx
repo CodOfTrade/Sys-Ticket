@@ -12,7 +12,7 @@ import {
   SERVICE_MODALITY_LABELS,
   PricingConfig,
 } from '@/types/ticket-details.types';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/store/auth.store';
 
 interface AppointmentTimerProps {
   ticketId: string;
@@ -21,7 +21,7 @@ interface AppointmentTimerProps {
 
 export function AppointmentTimer({ ticketId, clientId }: AppointmentTimerProps) {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [showStopModal, setShowStopModal] = useState(false);
   const [formData, setFormData] = useState({
     coverage_type: ServiceCoverageType.BILLABLE, // Avulso por padrão

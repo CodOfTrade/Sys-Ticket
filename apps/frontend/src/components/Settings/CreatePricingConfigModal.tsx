@@ -6,7 +6,7 @@ import {
   CreatePricingConfigDto,
   ServiceModality,
 } from '@/types/ticket-details.types';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/store/auth.store';
 
 interface CreatePricingConfigModalProps {
   onClose: () => void;
@@ -17,7 +17,7 @@ export function CreatePricingConfigModal({
   onClose,
   onSuccess,
 }: CreatePricingConfigModalProps) {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
