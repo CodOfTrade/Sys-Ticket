@@ -178,18 +178,16 @@ export function SlaSettings() {
         </div>
       </div>
 
-      {/* Configurações */}
-          {/* Horário Comercial */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Horário Comercial
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Define o horário de funcionamento para cálculo do SLA. Apenas horas úteis serão consideradas.
-              </p>
+      {/* Horário Comercial */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Horário Comercial
+        </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Define o horário de funcionamento para cálculo do SLA. Apenas horas úteis serão consideradas.
+        </p>
 
-                <div className="space-y-4">
+        <div className="space-y-4">
                   {/* Horários */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
@@ -254,38 +252,35 @@ export function SlaSettings() {
                         <option value="America/Rio_Branco">Acre (GMT-5)</option>
                       </select>
                     </div>
-                  </div>
-
-                </div>
-
-                {/* Dias Úteis */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Dias Úteis
-                    </label>
-                    <div className="flex gap-2 flex-wrap">
-                      {[0, 1, 2, 3, 4, 5, 6].map((day) => (
-                        <button
-                          key={day}
-                          type="button"
-                          onClick={() => toggleWorkingDay(day)}
-                          className={`px-4 py-2 rounded-lg border-2 transition-colors ${
-                            formData.working_days?.includes(day)
-                              ? 'bg-blue-500 border-blue-600 text-white'
-                              : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400'
-                          }`}
-                        >
-                          {WEEKDAY_LABELS[day]}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-            </div>
           </div>
 
-          {/* Configuração por Prioridade */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          {/* Dias Úteis */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Dias Úteis
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              {[0, 1, 2, 3, 4, 5, 6].map((day) => (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => toggleWorkingDay(day)}
+                  className={`px-4 py-2 rounded-lg border-2 transition-colors ${
+                    formData.working_days?.includes(day)
+                      ? 'bg-blue-500 border-blue-600 text-white'
+                      : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400'
+                  }`}
+                >
+                  {WEEKDAY_LABELS[day]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Configuração por Prioridade */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Prazos por Prioridade
             </h3>
@@ -357,14 +352,14 @@ export function SlaSettings() {
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+              </div>
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
 
-          {/* Alert - Calculado Automaticamente */}
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+      {/* Alert - Calculado Automaticamente */}
+      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
               <div className="flex-1">
@@ -375,10 +370,10 @@ export function SlaSettings() {
                   Os prazos de SLA são calculados automaticamente quando um ticket é criado.
                   O sistema monitora continuamente e envia alertas quando os prazos estão próximos
                   ou foram violados.
-                </p>
-              </div>
-            </div>
+            </p>
           </div>
+        </div>
+      </div>
 
       {/* Footer - Botão Salvar */}
       <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
