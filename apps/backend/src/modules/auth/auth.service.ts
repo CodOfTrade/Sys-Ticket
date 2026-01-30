@@ -83,27 +83,21 @@ export class AuthService {
   private getFirstServiceDeskId(service_desk_ids: string[] | string | null | undefined): string | null {
     if (!service_desk_ids) return null;
 
-    console.log('[Auth] service_desk_ids type:', typeof service_desk_ids);
-    console.log('[Auth] service_desk_ids value:', service_desk_ids);
-    console.log('[Auth] service_desk_ids isArray:', Array.isArray(service_desk_ids));
-
-    // Se é array, retorna primeiro elemento
+    // Se é array, pega primeiro elemento e remove chaves
     if (Array.isArray(service_desk_ids)) {
-      const result = service_desk_ids[0] || null;
-      console.log('[Auth] Returning from array:', result);
-      return result;
+      const first = service_desk_ids[0] || null;
+      if (first && typeof first === 'string') {
+        return first.replace(/[{}]/g, '').trim() || null;
+      }
+      return first;
     }
 
     // Se é string (formato PostgreSQL "{uuid}"), remove chaves
     if (typeof service_desk_ids === 'string') {
       const cleaned = service_desk_ids.replace(/[{}]/g, '');
-      const result = cleaned.split(',')[0].trim() || null;
-      console.log('[Auth] Cleaned string:', cleaned);
-      console.log('[Auth] Returning from string:', result);
-      return result;
+      return cleaned.split(',')[0].trim() || null;
     }
 
-    console.log('[Auth] Returning null (unexpected type)');
     return null;
   }
 
