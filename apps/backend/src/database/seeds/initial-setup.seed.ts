@@ -61,7 +61,14 @@ export async function seedInitialSetup(dataSource: DataSource) {
       console.log('ℹ️  Mesa de serviço já existe');
     }
 
-    // 3. Criar tabela pricing_configs se não existir
+    // 3. Associar usuário admin à mesa de serviço
+    await queryRunner.query(
+      `UPDATE users SET service_desk_id = $1 WHERE id = $2`,
+      [serviceDeskId, adminId],
+    );
+    console.log('✅ Usuário admin associado à mesa de serviço');
+
+    // 4. Criar tabela pricing_configs se não existir
     // NOTA: Tabela pricing_configs agora é criada/modificada via migrations
     // Os dados são inseridos via pricing-configs.seed.ts com a nova estrutura
     console.log('ℹ️  Tabela pricing_configs será criada/atualizada via migrations');

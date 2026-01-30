@@ -42,11 +42,17 @@ export function CreatePricingConfigModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!user?.service_desk_id) {
+      toast.error('Usuário sem mesa de serviço associada');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const dto: CreatePricingConfigDto = {
-        service_desk_id: user?.service_desk_id || '',
+        service_desk_id: user.service_desk_id,
         name: formData.name,
         description: formData.description || undefined,
         active: true,
