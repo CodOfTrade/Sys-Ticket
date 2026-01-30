@@ -10,6 +10,7 @@ import { clientService, Client } from '@/services/client.service';
 import { contractService } from '@/services/contract.service';
 import { userService } from '@/services/user.service';
 import { contactService } from '@/services/contact.service';
+import { queueService } from '@/services/queue.service';
 import { formatPhoneNumber } from '@/utils/phone-formatter';
 import { RichTextEditor } from '@/components/RichTextEditor';
 
@@ -27,6 +28,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     description: '',
     priority: TicketPriority.MEDIUM,
     service_catalog_id: '',
+    queue_id: '',
     client_id: '',
     client_name: '',
     contact_id: '',
@@ -85,6 +87,13 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     queryKey: ['service-catalogs', user?.service_desk_id],
     queryFn: () => serviceCatalogService.getAll(user?.service_desk_id),
     enabled: isOpen,
+  });
+
+  // Buscar filas de atendimento
+  const { data: queues } = useQuery({
+    queryKey: ['queues', user?.service_desk_id],
+    queryFn: () => queueService.getAll(user?.service_desk_id),
+    enabled: isOpen && !!user?.service_desk_id,
   });
 
   // Buscar contatos do cliente
@@ -223,6 +232,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
       description: '',
       priority: TicketPriority.MEDIUM,
       service_catalog_id: '',
+      queue_id: '',
       client_id: '',
       client_name: '',
       contact_id: '',
@@ -411,6 +421,11 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
       // Só enviar service_catalog_id se for um UUID válido (não enviar IDs de exemplo)
       if (formData.service_catalog_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(formData.service_catalog_id)) {
         ticketData.service_catalog_id = formData.service_catalog_id;
+      }
+
+      // Adicionar queue_id se selecionado (UUID válido)
+      if (formData.queue_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(formData.queue_id)) {
+        ticketData.queue_id = formData.queue_id;
       }
 
       // Adicionar campos opcionais apenas se preenchidos
@@ -846,6 +861,31 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                     {errors.service_catalog_id}
                   </p>
                 )}
+              </div>
+
+              {/* Fila de Atendimento */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Fila de Atendimento
+                </label>
+                <select
+                  name="queue_id"
+                  value={formData.queue_id}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="">Nenhuma (Atribuição Manual)</option>
+                  {queues
+                    ?.filter((q) => q.is_active)
+                    .map((queue) => (
+                      <option key={queue.id} value={queue.id}>
+                        {queue.name}
+                      </option>
+                    ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Se selecionada e com atribuição automática habilitada, o ticket será distribuído automaticamente entre os membros da fila
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
