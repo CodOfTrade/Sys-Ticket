@@ -15,6 +15,7 @@ import { ServiceCatalog } from '../../service-catalog/entities/service-catalog.e
 import { ServiceCategory } from '../../service-catalog/entities/service-category.entity';
 import { ClientContact } from '../../clients/entities/client-contact.entity';
 import { Resource } from '../../resources/entities/resource.entity';
+import { Queue } from '../../queues/entities/queue.entity';
 import { TicketFollower } from './ticket-follower.entity';
 import { TicketAttachment } from './ticket-attachment.entity';
 import { TicketComment } from './ticket-comment.entity';
@@ -164,6 +165,14 @@ export class Ticket {
 
   @Column({ nullable: true })
   assigned_to_id: string | null;
+
+  // Fila (Queue) à qual o ticket está atribuído
+  @ManyToOne(() => Queue, { nullable: true })
+  @JoinColumn({ name: 'queue_id' })
+  queue: Queue;
+
+  @Column({ nullable: true })
+  queue_id: string | null;
 
   // Criador do ticket
   @ManyToOne(() => User, { nullable: true })

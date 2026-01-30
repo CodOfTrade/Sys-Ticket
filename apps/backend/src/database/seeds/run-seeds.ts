@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import { seedInitialSetup } from './initial-setup.seed';
 import { seedPricingConfigs } from './pricing-configs.seed';
+import { seedQueues } from './queues.seed';
 
 // Configuração do TypeORM
 const AppDataSource = new DataSource({
@@ -27,6 +28,9 @@ async function runSeeds() {
 
     // Executar seed de classificações de atendimento
     await seedPricingConfigs(AppDataSource);
+
+    // Executar seed de filas
+    await seedQueues(AppDataSource);
 
     console.log('\n✅ Todos os seeds foram executados com sucesso!');
   } catch (error) {

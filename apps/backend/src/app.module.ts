@@ -15,6 +15,7 @@ import { ContractsModule } from './modules/contracts/contracts.module';
 import { TicketsModule } from './modules/tickets/tickets.module';
 import { TimesheetsModule } from './modules/timesheets/timesheets.module';
 import { ServiceDesksModule } from './modules/service-desks/service-desks.module';
+import { QueuesModule } from './modules/queues/queues.module';
 import { SlaModule } from './modules/sla/sla.module';
 import { SignaturesModule } from './modules/signatures/signatures.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
@@ -86,6 +87,7 @@ import { HealthController } from './health/health.controller';
     TimesheetsModule,
     ServiceDesksModule,
     ServiceCatalogModule,
+    QueuesModule,
     SlaModule,
     SignaturesModule,
     WebhooksModule,
