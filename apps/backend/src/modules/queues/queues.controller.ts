@@ -27,7 +27,7 @@ import { UserRole } from '../users/entities/user.entity';
 @ApiTags('Queues')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('v1/queues')
+@Controller({ path: 'queues', version: '1' })
 export class QueuesController {
   constructor(private readonly queuesService: QueuesService) {}
 
