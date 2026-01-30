@@ -19,6 +19,7 @@ import { SimpleCacheService } from '../../shared/services/simple-cache.service';
 import { PaginatedResult } from './interfaces/paginated-result.interface';
 import { ClientsService } from '../clients/clients.service';
 import { TicketHistoryService } from './services/ticket-history.service';
+import { SlaService } from '../sla/sla.service';
 
 @Injectable()
 export class TicketsService {
@@ -35,8 +36,8 @@ export class TicketsService {
     @Inject(forwardRef(() => ClientsService))
     private clientsService: ClientsService,
     private ticketHistoryService: TicketHistoryService,
-    @Inject(forwardRef(() => 'SlaService'))
-    private slaService: any,
+    @Inject(forwardRef(() => SlaService))
+    private slaService: SlaService,
   ) {
     this.initializeTicketCounter();
   }
