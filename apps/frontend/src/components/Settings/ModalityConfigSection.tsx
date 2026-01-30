@@ -41,9 +41,9 @@ export function ModalityConfigSection({
   };
 
   const calculateExample = (minutes: number): string => {
-    const threshold = formData.minimum_charge_threshold_minutes || modalityConfig.minimum_charge_threshold_minutes;
-    const minimum = formData.minimum_charge || modalityConfig.minimum_charge;
-    const hourlyRate = formData.hourly_rate || modalityConfig.hourly_rate;
+    const threshold = Number(formData.minimum_charge_threshold_minutes || modalityConfig.minimum_charge_threshold_minutes);
+    const minimum = Number(formData.minimum_charge || modalityConfig.minimum_charge);
+    const hourlyRate = Number(formData.hourly_rate || modalityConfig.hourly_rate);
     const perMinute = formData.charge_excess_per_minute !== undefined
       ? formData.charge_excess_per_minute
       : modalityConfig.charge_excess_per_minute;
@@ -97,7 +97,7 @@ export function ModalityConfigSection({
             />
           ) : (
             <div className="font-semibold text-gray-900 dark:text-white">
-              R$ {modalityConfig.hourly_rate.toFixed(2)}
+              R$ {Number(modalityConfig.hourly_rate).toFixed(2)}
             </div>
           )}
         </div>
@@ -119,7 +119,7 @@ export function ModalityConfigSection({
             />
           ) : (
             <div className="font-semibold text-gray-900 dark:text-white">
-              R$ {modalityConfig.minimum_charge.toFixed(2)}
+              R$ {Number(modalityConfig.minimum_charge).toFixed(2)}
             </div>
           )}
         </div>
@@ -197,7 +197,7 @@ export function ModalityConfigSection({
         <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
           <li>
             • 30 min → R${' '}
-            {(formData.minimum_charge || modalityConfig.minimum_charge).toFixed(2)} (valor
+            {Number(formData.minimum_charge || modalityConfig.minimum_charge).toFixed(2)} (valor
             mínimo)
           </li>
           <li>
@@ -205,7 +205,7 @@ export function ModalityConfigSection({
             {formData.minimum_charge_threshold_minutes ||
               modalityConfig.minimum_charge_threshold_minutes}{' '}
             min → R${' '}
-            {(formData.minimum_charge || modalityConfig.minimum_charge).toFixed(2)} (valor
+            {Number(formData.minimum_charge || modalityConfig.minimum_charge).toFixed(2)} (valor
             mínimo)
           </li>
           <li>
