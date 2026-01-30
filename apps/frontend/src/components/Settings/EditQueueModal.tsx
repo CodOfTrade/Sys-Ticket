@@ -7,8 +7,7 @@ import {
   UpdateQueueDto,
   DistributionStrategy,
   DISTRIBUTION_STRATEGY_LABELS,
-  DISTRIBUTION_STRATEGY_DESCRIPTIONS,
-  QueueMember
+  DISTRIBUTION_STRATEGY_DESCRIPTIONS
 } from '@/types/queue.types';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '@/store/auth.store';
