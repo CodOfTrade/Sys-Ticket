@@ -428,10 +428,11 @@ export class TicketsService {
     try {
       const ticket = await this.findOne(id);
 
-      // Guardar valores antigos para histórico
+      // Guardar valores antigos para histórico e recálculo de SLA
       const oldStatus = ticket.status;
       const oldPriority = ticket.priority;
       const oldAssignedToId = ticket.assigned_to_id;
+      const oldQueueId = ticket.queue_id;
 
       // Verificar mudanças de status importantes
       if (updateTicketDto.status && updateTicketDto.status !== ticket.status) {
@@ -454,6 +455,48 @@ export class TicketsService {
       }
 
       await this.ticketsRepository.save(ticket);
+
+      // Recalcular SLA se prioridade ou fila mudou
+      const priorityChanged = updateTicketDto.priority && updateTicketDto.priority !== oldPriority;
+      const queueChanged = updateTicketDto.queue_id !== undefined && updateTicketDto.queue_id !== oldQueueId;
+
+      if ((priorityChanged || queueChanged) && this.slaService && ticket.service_desk_id) {
+        try {
+          const slaConfig = await this.slaService.getSlaConfigForTicket(
+            ticket.queue_id,
+            ticket.service_desk_id,
+          );
+
+          const slaResult = this.slaService.calculateSlaDueDates(
+            ticket.created_at,
+            ticket.priority,
+            slaConfig,
+          );
+
+          if (slaResult.first_response_due && slaResult.resolution_due) {
+            // Só atualizar first_response se ainda não respondeu
+            const updateData: any = {};
+            if (!ticket.first_response_at) {
+              updateData.sla_first_response_due = slaResult.first_response_due;
+            }
+            // Só atualizar resolution se ainda não resolveu
+            if (!ticket.resolved_at) {
+              updateData.sla_resolution_due = slaResult.resolution_due;
+            }
+
+            if (Object.keys(updateData).length > 0) {
+              await this.ticketsRepository.update(ticket.id, updateData);
+              this.logger.log(
+                `SLA recalculado para ticket ${ticket.ticket_number} ` +
+                `(prioridade: ${priorityChanged ? 'mudou' : 'mantida'}, ` +
+                `fila: ${queueChanged ? 'mudou' : 'mantida'})`,
+              );
+            }
+          }
+        } catch (error) {
+          this.logger.error(`Erro ao recalcular SLA para ticket ${ticket.ticket_number}:`, error);
+        }
+      }
 
       // Registrar mudanças no histórico
       await this.recordTicketChanges(
