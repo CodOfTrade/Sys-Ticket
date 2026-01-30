@@ -139,7 +139,7 @@ export class CreateNewPricingStructure1738298000000 implements MigrationInterfac
       SELECT id, service_desk_id, service_type, pricing_type,
              hourly_rate_normal, hourly_rate_extra,
              minimum_charge, minimum_charge_threshold_minutes,
-             charge_by_complete_hour
+             charge_excess_per_minute
       FROM pricing_configs
     `);
 
@@ -169,7 +169,7 @@ export class CreateNewPricingStructure1738298000000 implements MigrationInterfac
       const hourlyRate = config.hourly_rate_normal || 0;
       const minimumCharge = config.minimum_charge || 0;
       const threshold = config.minimum_charge_threshold_minutes || 60;
-      const chargeExcessPerMinute = config.charge_by_complete_hour === false; // Inverter lógica
+      const chargeExcessPerMinute = config.charge_excess_per_minute === true;
 
       for (const modality of modalities) {
         await queryRunner.query(
@@ -205,7 +205,7 @@ export class CreateNewPricingStructure1738298000000 implements MigrationInterfac
       'hourly_rate_night',
       'fixed_price',
       'contract_percentage',
-      'charge_by_complete_hour',
+      'charge_excess_per_minute',
     ];
 
     for (const columnName of columnsToRemove) {
@@ -275,7 +275,7 @@ export class CreateNewPricingStructure1738298000000 implements MigrationInterfac
     await queryRunner.addColumn(
       'pricing_configs',
       new TableColumn({
-        name: 'charge_by_complete_hour',
+        name: 'charge_excess_per_minute',
         type: 'boolean',
         default: false,
       }),
