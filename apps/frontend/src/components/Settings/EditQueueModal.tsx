@@ -7,11 +7,11 @@ import {
   UpdateQueueDto,
   DistributionStrategy,
   DISTRIBUTION_STRATEGY_LABELS,
-  DISTRIBUTION_STRATEGY_DESCRIPTIONS
+  DISTRIBUTION_STRATEGY_DESCRIPTIONS,
+  QueueMember
 } from '@/types/queue.types';
-import { User } from '@/types/user.types';
 import { toast } from 'react-hot-toast';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/store/auth.store';
 
 interface EditQueueModalProps {
   queue: Queue;
@@ -22,7 +22,7 @@ interface EditQueueModalProps {
 export function EditQueueModal({ queue, onClose, onSuccess }: EditQueueModalProps) {
   const { user: currentUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<QueueMember[]>([]);
   const [formData, setFormData] = useState<UpdateQueueDto>({
     name: queue.name,
     description: queue.description || '',
@@ -33,7 +33,11 @@ export function EditQueueModal({ queue, onClose, onSuccess }: EditQueueModalProp
     display_order: queue.display_order,
     auto_assignment_config: queue.auto_assignment_config || {
       enabled: false,
+      on_ticket_create: false,
+      on_ticket_status_change: false,
       max_tickets_per_member: null,
+      priority_weight: false,
+      skills_matching: false,
     },
   });
 
@@ -43,9 +47,13 @@ export function EditQueueModal({ queue, onClose, onSuccess }: EditQueueModalProp
 
   const fetchUsers = async () => {
     try {
-      const data = await userService.getAll({ service_desk_id: currentUser?.service_desk_id });
-      // Filter only agents and admins
-      setUsers(data.filter(u => u.role === 'agent' || u.role === 'admin'));
+      const data = await userService.getAll();
+      // Filter only agents and admins from current service desk
+      const filtered = data.filter(
+        u => (u.role === 'agent' || u.role === 'admin') &&
+             u.service_desk_id === currentUser?.service_desk_id
+      );
+      setUsers(filtered as QueueMember[]);
     } catch (error: any) {
       console.error('Erro ao buscar usuários:', error);
       toast.error('Erro ao carregar usuários');
@@ -260,13 +268,17 @@ export function EditQueueModal({ queue, onClose, onSuccess }: EditQueueModalProp
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={formData.auto_assignment_config?.enabled}
+                  checked={formData.auto_assignment_config?.enabled || false}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
                       auto_assignment_config: {
-                        ...formData.auto_assignment_config!,
                         enabled: e.target.checked,
+                        on_ticket_create: formData.auto_assignment_config?.on_ticket_create || false,
+                        on_ticket_status_change: formData.auto_assignment_config?.on_ticket_status_change || false,
+                        max_tickets_per_member: formData.auto_assignment_config?.max_tickets_per_member || null,
+                        priority_weight: formData.auto_assignment_config?.priority_weight || false,
+                        skills_matching: formData.auto_assignment_config?.skills_matching || false,
                       },
                     })
                   }
@@ -294,8 +306,12 @@ export function EditQueueModal({ queue, onClose, onSuccess }: EditQueueModalProp
                       setFormData({
                         ...formData,
                         auto_assignment_config: {
-                          ...formData.auto_assignment_config!,
+                          enabled: formData.auto_assignment_config?.enabled || false,
+                          on_ticket_create: formData.auto_assignment_config?.on_ticket_create || false,
+                          on_ticket_status_change: formData.auto_assignment_config?.on_ticket_status_change || false,
                           max_tickets_per_member: e.target.value ? parseInt(e.target.value) : null,
+                          priority_weight: formData.auto_assignment_config?.priority_weight || false,
+                          skills_matching: formData.auto_assignment_config?.skills_matching || false,
                         },
                       })
                     }

@@ -4,23 +4,23 @@ import { slaService } from '@/services/sla.service';
 import {
   SlaConfig,
   UpdateSlaConfigDto,
-  PrioritySlaConfig,
+  SlaPriorityConfig,
   BusinessHoursConfig,
   WEEKDAY_LABELS,
 } from '@/types/sla.types';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/store/auth.store';
 import { toast } from 'react-hot-toast';
 
 const PRIORITY_LABELS: Record<string, string> = {
   low: 'Baixa',
-  normal: 'Normal',
+  medium: 'Normal',
   high: 'Alta',
   urgent: 'Urgente',
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
   low: '#10B981', // Green
-  normal: '#3B82F6', // Blue
+  medium: '#3B82F6', // Blue
   high: '#F59E0B', // Amber
   urgent: '#EF4444', // Red
 };
@@ -29,21 +29,18 @@ export function SlaSettings() {
   const { user: currentUser } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [slaConfig, setSlaConfig] = useState<SlaConfig | null>(null);
   const [formData, setFormData] = useState<UpdateSlaConfigDto>({
-    enabled: false,
-    business_hours_enabled: false,
     business_hours: {
-      start_time: '08:00',
-      end_time: '18:00',
+      start: '08:00',
+      end: '18:00',
       timezone: 'America/Sao_Paulo',
     },
     working_days: [1, 2, 3, 4, 5], // Monday to Friday
-    priority_configs: {
-      low: { first_response_minutes: 480, resolution_minutes: 2880 },
-      normal: { first_response_minutes: 240, resolution_minutes: 1440 },
-      high: { first_response_minutes: 120, resolution_minutes: 480 },
-      urgent: { first_response_minutes: 60, resolution_minutes: 240 },
+    priorities: {
+      low: { first_response: 480, resolution: 2880 },
+      medium: { first_response: 240, resolution: 1440 },
+      high: { first_response: 120, resolution: 480 },
+      urgent: { first_response: 60, resolution: 240 },
     },
   });
 
@@ -62,13 +59,10 @@ export function SlaSettings() {
       const response = await slaService.getConfig(currentUser.service_desk_id);
 
       if (response.sla_config) {
-        setSlaConfig(response.sla_config);
         setFormData({
-          enabled: response.sla_config.enabled,
-          business_hours_enabled: response.sla_config.business_hours_enabled,
           business_hours: response.sla_config.business_hours,
           working_days: response.sla_config.working_days,
-          priority_configs: response.sla_config.priority_configs,
+          priorities: response.sla_config.priorities,
         });
       }
     } catch (error: any) {
@@ -88,16 +82,14 @@ export function SlaSettings() {
     }
 
     // Validation
-    if (formData.business_hours_enabled) {
-      if (!formData.business_hours?.start_time || !formData.business_hours?.end_time) {
-        toast.error('Horário comercial é obrigatório quando habilitado');
-        return;
-      }
+    if (!formData.business_hours?.start || !formData.business_hours?.end) {
+      toast.error('Horário comercial é obrigatório');
+      return;
+    }
 
-      if (formData.working_days && formData.working_days.length === 0) {
-        toast.error('Selecione pelo menos um dia útil');
-        return;
-      }
+    if (formData.working_days && formData.working_days.length === 0) {
+      toast.error('Selecione pelo menos um dia útil');
+      return;
     }
 
     try {
@@ -123,16 +115,16 @@ export function SlaSettings() {
   };
 
   const updatePriorityConfig = (
-    priority: keyof typeof formData.priority_configs,
-    field: keyof PrioritySlaConfig,
+    priority: keyof typeof formData.priorities,
+    field: keyof SlaPriorityConfig,
     value: number
   ) => {
     setFormData((prev) => ({
       ...prev,
-      priority_configs: {
-        ...prev.priority_configs,
+      priorities: {
+        ...prev.priorities,
         [priority]: {
-          ...prev.priority_configs![priority],
+          ...prev.priorities[priority],
           [field]: value,
         },
       },
@@ -186,52 +178,18 @@ export function SlaSettings() {
         </div>
       </div>
 
-      {/* SLA Habilitado */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={formData.enabled}
-            onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
-            className="w-5 h-5 rounded text-blue-600 focus:ring-2 focus:ring-blue-500"
-          />
-          <div>
-            <span className="text-lg font-semibold text-gray-900 dark:text-white">
-              Habilitar SLA
-            </span>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Quando habilitado, tickets terão prazos de resposta e resolução calculados automaticamente
-            </p>
-          </div>
-        </label>
-      </div>
-
-      {formData.enabled && (
-        <>
+      {/* Configurações */}
           {/* Horário Comercial */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 space-y-4">
             <div>
-              <label className="flex items-center gap-3 cursor-pointer mb-4">
-                <input
-                  type="checkbox"
-                  checked={formData.business_hours_enabled}
-                  onChange={(e) =>
-                    setFormData({ ...formData, business_hours_enabled: e.target.checked })
-                  }
-                  className="w-5 h-5 rounded text-blue-600 focus:ring-2 focus:ring-blue-500"
-                />
-                <div>
-                  <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Considerar Horário Comercial
-                  </span>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Conta apenas horas úteis no cálculo do prazo de SLA
-                  </p>
-                </div>
-              </label>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Horário Comercial
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Define o horário de funcionamento para cálculo do SLA. Apenas horas úteis serão consideradas.
+              </p>
 
-              {formData.business_hours_enabled && (
-                <div className="ml-8 space-y-4">
+                <div className="space-y-4">
                   {/* Horários */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
@@ -240,13 +198,13 @@ export function SlaSettings() {
                       </label>
                       <input
                         type="time"
-                        value={formData.business_hours?.start_time}
+                        value={formData.business_hours?.start}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
                             business_hours: {
                               ...formData.business_hours!,
-                              start_time: e.target.value,
+                              start: e.target.value,
                             },
                           })
                         }
@@ -260,13 +218,13 @@ export function SlaSettings() {
                       </label>
                       <input
                         type="time"
-                        value={formData.business_hours?.end_time}
+                        value={formData.business_hours?.end}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
                             business_hours: {
                               ...formData.business_hours!,
-                              end_time: e.target.value,
+                              end: e.target.value,
                             },
                           })
                         }
@@ -298,7 +256,9 @@ export function SlaSettings() {
                     </div>
                   </div>
 
-                  {/* Dias Úteis */}
+                </div>
+
+                {/* Dias Úteis */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Dias Úteis
@@ -321,7 +281,6 @@ export function SlaSettings() {
                     </div>
                   </div>
                 </div>
-              )}
             </div>
           </div>
 
@@ -331,7 +290,7 @@ export function SlaSettings() {
               Prazos por Prioridade
             </h3>
             <div className="space-y-6">
-              {Object.entries(formData.priority_configs || {}).map(([priority, config]) => (
+              {Object.entries(formData.priorities).map(([priority, config]) => (
                 <div
                   key={priority}
                   className="border-l-4 pl-4 py-2"
@@ -356,11 +315,11 @@ export function SlaSettings() {
                         <input
                           type="number"
                           min="1"
-                          value={config.first_response_minutes}
+                          value={config.first_response}
                           onChange={(e) =>
                             updatePriorityConfig(
-                              priority as keyof typeof formData.priority_configs,
-                              'first_response_minutes',
+                              priority as keyof typeof formData.priorities,
+                              'first_response',
                               parseInt(e.target.value) || 0
                             )
                           }
@@ -368,7 +327,7 @@ export function SlaSettings() {
                           placeholder="Minutos"
                         />
                         <div className="flex items-center px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                          {formatMinutesToHours(config.first_response_minutes)}
+                          {formatMinutesToHours(config.first_response)}
                         </div>
                       </div>
                     </div>
@@ -382,11 +341,11 @@ export function SlaSettings() {
                         <input
                           type="number"
                           min="1"
-                          value={config.resolution_minutes}
+                          value={config.resolution}
                           onChange={(e) =>
                             updatePriorityConfig(
-                              priority as keyof typeof formData.priority_configs,
-                              'resolution_minutes',
+                              priority as keyof typeof formData.priorities,
+                              'resolution',
                               parseInt(e.target.value) || 0
                             )
                           }
@@ -394,7 +353,7 @@ export function SlaSettings() {
                           placeholder="Minutos"
                         />
                         <div className="flex items-center px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                          {formatMinutesToHours(config.resolution_minutes)}
+                          {formatMinutesToHours(config.resolution)}
                         </div>
                       </div>
                     </div>

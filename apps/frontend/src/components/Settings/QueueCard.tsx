@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Edit, Trash2, Users, Settings as SettingsIcon, BarChart3, Power, PowerOff } from 'lucide-react';
+import { ChevronDown, ChevronUp, Edit, Trash2, Users, Settings as SettingsIcon, Power, PowerOff } from 'lucide-react';
 import { Queue } from '@/types/queue.types';
 import { DISTRIBUTION_STRATEGY_LABELS, DISTRIBUTION_STRATEGY_DESCRIPTIONS } from '@/types/queue.types';
 import { EditQueueModal } from './EditQueueModal';
