@@ -31,14 +31,7 @@ export class UpdateTicketAppointmentsStructure1738298100000 implements Migration
       // Mapear valores antigos para novos
       await queryRunner.query(`
         UPDATE ticket_appointments
-        SET service_modality = CASE
-          WHEN service_type = 'internal' THEN 'internal'::text
-          WHEN service_type = 'remote' THEN 'remote'::text
-          WHEN service_type = 'external' THEN 'external'::text
-          WHEN service_type = 'outsourced_n1' THEN 'remote'::text
-          WHEN service_type = 'outsourced_n2' THEN 'remote'::text
-          ELSE 'remote'::text
-        END::pricing_modality_configs_modality_enum
+        SET service_modality = service_type::text::pricing_modality_configs_modality_enum
       `);
 
       // Remover coluna antiga service_type
