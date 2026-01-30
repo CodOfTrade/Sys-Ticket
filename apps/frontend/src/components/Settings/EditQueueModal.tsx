@@ -22,7 +22,7 @@ interface EditQueueModalProps {
 export function EditQueueModal({ queue, onClose, onSuccess }: EditQueueModalProps) {
   const { user: currentUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState<QueueMember[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [formData, setFormData] = useState<UpdateQueueDto>({
     name: queue.name,
     description: queue.description || '',

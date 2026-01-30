@@ -6,8 +6,7 @@ import {
   CreateQueueDto,
   DistributionStrategy,
   DISTRIBUTION_STRATEGY_LABELS,
-  DISTRIBUTION_STRATEGY_DESCRIPTIONS,
-  QueueMember
+  DISTRIBUTION_STRATEGY_DESCRIPTIONS
 } from '@/types/queue.types';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '@/store/auth.store';
@@ -20,7 +19,7 @@ interface CreateQueueModalProps {
 export function CreateQueueModal({ onClose, onSuccess }: CreateQueueModalProps) {
   const { user: currentUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState<QueueMember[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [formData, setFormData] = useState<CreateQueueDto>({
     service_desk_id: currentUser?.service_desk_id || '',
     name: '',
