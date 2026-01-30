@@ -45,6 +45,26 @@ export interface AutoAssignmentConfig {
 }
 
 /**
+ * Configuração de SLA por prioridade
+ */
+export interface SlaPriorityConfig {
+  first_response: number;
+  resolution: number;
+}
+
+/**
+ * Configuração de SLA da fila
+ */
+export interface QueueSlaConfig {
+  priorities: {
+    low: SlaPriorityConfig;
+    medium: SlaPriorityConfig;
+    high: SlaPriorityConfig;
+    urgent: SlaPriorityConfig;
+  };
+}
+
+/**
  * Membro da fila (usuário)
  */
 export interface QueueMember {
@@ -66,6 +86,7 @@ export interface Queue {
   service_desk_id: string;
   distribution_strategy: DistributionStrategy;
   auto_assignment_config: AutoAssignmentConfig | null;
+  sla_config: QueueSlaConfig | null;
   members: QueueMember[];
   is_active: boolean;
   color: string;
@@ -83,6 +104,7 @@ export interface CreateQueueDto {
   service_desk_id: string;
   distribution_strategy?: DistributionStrategy;
   auto_assignment_config?: AutoAssignmentConfig;
+  sla_config?: QueueSlaConfig | null;
   member_ids?: string[];
   is_active?: boolean;
   color?: string;
@@ -97,6 +119,7 @@ export interface UpdateQueueDto {
   description?: string;
   distribution_strategy?: DistributionStrategy;
   auto_assignment_config?: AutoAssignmentConfig;
+  sla_config?: QueueSlaConfig | null;
   member_ids?: string[];
   is_active?: boolean;
   color?: string;

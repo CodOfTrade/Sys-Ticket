@@ -7,7 +7,8 @@ import {
   UpdateQueueDto,
   DistributionStrategy,
   DISTRIBUTION_STRATEGY_LABELS,
-  DISTRIBUTION_STRATEGY_DESCRIPTIONS
+  DISTRIBUTION_STRATEGY_DESCRIPTIONS,
+  QueueSlaConfig
 } from '@/types/queue.types';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '@/store/auth.store';
@@ -26,7 +27,7 @@ const PRIORITY_COLORS: Record<string, string> = {
   urgent: '#EF4444',
 };
 
-const DEFAULT_SLA_CONFIG = {
+const DEFAULT_SLA_CONFIG: QueueSlaConfig = {
   priorities: {
     low: { first_response: 480, resolution: 2880 },
     medium: { first_response: 240, resolution: 1440 },
@@ -46,7 +47,7 @@ export function EditQueueModal({ queue, onClose, onSuccess }: EditQueueModalProp
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [useCustomSla, setUseCustomSla] = useState(!!queue.sla_config);
-  const [slaConfig, setSlaConfig] = useState(queue.sla_config || DEFAULT_SLA_CONFIG);
+  const [slaConfig, setSlaConfig] = useState<QueueSlaConfig>(queue.sla_config || DEFAULT_SLA_CONFIG);
   const [formData, setFormData] = useState<UpdateQueueDto>({
     name: queue.name,
     description: queue.description || '',
