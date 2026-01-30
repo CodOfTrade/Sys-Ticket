@@ -31,7 +31,10 @@ export class AuthService {
     const token = this.generateToken(user);
 
     return {
-      user: userWithoutPassword,
+      user: {
+        ...userWithoutPassword,
+        service_desk_id: user.service_desk_ids?.[0] || null,
+      },
       access_token: token,
     };
   }
@@ -58,7 +61,10 @@ export class AuthService {
     const token = this.generateToken(user);
 
     return {
-      user: userWithoutPassword,
+      user: {
+        ...userWithoutPassword,
+        service_desk_id: user.service_desk_ids?.[0] || null,
+      },
       access_token: token,
     };
   }
@@ -79,6 +85,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      service_desk_id: user.service_desk_ids?.[0] || null,
     };
 
     return this.jwtService.sign(payload);
