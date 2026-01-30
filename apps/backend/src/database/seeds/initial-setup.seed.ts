@@ -62,98 +62,10 @@ export async function seedInitialSetup(dataSource: DataSource) {
     }
 
     // 3. Criar tabela pricing_configs se não existir
-    await queryRunner.query(`
-      CREATE TABLE IF NOT EXISTS pricing_configs (
-        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-        service_desk_id uuid NOT NULL REFERENCES service_desks(id) ON DELETE CASCADE,
-        service_type varchar NOT NULL,
-        pricing_type varchar DEFAULT 'hourly',
-        hourly_rate_normal decimal(10,2) DEFAULT 0,
-        hourly_rate_extra decimal(10,2) DEFAULT 0,
-        hourly_rate_weekend decimal(10,2) DEFAULT 0,
-        hourly_rate_holiday decimal(10,2) DEFAULT 0,
-        hourly_rate_night decimal(10,2) DEFAULT 0,
-        fixed_price decimal(10,2) DEFAULT 0,
-        contract_percentage decimal(5,2) DEFAULT 100,
-        minimum_charge decimal(10,2) DEFAULT 0,
-        round_to_minutes integer DEFAULT 30,
-        active boolean DEFAULT true,
-        description text,
-        created_at timestamp DEFAULT NOW(),
-        updated_at timestamp DEFAULT NOW(),
-        UNIQUE(service_desk_id, service_type)
-      );
-    `);
-    console.log('✅ Tabela pricing_configs verificada/criada!');
-
-    // 4. Criar configurações de preço padrão
-    const pricingTypes = [
-      {
-        service_type: 'remote',
-        hourly_rate_normal: 100.00,
-        hourly_rate_extra: 150.00,
-        hourly_rate_weekend: 200.00,
-        hourly_rate_holiday: 250.00,
-        hourly_rate_night: 150.00,
-        description: 'Atendimento Remoto',
-      },
-      {
-        service_type: 'external',
-        hourly_rate_normal: 150.00,
-        hourly_rate_extra: 225.00,
-        hourly_rate_weekend: 300.00,
-        hourly_rate_holiday: 375.00,
-        hourly_rate_night: 225.00,
-        description: 'Atendimento Presencial/Externo',
-      },
-      {
-        service_type: 'internal',
-        hourly_rate_normal: 50.00,
-        hourly_rate_extra: 75.00,
-        hourly_rate_weekend: 100.00,
-        hourly_rate_holiday: 125.00,
-        hourly_rate_night: 75.00,
-        description: 'Atendimento Interno',
-      },
-    ];
-
-    for (const pricing of pricingTypes) {
-      const exists = await queryRunner.query(
-        `SELECT id FROM pricing_configs WHERE service_desk_id = $1 AND service_type = $2`,
-        [serviceDeskId, pricing.service_type],
-      );
-
-      if (exists.length === 0) {
-        await queryRunner.query(
-          `INSERT INTO pricing_configs (
-            service_desk_id, service_type, pricing_type,
-            hourly_rate_normal, hourly_rate_extra, hourly_rate_weekend,
-            hourly_rate_holiday, hourly_rate_night,
-            fixed_price, contract_percentage, minimum_charge, round_to_minutes,
-            active, description, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())`,
-          [
-            serviceDeskId,
-            pricing.service_type,
-            'hourly',
-            pricing.hourly_rate_normal,
-            pricing.hourly_rate_extra,
-            pricing.hourly_rate_weekend,
-            pricing.hourly_rate_holiday,
-            pricing.hourly_rate_night,
-            0,
-            100,
-            0,
-            30,
-            true,
-            pricing.description,
-          ],
-        );
-        console.log(`✅ Configuração de preço criada: ${pricing.description}`);
-      } else {
-        console.log(`ℹ️  Configuração ${pricing.description} já existe`);
-      }
-    }
+    // NOTA: Tabela pricing_configs agora é criada/modificada via migrations
+    // Os dados são inseridos via pricing-configs.seed.ts com a nova estrutura
+    console.log('ℹ️  Tabela pricing_configs será criada/atualizada via migrations');
+    console.log('ℹ️  Dados de pricing_configs serão inseridos via pricing-configs.seed.ts');
 
     await queryRunner.commitTransaction();
     console.log('✅ Seed concluído com sucesso!\n');
