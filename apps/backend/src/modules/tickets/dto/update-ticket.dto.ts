@@ -146,6 +146,15 @@ export class UpdateTicketDto {
   tags?: string[];
 
   @ApiPropertyOptional({
+    description: 'ID da fila de atendimento',
+    example: 'uuid-da-fila',
+  })
+  @ValidateIf((o) => o.queue_id !== null && o.queue_id !== undefined)
+  @IsUUID()
+  @IsOptional()
+  queue_id?: string | null;
+
+  @ApiPropertyOptional({
     description: 'ID do atendente responsável',
     example: 'uuid-do-atendente',
   })
