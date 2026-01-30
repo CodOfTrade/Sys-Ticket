@@ -106,35 +106,36 @@ export class TicketsService {
 
         const savedTicket = await this.ticketsRepository.save(ticket);
 
-        // Calcular e atribuir SLA
+        // Calcular e atribuir SLA (considerando fila > service_desk > padrão)
         if (this.slaService && savedTicket.service_desk_id) {
           try {
-            const serviceDesk: any = await this.ticketsRepository.manager.findOne('ServiceDesk', {
-              where: { id: savedTicket.service_desk_id },
-            });
+            // Usar getSlaConfigForTicket que considera a hierarquia: Fila > Service Desk > Padrão
+            const slaConfig = await this.slaService.getSlaConfigForTicket(
+              savedTicket.queue_id,
+              savedTicket.service_desk_id,
+            );
 
-            if (serviceDesk && serviceDesk.sla_config) {
-              const slaResult = this.slaService.calculateSlaDueDates(
-                savedTicket.created_at,
-                savedTicket.priority,
-                serviceDesk.sla_config,
+            const slaResult = this.slaService.calculateSlaDueDates(
+              savedTicket.created_at,
+              savedTicket.priority,
+              slaConfig,
+            );
+
+            if (slaResult.first_response_due && slaResult.resolution_due) {
+              await this.ticketsRepository.update(savedTicket.id, {
+                sla_first_response_due: slaResult.first_response_due,
+                sla_resolution_due: slaResult.resolution_due,
+              });
+
+              savedTicket.sla_first_response_due = slaResult.first_response_due;
+              savedTicket.sla_resolution_due = slaResult.resolution_due;
+
+              this.logger.log(
+                `SLA calculado para ticket ${ticketNumber}: ` +
+                `Primeira resposta: ${slaResult.first_response_due.toISOString()}, ` +
+                `Resolução: ${slaResult.resolution_due.toISOString()}` +
+                (savedTicket.queue_id ? ` (usando SLA da fila)` : ` (usando SLA padrão)`),
               );
-
-              if (slaResult.first_response_due && slaResult.resolution_due) {
-                await this.ticketsRepository.update(savedTicket.id, {
-                  sla_first_response_due: slaResult.first_response_due,
-                  sla_resolution_due: slaResult.resolution_due,
-                });
-
-                savedTicket.sla_first_response_due = slaResult.first_response_due;
-                savedTicket.sla_resolution_due = slaResult.resolution_due;
-
-                this.logger.log(
-                  `SLA calculado para ticket ${ticketNumber}: ` +
-                  `Primeira resposta: ${slaResult.first_response_due.toISOString()}, ` +
-                  `Resolução: ${slaResult.resolution_due.toISOString()}`,
-                );
-              }
             }
           } catch (error) {
             this.logger.error(`Erro ao calcular SLA para ticket ${ticketNumber}:`, error);
