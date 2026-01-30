@@ -29,7 +29,7 @@ import { UserRole } from '../users/entities/user.entity';
 @ApiTags('SLA')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('v1/sla')
+@Controller({ path: 'sla', version: '1' })
 export class SlaController {
   constructor(
     private readonly slaService: SlaService,
