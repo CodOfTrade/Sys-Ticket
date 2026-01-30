@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { PricingConfig } from './pricing-config.entity';
 
 @Entity('service_desks')
 export class ServiceDesk {
@@ -52,6 +54,10 @@ export class ServiceDesk {
     required: boolean;
     options?: string[];
   }>;
+
+  // Relacionamento com configurações de precificação
+  @OneToMany(() => PricingConfig, (pricingConfig) => pricingConfig.service_desk)
+  pricing_configs: PricingConfig[];
 
   @CreateDateColumn()
   created_at: Date;
