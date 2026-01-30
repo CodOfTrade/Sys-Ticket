@@ -3,7 +3,7 @@ import { X, Search, Upload, Link2, UserPlus, Mail, AlertCircle, CheckCircle2, Ch
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { ticketService } from '@/services/ticket.service';
 import { ticketAttachmentsService } from '@/services/ticket-attachments.service';
-import { TicketPriority, ServiceType, CreateTicketDto } from '@/types/ticket.types';
+import { TicketPriority, CreateTicketDto } from '@/types/ticket.types';
 import { useAuthStore } from '@/store/auth.store';
 import { serviceCatalogService } from '@/services/service-catalog.service';
 import { clientService, Client } from '@/services/client.service';
@@ -26,7 +26,6 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
     title: '',
     description: '',
     priority: TicketPriority.MEDIUM,
-    service_type: ServiceType.REMOTE,
     service_catalog_id: '',
     client_id: '',
     client_name: '',
@@ -223,7 +222,6 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
       title: '',
       description: '',
       priority: TicketPriority.MEDIUM,
-      service_type: ServiceType.REMOTE,
       service_catalog_id: '',
       client_id: '',
       client_name: '',
@@ -404,7 +402,6 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
         title: formData.title,
         description: formData.description,
         priority: formData.priority,
-        type: formData.service_type,
         client_id: formData.client_id || 'CLI-' + Date.now(), // Gerar ID temporário se não houver
         client_name: formData.client_name,
         requester_name: formData.requester_name,
@@ -851,7 +848,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Prioridade <span className="text-red-500">*</span>
@@ -866,24 +863,6 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
                     <option value={TicketPriority.MEDIUM}>Média</option>
                     <option value={TicketPriority.HIGH}>Alta</option>
                     <option value={TicketPriority.URGENT}>Urgente</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Tipo de Serviço <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="service_type"
-                    value={formData.service_type}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    <option value={ServiceType.REMOTE}>Remoto</option>
-                    <option value={ServiceType.INTERNAL}>Interno</option>
-                    <option value={ServiceType.EXTERNAL}>Externo</option>
-                    <option value={ServiceType.OUTSOURCED_N1}>Terceirizado N1</option>
-                    <option value={ServiceType.OUTSOURCED_N2}>Terceirizado N2</option>
                   </select>
                 </div>
 
