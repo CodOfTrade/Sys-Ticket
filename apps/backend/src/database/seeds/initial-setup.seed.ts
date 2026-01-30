@@ -63,8 +63,8 @@ export async function seedInitialSetup(dataSource: DataSource) {
 
     // 3. Associar usuário admin à mesa de serviço
     await queryRunner.query(
-      `UPDATE users SET service_desk_id = $1 WHERE id = $2`,
-      [serviceDeskId, adminId],
+      `UPDATE users SET service_desk_ids = $1 WHERE id = $2`,
+      [`{${serviceDeskId}}`, adminId],
     );
     console.log('✅ Usuário admin associado à mesa de serviço');
 
