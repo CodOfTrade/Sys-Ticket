@@ -27,10 +27,12 @@ import { SettingsModule } from './modules/settings/settings.module';
 import { ResourcesModule } from './modules/resources/resources.module';
 import { DownloadsModule } from './modules/downloads/downloads.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
 
 // Guards
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
+import { PermissionsGuard } from './modules/permissions/guards/permissions.guard';
 
 // Controllers
 import { HealthController } from './health/health.controller';
@@ -98,6 +100,7 @@ import { HealthController } from './health/health.controller';
     ResourcesModule,
     DownloadsModule,
     NotificationsModule,
+    PermissionsModule,
   ],
   controllers: [HealthController],
   providers: [
@@ -108,6 +111,10 @@ import { HealthController } from './health/health.controller';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
     },
   ],
 })

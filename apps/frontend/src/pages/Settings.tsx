@@ -4,6 +4,7 @@ import { TicketSettingsContainer } from '@/components/Settings/TicketSettingsCon
 import { GeneralSettingsContainer } from '@/components/Settings/GeneralSettingsContainer';
 import { LogoSettings } from '@/components/Settings/LogoSettings';
 import { NotificationSettings } from '@/components/Settings/NotificationSettings';
+import { UsersSettings } from '@/components/Settings/UsersSettings';
 
 type SettingsTab = 'tickets' | 'branding' | 'users' | 'notifications' | 'general';
 
@@ -65,11 +66,7 @@ export function Settings() {
           <div className="p-6">
             {activeTab === 'tickets' && <TicketSettingsContainer />}
             {activeTab === 'branding' && <LogoSettings />}
-            {activeTab === 'users' && (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                Usuarios e Permissoes - Em desenvolvimento
-              </div>
-            )}
+            {activeTab === 'users' && <UsersSettings />}
             {activeTab === 'notifications' && <NotificationSettings />}
             {activeTab === 'general' && <GeneralSettingsContainer />}
           </div>

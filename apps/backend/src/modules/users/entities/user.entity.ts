@@ -6,8 +6,11 @@ import {
   UpdateDateColumn,
   BeforeInsert,
   BeforeUpdate,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { CustomRole } from '../../permissions/entities/custom-role.entity';
 
 export enum UserRole {
   ADMIN = 'admin',
@@ -63,9 +66,17 @@ export class User {
   @Column({ type: 'varchar', length: 100, nullable: true })
   client_id: string;
 
-  // Permissões específicas
+  // Permissões específicas (extras além do role)
   @Column({ type: 'simple-array', nullable: true })
   permissions: string[];
+
+  // Role customizado (alternativo ao role fixo)
+  @Column({ type: 'uuid', nullable: true })
+  custom_role_id: string;
+
+  @ManyToOne(() => CustomRole, { nullable: true, eager: false })
+  @JoinColumn({ name: 'custom_role_id' })
+  custom_role: CustomRole;
 
   // Mesas de serviço que o usuário pode acessar
   @Column({ type: 'simple-array', nullable: true })

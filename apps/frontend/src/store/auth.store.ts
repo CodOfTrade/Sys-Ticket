@@ -6,8 +6,14 @@ interface User {
   name: string;
   email: string;
   role: 'admin' | 'manager' | 'agent' | 'client';
+  status?: 'active' | 'inactive' | 'suspended';
   avatar_url?: string;
+  phone?: string;
+  department?: string;
+  permissions: string[];
+  custom_role_id?: string;
   service_desk_id?: string;
+  service_desk_ids?: string[];
 }
 
 interface AuthStore {

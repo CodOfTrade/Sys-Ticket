@@ -11,12 +11,18 @@ import {
   Key,
 } from 'lucide-react';
 import { settingsService } from '@/services/settings.service';
+import { useCanAccessFn } from '@/hooks/useCanAccess';
+import type { Permission, UserRole } from '@/types/permissions.types';
 
 interface MenuItem {
   title: string;
   icon: React.ReactNode;
   path: string;
   badge?: number;
+  /** Permissoes necessarias para ver o item (OR - qualquer uma) */
+  permissions?: Permission[];
+  /** Roles permitidos para ver o item */
+  roles?: UserRole[];
 }
 
 const menuItems: MenuItem[] = [
@@ -24,41 +30,50 @@ const menuItems: MenuItem[] = [
     title: 'Dashboard',
     icon: <LayoutDashboard size={20} />,
     path: '/dashboard',
+    // Dashboard e visivel para todos os autenticados
   },
   {
     title: 'Tickets',
     icon: <Ticket size={20} />,
     path: '/tickets',
+    permissions: ['tickets:read', 'tickets:read:all', 'tickets:read:own', 'tickets:read:assigned'],
   },
   {
-    title: 'Aprovação',
+    title: 'Aprovacao',
     icon: <ClipboardCheck size={20} />,
     path: '/ticket-approval',
+    permissions: ['tickets:approve'],
   },
   {
     title: 'Clientes',
     icon: <Users size={20} />,
     path: '/clients',
+    permissions: ['clients:read'],
   },
   {
     title: 'Recursos',
     icon: <HardDrive size={20} />,
     path: '/resources',
+    permissions: ['resources:read'],
   },
   {
-    title: 'Licenças',
+    title: 'Licencas',
     icon: <Key size={20} />,
     path: '/licenses',
+    permissions: ['licenses:read'],
   },
   {
-    title: 'Relatórios',
+    title: 'Relatorios',
     icon: <FileText size={20} />,
     path: '/reports',
+    permissions: ['reports:view'],
   },
   {
-    title: 'Configurações',
+    title: 'Configuracoes',
     icon: <Settings size={20} />,
     path: '/settings',
+    permissions: ['settings:read'],
+    roles: ['admin', 'manager'],
   },
 ];
 
@@ -69,6 +84,7 @@ interface SidebarProps {
 export function Sidebar({ isOpen }: SidebarProps) {
   const location = useLocation();
   const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
+  const checkAccess = useCanAccessFn();
 
   // Buscar logos
   const { data: logos } = useQuery({
@@ -80,6 +96,19 @@ export function Sidebar({ isOpen }: SidebarProps) {
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
+
+  // Filtra itens do menu por permissao
+  const visibleMenuItems = menuItems.filter((item) => {
+    // Se nao tem restricoes, mostra para todos
+    if (!item.permissions && !item.roles) return true;
+
+    // Verifica acesso (OR para permissoes)
+    return checkAccess({
+      permissions: item.permissions,
+      roles: item.roles,
+      requireAll: false, // Qualquer permissao da lista permite acesso
+    });
+  });
 
   return (
     <aside
@@ -116,7 +145,7 @@ export function Sidebar({ isOpen }: SidebarProps) {
 
       {/* Menu Items */}
       <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-4rem)]">
-        {menuItems.map((item) => (
+        {visibleMenuItems.map((item) => (
           <Link
             key={item.path}
             to={item.path}

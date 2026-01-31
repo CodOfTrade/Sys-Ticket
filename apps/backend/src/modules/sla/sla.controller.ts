@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  Post,
   Patch,
   Param,
   Body,
@@ -25,7 +24,6 @@ import { UpdateSlaConfigDto } from './dto/update-sla-config.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { Public } from '../auth/decorators/public.decorator';
 import { UserRole } from '../users/entities/user.entity';
 
 @ApiTags('SLA')
@@ -148,22 +146,6 @@ export class SlaController {
         end: end || 'now',
       },
       metrics,
-    };
-  }
-
-  @Post('queues/:queueId/recalculate')
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  @ApiOperation({ summary: 'Recalcular SLA de todos os tickets abertos de uma fila' })
-  @ApiParam({ name: 'queueId', description: 'ID da fila' })
-  @ApiResponse({ status: 200, description: 'SLA recalculado com sucesso' })
-  @ApiResponse({ status: 404, description: 'Fila não encontrada' })
-  async recalculateQueueSla(@Param('queueId') queueId: string) {
-    const recalculatedCount = await this.slaService.recalculateSlaForQueue(queueId);
-
-    return {
-      message: 'SLA recalculado com sucesso',
-      queue_id: queueId,
-      tickets_recalculated: recalculatedCount,
     };
   }
 

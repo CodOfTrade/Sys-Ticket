@@ -1,6 +1,7 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
+import { PermissionsService } from '../permissions/permissions.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UserRole, UserStatus } from '../users/entities/user.entity';
@@ -11,6 +12,8 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    @Inject(forwardRef(() => PermissionsService))
+    private readonly permissionsService: PermissionsService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -29,11 +32,13 @@ export class AuthService {
     const { password, ...userWithoutPassword } = user;
 
     const token = this.generateToken(user);
+    const permissions = await this.permissionsService.getUserPermissions(user.id);
 
     return {
       user: {
         ...userWithoutPassword,
         service_desk_id: this.getFirstServiceDeskId(user.service_desk_ids),
+        permissions,
       },
       access_token: token,
     };
@@ -59,11 +64,13 @@ export class AuthService {
     const { password, ...userWithoutPassword } = user;
 
     const token = this.generateToken(user);
+    const permissions = await this.permissionsService.getUserPermissions(user.id);
 
     return {
       user: {
         ...userWithoutPassword,
         service_desk_id: this.getFirstServiceDeskId(user.service_desk_ids),
+        permissions,
       },
       access_token: token,
     };
