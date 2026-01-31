@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, Ticket, Users, Bell, Sliders, Palette } from 'lucide-react';
+import { Settings as SettingsIcon, Ticket, Users, Bell, Sliders, Palette, Shield } from 'lucide-react';
 import { TicketSettingsContainer } from '@/components/Settings/TicketSettingsContainer';
 import { GeneralSettingsContainer } from '@/components/Settings/GeneralSettingsContainer';
 import { LogoSettings } from '@/components/Settings/LogoSettings';
 import { NotificationSettings } from '@/components/Settings/NotificationSettings';
 import { UsersSettings } from '@/components/Settings/UsersSettings';
+import { RolesSettings } from '@/components/Settings/RolesSettings';
 
-type SettingsTab = 'tickets' | 'branding' | 'users' | 'notifications' | 'general';
+type SettingsTab = 'tickets' | 'branding' | 'users' | 'roles' | 'notifications' | 'general';
 
 export function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('tickets');
@@ -14,7 +15,8 @@ export function Settings() {
   const tabs = [
     { id: 'tickets' as SettingsTab, label: 'Tickets', icon: Ticket },
     { id: 'branding' as SettingsTab, label: 'Identidade Visual', icon: Palette },
-    { id: 'users' as SettingsTab, label: 'Usuarios e Permissoes', icon: Users },
+    { id: 'users' as SettingsTab, label: 'Usuarios', icon: Users },
+    { id: 'roles' as SettingsTab, label: 'Perfis e Permissoes', icon: Shield },
     { id: 'notifications' as SettingsTab, label: 'Notificacoes', icon: Bell },
     { id: 'general' as SettingsTab, label: 'Geral', icon: Sliders },
   ];
@@ -67,6 +69,7 @@ export function Settings() {
             {activeTab === 'tickets' && <TicketSettingsContainer />}
             {activeTab === 'branding' && <LogoSettings />}
             {activeTab === 'users' && <UsersSettings />}
+            {activeTab === 'roles' && <RolesSettings />}
             {activeTab === 'notifications' && <NotificationSettings />}
             {activeTab === 'general' && <GeneralSettingsContainer />}
           </div>
