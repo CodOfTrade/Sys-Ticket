@@ -152,7 +152,7 @@ export class SlaController {
   }
 
   @Post('queues/:queueId/recalculate')
-  @Public() // TEMPORÁRIO: Permitir acesso sem autenticação para teste
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @ApiOperation({ summary: 'Recalcular SLA de todos os tickets abertos de uma fila' })
   @ApiParam({ name: 'queueId', description: 'ID da fila' })
   @ApiResponse({ status: 200, description: 'SLA recalculado com sucesso' })
