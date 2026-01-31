@@ -9,6 +9,13 @@ import type {
   Permission,
 } from '@/types/permissions.types';
 
+// Helper para respostas encapsuladas pelo TransformInterceptor
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  errors?: any[];
+}
+
 /**
  * Service para gerenciar permissoes e roles customizados
  */
@@ -21,16 +28,16 @@ export const permissionService = {
    * Lista todas as permissoes disponiveis no sistema
    */
   async getAllPermissions(): Promise<PermissionsResponse> {
-    const response = await api.get<PermissionsResponse>('/v1/permissions/all');
-    return response.data;
+    const response = await api.get<ApiResponse<PermissionsResponse>>('/v1/permissions/all');
+    return response.data.data;
   },
 
   /**
    * Lista permissoes padrao de cada role fixo
    */
   async getDefaultRolePermissions(): Promise<DefaultRolePermissions> {
-    const response = await api.get<DefaultRolePermissions>('/v1/permissions/roles/defaults');
-    return response.data;
+    const response = await api.get<ApiResponse<DefaultRolePermissions>>('/v1/permissions/roles/defaults');
+    return response.data.data;
   },
 
   // =====================
@@ -41,34 +48,34 @@ export const permissionService = {
    * Lista todos os roles customizados
    */
   async getAllCustomRoles(includeInactive = false): Promise<CustomRole[]> {
-    const response = await api.get<CustomRole[]>('/v1/permissions/roles', {
+    const response = await api.get<ApiResponse<CustomRole[]>>('/v1/permissions/roles', {
       params: { includeInactive: includeInactive ? 'true' : undefined },
     });
-    return response.data;
+    return response.data.data || [];
   },
 
   /**
    * Busca um role customizado por ID
    */
   async getCustomRoleById(id: string): Promise<CustomRole> {
-    const response = await api.get<CustomRole>(`/v1/permissions/roles/${id}`);
-    return response.data;
+    const response = await api.get<ApiResponse<CustomRole>>(`/v1/permissions/roles/${id}`);
+    return response.data.data;
   },
 
   /**
    * Cria um novo role customizado
    */
   async createCustomRole(data: CreateCustomRoleDto): Promise<CustomRole> {
-    const response = await api.post<CustomRole>('/v1/permissions/roles', data);
-    return response.data;
+    const response = await api.post<ApiResponse<CustomRole>>('/v1/permissions/roles', data);
+    return response.data.data;
   },
 
   /**
    * Atualiza um role customizado
    */
   async updateCustomRole(id: string, data: UpdateCustomRoleDto): Promise<CustomRole> {
-    const response = await api.patch<CustomRole>(`/v1/permissions/roles/${id}`, data);
-    return response.data;
+    const response = await api.patch<ApiResponse<CustomRole>>(`/v1/permissions/roles/${id}`, data);
+    return response.data.data;
   },
 
   /**
@@ -86,10 +93,10 @@ export const permissionService = {
    * Obtem permissoes efetivas de um usuario
    */
   async getUserPermissions(userId: string): Promise<Permission[]> {
-    const response = await api.get<{ permissions: Permission[] }>(
+    const response = await api.get<ApiResponse<{ permissions: Permission[] }>>(
       `/v1/permissions/user/${userId}`,
     );
-    return response.data.permissions;
+    return response.data.data.permissions;
   },
 
   /**
@@ -144,10 +151,10 @@ export const permissionService = {
     page?: number;
     perPage?: number;
   }): Promise<{ data: PermissionAuditLog[]; total: number }> {
-    const response = await api.get<{ data: PermissionAuditLog[]; total: number }>(
+    const response = await api.get<ApiResponse<{ data: PermissionAuditLog[]; total: number }>>(
       '/v1/permissions/audit',
       { params },
     );
-    return response.data;
+    return response.data.data;
   },
 };
