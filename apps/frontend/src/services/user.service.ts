@@ -1,11 +1,14 @@
-import api from './api';
+import { api } from './api';
 import type {
-  User,
+  User as UserType,
   CreateUserDto,
   UpdateUserDto,
   UserRole,
   UserStatus,
 } from '@/types/permissions.types';
+
+// Re-export User type for compatibility with existing imports
+export type User = UserType;
 
 interface ApiResponse<T> {
   success: boolean;
@@ -14,7 +17,7 @@ interface ApiResponse<T> {
 }
 
 interface UsersListResponse {
-  data: User[];
+  data: UserType[];
   total: number;
   page: number;
   perPage: number;
@@ -33,7 +36,7 @@ interface UsersQueryParams {
 
 export const userService = {
   /**
-   * Lista usuarios com paginacao e filtros
+   * Lista usuarios com paginacao e filtros (retorna objeto com data, total, etc)
    */
   async getAll(params?: UsersQueryParams): Promise<UsersListResponse> {
     try {
@@ -46,9 +49,23 @@ export const userService = {
   },
 
   /**
+   * Lista usuarios simples (retorna array direto para compatibilidade)
+   * @deprecated Use getAll() para paginacao
+   */
+  async getAllSimple(): Promise<UserType[]> {
+    try {
+      const response = await api.get<UsersListResponse>('/v1/users', { params: { perPage: 1000 } });
+      return response.data?.data || [];
+    } catch (error) {
+      console.error('Erro ao buscar usuarios:', error);
+      return [];
+    }
+  },
+
+  /**
    * Lista apenas tecnicos (agents e managers)
    */
-  async getAllTechnicians(): Promise<User[]> {
+  async getAllTechnicians(): Promise<UserType[]> {
     try {
       const response = await api.get<ApiResponse<User[]>>('/v1/users/technicians');
       return response.data.data || [];

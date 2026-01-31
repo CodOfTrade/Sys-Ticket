@@ -1,4 +1,4 @@
-import api from './api';
+import { api } from './api';
 import type {
   PermissionsResponse,
   DefaultRolePermissions,
@@ -6,7 +6,6 @@ import type {
   CreateCustomRoleDto,
   UpdateCustomRoleDto,
   PermissionAuditLog,
-  PaginatedResponse,
   Permission,
 } from '@/types/permissions.types';
 

@@ -106,7 +106,7 @@ export function CreateTicketModal({ isOpen, onClose }: CreateTicketModalProps) {
   // Buscar todos usuários para lista de solicitantes (inclui técnicos)
   const { data: allUsers } = useQuery({
     queryKey: ['all-users'],
-    queryFn: () => userService.getAll(),
+    queryFn: () => userService.getAllSimple(),
     enabled: isOpen,
   });
 

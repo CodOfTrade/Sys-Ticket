@@ -6,7 +6,6 @@ import type {
   Permission,
   PermissionsMap,
   PermissionsByModule,
-  DefaultRolePermissions,
 } from '@/types/permissions.types';
 
 interface UserPermissionsModalProps {
@@ -217,7 +216,9 @@ export function UserPermissionsModal({ user, onClose, onSuccess }: UserPermissio
                                 {allPermissions[permission] || permission}
                               </span>
                               {fromRole && (
-                                <Shield className="w-4 h-4 text-green-500" title="Herdado do perfil" />
+                                <span title="Herdado do perfil">
+                                  <Shield className="w-4 h-4 text-green-500" />
+                                </span>
                               )}
                             </div>
                             <span className="text-xs text-gray-500 dark:text-gray-400">

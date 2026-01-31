@@ -71,7 +71,7 @@ export function CreateQueueModal({ onClose, onSuccess }: CreateQueueModalProps) 
 
   const fetchUsers = async () => {
     try {
-      const data = await userService.getAll();
+      const data = await userService.getAllSimple();
       // Filter only agents and admins from current service desk
       const filtered = data.filter(
         (u: any) => (u.role === 'agent' || u.role === 'admin') &&
