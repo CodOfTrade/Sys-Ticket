@@ -138,10 +138,10 @@ export class TicketAppointment {
   @Column({ type: 'boolean', default: false })
   is_timer_based: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   timer_started_at: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   timer_stopped_at: Date;
 
   // Contrato/Serviço avulso associado
@@ -161,7 +161,7 @@ export class TicketAppointment {
   @Column({ type: 'uuid', nullable: true })
   approved_by_id: string;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   approved_at: Date;
 
   // Anexos (fotos, documentos)
@@ -176,10 +176,10 @@ export class TicketAppointment {
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, any>;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
   @Column({ type: 'uuid', nullable: true })

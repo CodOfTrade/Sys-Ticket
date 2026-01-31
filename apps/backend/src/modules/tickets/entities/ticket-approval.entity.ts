@@ -65,7 +65,7 @@ export class TicketApproval {
   token_hash: string;
 
   // Data de expiração do token (48h)
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'timestamptz' })
   expires_at: Date;
 
   // Comentário do aprovador
@@ -73,7 +73,7 @@ export class TicketApproval {
   comment: string | null;
 
   // Data da resposta
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   responded_at: Date | null;
 
   // IP do aprovador (auditoria)
@@ -92,7 +92,7 @@ export class TicketApproval {
   @Column({ type: 'boolean', default: false })
   email_sent: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   email_sent_at: Date | null;
 
   @Column({ type: 'integer', default: 0 })
@@ -106,9 +106,9 @@ export class TicketApproval {
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, any>;
 
-  @CreateDateColumn({ type: 'timestamp' })
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 }

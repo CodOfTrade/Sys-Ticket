@@ -17,7 +17,7 @@ export class AgentActivationCode {
   @Column({ type: 'varchar', length: 255, nullable: true })
   description: string;
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'timestamptz' })
   expires_at: Date;
 
   @Column({ type: 'int', default: 0 })
@@ -35,10 +35,10 @@ export class AgentActivationCode {
   @Column({ type: 'varchar', length: 255, nullable: true })
   created_by_user_name: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
   /**

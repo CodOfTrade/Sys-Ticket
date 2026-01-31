@@ -55,9 +55,9 @@ export class ClientContact {
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, any>;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 }

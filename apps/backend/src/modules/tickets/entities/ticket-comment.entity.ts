@@ -61,7 +61,7 @@ export class TicketComment {
   @Column({ type: 'boolean', default: false })
   sent_to_client: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   sent_at: Date;
 
   // Anexos associados ao comentário
@@ -72,15 +72,15 @@ export class TicketComment {
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, any>;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
   @Column({ type: 'boolean', default: false })
   is_edited: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   edited_at: Date;
 }

@@ -71,6 +71,6 @@ export class LicenseHistory {
   @Column({ type: 'varchar', length: 45, nullable: true })
   ip_address: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 }

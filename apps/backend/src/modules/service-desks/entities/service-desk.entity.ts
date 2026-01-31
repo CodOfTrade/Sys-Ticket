@@ -69,9 +69,9 @@ export class ServiceDesk {
   @OneToMany(() => PricingConfig, (pricingConfig) => pricingConfig.service_desk)
   pricing_configs: PricingConfig[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 }

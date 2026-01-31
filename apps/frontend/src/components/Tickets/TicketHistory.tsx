@@ -19,6 +19,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { historyService } from '@/services/ticket-details.service';
+import { formatDateTime } from '@/utils/date-formatter';
 
 interface TicketHistoryProps {
   ticketId: string;
@@ -183,16 +184,6 @@ export function TicketHistory({ ticketId }: TicketHistoryProps) {
     queryFn: () => historyService.getTicketHistory(ticketId),
   });
 
-  const formatDate = (date: Date | string): string => {
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(date));
-  };
-
   const formatRelativeTime = (date: Date | string): string => {
     const now = new Date();
     const then = new Date(date);
@@ -205,7 +196,7 @@ export function TicketHistory({ ticketId }: TicketHistoryProps) {
     if (diffMins < 60) return `${diffMins} min atrás`;
     if (diffHours < 24) return `${diffHours}h atrás`;
     if (diffDays < 7) return `${diffDays}d atrás`;
-    return formatDate(date);
+    return formatDateTime(date);
   };
 
   // Formatar valor para exibição
@@ -318,7 +309,7 @@ export function TicketHistory({ ticketId }: TicketHistoryProps) {
 
                       {/* Tempo */}
                       <div className="text-right flex-shrink-0 ml-4">
-                        <span className="text-xs text-gray-500 dark:text-gray-500 whitespace-nowrap" title={formatDate(entry.created_at)}>
+                        <span className="text-xs text-gray-500 dark:text-gray-500 whitespace-nowrap" title={formatDateTime(entry.created_at)}>
                           {formatRelativeTime(entry.created_at)}
                         </span>
                       </div>

@@ -49,10 +49,10 @@ export class Timesheet {
   user_id: string;
 
   // Tempo
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'timestamptz' })
   start_time: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   end_time: Date;
 
   @Column({ type: 'integer', nullable: true })
@@ -108,7 +108,7 @@ export class Timesheet {
   })
   sync_status: SyncStatus;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   synced_at: Date;
 
   // Aprovação
@@ -118,7 +118,7 @@ export class Timesheet {
   @Column({ type: 'uuid', nullable: true })
   approved_by_id: string;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   approved_at: Date;
 
   // Faturamento
@@ -136,9 +136,9 @@ export class Timesheet {
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, any>;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 }

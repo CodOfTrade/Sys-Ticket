@@ -117,7 +117,7 @@ export class TicketValuation {
   @Column({ type: 'uuid', nullable: true })
   approved_by_id: string;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   approved_at: Date;
 
   // Vínculo com OS do SIGE Cloud
@@ -127,17 +127,17 @@ export class TicketValuation {
   @Column({ type: 'boolean', default: false })
   synced_to_sige: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   synced_at: Date;
 
   // Metadados
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, any>;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
   @Column({ type: 'uuid' })

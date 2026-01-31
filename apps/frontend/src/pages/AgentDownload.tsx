@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Download, Package, Monitor, Info, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { api } from '@/services/api';
+import { formatDateTime } from '@/utils/date-formatter';
 
 interface VersionsData {
   latest: string;
@@ -29,21 +30,6 @@ export default function AgentDownload() {
   const handleDownload = (type: 'installer' | 'portable') => {
     const url = `${apiUrl}/v1/downloads/agent/${type}`;
     window.open(url, '_blank');
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return null;
-    try {
-      return new Date(dateString).toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return null;
-    }
   };
 
   return (
@@ -97,7 +83,7 @@ export default function AgentDownload() {
             )}
             {versionsData?.updatedAt && (
               <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-                Última atualização: {formatDate(versionsData.updatedAt)}
+                Última atualização: {formatDateTime(versionsData.updatedAt)}
               </p>
             )}
           </div>

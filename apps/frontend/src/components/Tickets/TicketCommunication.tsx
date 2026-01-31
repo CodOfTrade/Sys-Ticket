@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, Send, User, Clock, Trash2, Eye, EyeOff } from 'lucide-react';
 import { commentsService } from '@/services/ticket-details.service';
 import { CommentType, CommentVisibility, CreateCommentDto } from '@/types/ticket-details.types';
+import { formatDateTime } from '@/utils/date-formatter';
 
 interface TicketCommunicationProps {
   ticketId: string;
@@ -68,16 +69,6 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
       visibility: commentVisibility,
       sent_to_client: sendToClient,
     });
-  };
-
-  const formatDate = (date: Date): string => {
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(date));
   };
 
   const getInitials = (name: string): string => {
@@ -233,8 +224,8 @@ export function TicketCommunication({ ticketId }: TicketCommunicationProps) {
                     </div>
                     <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mt-1">
                       <Clock className="w-3 h-3" />
-                      {formatDate(comment.created_at)}
-                      {comment.sent_at && ` • Enviado em ${formatDate(comment.sent_at)}`}
+                      {formatDateTime(comment.created_at)}
+                      {comment.sent_at && ` • Enviado em ${formatDateTime(comment.sent_at)}`}
                     </div>
                   </div>
                 </div>

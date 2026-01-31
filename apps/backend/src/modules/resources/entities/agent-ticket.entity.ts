@@ -52,6 +52,6 @@ export class AgentTicket {
   @Column({ type: 'jsonb', nullable: true })
   system_info: Record<string, any>;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 }

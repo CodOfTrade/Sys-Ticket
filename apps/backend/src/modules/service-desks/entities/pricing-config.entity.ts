@@ -75,9 +75,9 @@ export class PricingConfig {
   })
   modality_configs: PricingModalityConfig[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 }

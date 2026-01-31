@@ -4,6 +4,7 @@ import { DollarSign, Plus, Trash2, Edit2, Package, CheckCircle, XCircle, Trendin
 import { valuationsService } from '@/services/ticket-details.service';
 import { ValuationType, ValuationCategory, CreateValuationDto } from '@/types/ticket-details.types';
 import { sigeProductsService, SigeProduct } from '@/services/sige-products.service';
+import { formatDateTime } from '@/utils/date-formatter';
 
 interface TicketValuationProps {
   ticketId: string;
@@ -186,12 +187,7 @@ export function TicketValuation({ ticketId, readOnly = false }: TicketValuationP
       currency: 'BRL',
     }).format(value);
   };
-
-  const formatDate = (date: string): string => {
-    return new Date(date).toLocaleDateString('pt-BR');
-  };
-
-  return (
+return (
     <div className="space-y-6">
       {/* Resumo */}
       {summary && (
@@ -331,7 +327,7 @@ export function TicketValuation({ ticketId, readOnly = false }: TicketValuationP
                     <div>
                       <span className="text-gray-600 dark:text-gray-400">Data:</span>
                       <span className="ml-2 text-gray-900 dark:text-white">
-                        {formatDate(valuation.valuation_date)}
+                        {formatDateTime(valuation.valuation_date)}
                       </span>
                     </div>
                     <div>

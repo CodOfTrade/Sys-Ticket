@@ -43,9 +43,9 @@ export class NotificationEmailTemplate {
   @Column({ type: 'varchar', length: 100, unique: true })
   unique_key: string; // Ex: "license_expiring_30_admin"
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 }

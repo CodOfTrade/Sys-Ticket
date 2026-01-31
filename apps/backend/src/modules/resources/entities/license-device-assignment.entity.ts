@@ -39,6 +39,6 @@ export class LicenseDeviceAssignment {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   assigned_at: Date;
 }

@@ -83,17 +83,17 @@ export class User {
   refresh_token: string;
 
   // Últimos acessos
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   last_login_at: Date;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   last_login_ip: string;
 
   // Timestamps
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
   // Preferências do usuário

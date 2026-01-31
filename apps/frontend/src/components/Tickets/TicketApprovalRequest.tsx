@@ -17,6 +17,7 @@ import {
 import { ticketService } from '@/services/ticket.service';
 import { clientService } from '@/services/client.service';
 import { TicketApproval, ApprovalStatus, RequestApprovalDto, UpdateApproverDto } from '@/types/ticket.types';
+import { formatDateTime } from '@/utils/date-formatter';
 
 interface TicketApprovalRequestProps {
   ticketId: string;
@@ -190,16 +191,6 @@ export function TicketApprovalRequest({ ticketId, clientId, readOnly = false }: 
     });
   };
 
-  const formatDate = (date: string): string => {
-    return new Date(date).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   const getTimeRemaining = (expiresAt: string): string => {
     const now = new Date();
     const expires = new Date(expiresAt);
@@ -341,7 +332,7 @@ export function TicketApprovalRequest({ ticketId, clientId, readOnly = false }: 
                 <p className="font-medium text-gray-900 dark:text-white">
                   {getTimeRemaining(pendingApproval.expires_at)}
                 </p>
-                <p className="text-xs text-gray-500">{formatDate(pendingApproval.expires_at)}</p>
+                <p className="text-xs text-gray-500">{formatDateTime(pendingApproval.expires_at)}</p>
               </div>
             </div>
 
@@ -671,7 +662,7 @@ export function TicketApprovalRequest({ ticketId, clientId, readOnly = false }: 
                             </span>
                           </div>
                           <span className="text-xs text-gray-500">
-                            {formatDate(approval.created_at)}
+                            {formatDateTime(approval.created_at)}
                           </span>
                         </div>
 
@@ -692,7 +683,7 @@ export function TicketApprovalRequest({ ticketId, clientId, readOnly = false }: 
                             <div className="col-span-2">
                               <span className="text-gray-500">Respondido em:</span>
                               <span className="ml-2 text-gray-900 dark:text-white">
-                                {formatDate(approval.responded_at)}
+                                {formatDateTime(approval.responded_at)}
                               </span>
                             </div>
                           )}

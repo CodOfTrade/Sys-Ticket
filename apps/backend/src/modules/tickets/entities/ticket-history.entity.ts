@@ -69,6 +69,6 @@ export class TicketHistory {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  @CreateDateColumn({ type: 'timestamp' })
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 }

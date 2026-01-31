@@ -54,6 +54,7 @@ import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
 import { serviceCatalogService, ServiceCatalog, ServiceCategory } from '@/services/service-catalog.service';
 import { queueService } from '@/services/queue.service';
 import { SlaHeaderBadge } from '@/components/Tickets/SlaHeaderBadge';
+import { formatDateTime } from '@/utils/date-formatter';
 
 type TabType = 'appointments' | 'communication' | 'valuation' | 'checklists' | 'approval' | 'history';
 
@@ -705,16 +706,6 @@ export default function TicketDetails() {
     );
   }
 
-  const formatDate = (date: Date | string): string => {
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(date));
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -1123,7 +1114,7 @@ export default function TicketDetails() {
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">Criado em</p>
                     <p className="font-medium text-gray-900 dark:text-white">
-                      {formatDate(ticket.created_at)}
+                      {formatDateTime(ticket.created_at)}
                     </p>
                   </div>
                 </div>

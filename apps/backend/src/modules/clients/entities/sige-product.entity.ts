@@ -32,7 +32,7 @@ export class SigeProduct {
   @Column({ default: true })
   ativo: boolean;
 
-  @Column({ name: 'last_synced_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ name: 'last_synced_at', type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   lastSyncedAt: Date;
 
   @CreateDateColumn({ name: 'created_at' })

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { checklistsService } from '@/services/ticket-details.service';
 import { AddChecklistToTicketDto, UpdateChecklistItemDto } from '@/types/ticket-details.types';
+import { formatDateTime } from '@/utils/date-formatter';
 
 interface TicketChecklistsProps {
   ticketId: string;
@@ -175,16 +176,6 @@ export function TicketChecklists({ ticketId, readOnly = false }: TicketChecklist
     }
   };
 
-  const formatDate = (date: Date | string): string => {
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(date));
-  };
-
   const toggleExpandChecklist = (checklistId: string) => {
     const newExpanded = new Set(expandedChecklists);
     if (newExpanded.has(checklistId)) {
@@ -264,7 +255,7 @@ export function TicketChecklists({ ticketId, readOnly = false }: TicketChecklist
                   <span>
                     Por {item.completed_by_name || item.filled_by_name} em{' '}
                     {item.completed_at || item.filled_at
-                      ? formatDate(item.completed_at || item.filled_at!)
+                      ? formatDateTime(item.completed_at || item.filled_at!)
                       : ''}
                   </span>
                 </div>
@@ -454,7 +445,7 @@ export function TicketChecklists({ ticketId, readOnly = false }: TicketChecklist
                 <span>
                   Preenchido por {item.filled_by_name || item.completed_by_name} em{' '}
                   {item.filled_at || item.completed_at
-                    ? formatDate(item.filled_at || item.completed_at!)
+                    ? formatDateTime(item.filled_at || item.completed_at!)
                     : ''}
                 </span>
               </div>
@@ -553,9 +544,9 @@ export function TicketChecklists({ ticketId, readOnly = false }: TicketChecklist
 
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                         <Clock className="w-4 h-4" />
-                        Adicionado em {formatDate(checklist.created_at)}
+                        Adicionado em {formatDateTime(checklist.created_at)}
                         {checklist.is_completed && checklist.completed_at && (
-                          <span>• Concluído em {formatDate(checklist.completed_at)}</span>
+                          <span>• Concluído em {formatDateTime(checklist.completed_at)}</span>
                         )}
                       </div>
                     </div>

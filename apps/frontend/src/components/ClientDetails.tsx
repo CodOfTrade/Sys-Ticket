@@ -5,6 +5,7 @@ import { Client, clientService } from '@services/client.service';
 import { contractService, Contract, ContractQuota, CreateQuotaDto } from '@services/contract.service';
 import ClientRequesters from './ClientRequesters';
 import { Monitor, Server, Settings, Save, RefreshCw, ChevronDown, ChevronUp, Shield } from 'lucide-react';
+import { formatDateTime } from '@/utils/date-formatter';
 
 interface ClientDetailsProps {
   client: Client;
@@ -215,13 +216,7 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
     }
     return phone;
   };
-
-  const formatDate = (date?: string) => {
-    if (!date) return '-';
-    return new Date(date).toLocaleDateString('pt-BR');
-  };
-
-  const tabs = [
+const tabs = [
     { id: 'info', label: 'Informações', icon: '📋' },
     { id: 'requesters', label: 'Solicitantes', icon: '👥' },
     { id: 'contracts', label: 'Contratos', icon: '📄' },
@@ -508,10 +503,10 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
 
                               <div className="flex gap-4 text-xs text-gray-600 dark:text-gray-400">
                                 {contract.data_inicio && (
-                                  <span><strong>Início:</strong> {formatDate(contract.data_inicio)}</span>
+                                  <span><strong>Início:</strong> {formatDateTime(contract.data_inicio)}</span>
                                 )}
                                 {contract.data_fim && (
-                                  <span><strong>Fim:</strong> {formatDate(contract.data_fim)}</span>
+                                  <span><strong>Fim:</strong> {formatDateTime(contract.data_fim)}</span>
                                 )}
                               </div>
                             </div>

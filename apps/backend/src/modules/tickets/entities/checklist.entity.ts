@@ -74,10 +74,10 @@ export class Checklist {
   @Column({ type: 'jsonb', default: '[]' })
   catalog_restrictions: string[];  // IDs de catálogos de serviço específicos
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
   @Column({ type: 'uuid' })

@@ -74,9 +74,9 @@ export class Notification {
   @Column({ type: 'boolean', default: false })
   is_email_sent: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   email_sent_at: Date;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 }

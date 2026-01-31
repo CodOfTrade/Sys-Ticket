@@ -55,6 +55,6 @@ export class TicketFollower {
   @JoinColumn({ name: 'added_by_id' })
   added_by: User;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 }

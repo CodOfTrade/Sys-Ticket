@@ -55,6 +55,6 @@ export class ResourceHistory {
   @Column({ type: 'boolean', default: false })
   changed_by_agent: boolean;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 }

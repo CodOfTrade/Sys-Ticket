@@ -81,7 +81,7 @@ export class Resource {
   @Column({ type: 'boolean', default: false })
   is_online: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   last_seen_at: Date;
 
   // Usuário responsável
@@ -102,7 +102,7 @@ export class Resource {
   @Column({ type: 'varchar', length: 50, nullable: true })
   pending_command?: string | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   pending_command_at?: Date | null;
 
   // Informações básicas
@@ -134,10 +134,10 @@ export class Resource {
   @Column({ type: 'varchar', length: 50, nullable: true })
   agent_version?: string | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   agent_installed_at?: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   agent_last_heartbeat?: Date | null;
 
   // Dados técnicos (JSON flexível)
@@ -157,7 +157,7 @@ export class Resource {
   @Column({ type: 'varchar', length: 50, nullable: true })
   os_architecture: string;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   os_last_updated: Date;
 
   // Antivírus
@@ -167,7 +167,7 @@ export class Resource {
   @Column({ type: 'varchar', length: 100, nullable: true })
   antivirus_version: string;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   antivirus_last_updated: Date;
 
   @Column({
@@ -202,13 +202,13 @@ export class Resource {
   image_url: string;
 
   // Timestamps
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   retired_at: Date;
 
   // Relacionamentos

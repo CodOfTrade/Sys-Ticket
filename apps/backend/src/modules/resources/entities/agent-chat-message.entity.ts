@@ -69,9 +69,9 @@ export class AgentChatMessage {
   @Column({ type: 'boolean', default: false })
   is_read: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   read_at: Date;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 }

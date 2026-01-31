@@ -83,9 +83,9 @@ export class PricingModalityConfig {
   @Column({ type: 'int', nullable: true })
   round_to_minutes: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 }
