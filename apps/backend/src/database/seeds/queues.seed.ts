@@ -84,6 +84,14 @@ export async function seedQueues(dataSource: DataSource) {
           priority_weight: true,
           skills_matching: false,
         },
+        sla_config: {
+          priorities: {
+            low: { first_response: 60, resolution: 480 }, // 1h, 8h
+            medium: { first_response: 30, resolution: 240 }, // 30min, 4h
+            high: { first_response: 15, resolution: 120 }, // 15min, 2h
+            urgent: { first_response: 10, resolution: 60 }, // 10min, 1h
+          },
+        },
       },
     ];
 
@@ -112,19 +120,21 @@ export async function seedQueues(dataSource: DataSource) {
           description,
           distribution_strategy,
           auto_assignment_config,
+          sla_config,
           color,
           display_order,
           is_active,
           round_robin_index,
           created_at,
           updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())`,
         [
           serviceDeskId,
           queueData.name,
           queueData.description,
           queueData.distribution_strategy,
           JSON.stringify(queueData.auto_assignment_config),
+          queueData.sla_config ? JSON.stringify(queueData.sla_config) : null,
           queueData.color,
           queueData.display_order,
           true,
