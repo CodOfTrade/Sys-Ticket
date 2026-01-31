@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Param,
   Body,
@@ -146,6 +147,22 @@ export class SlaController {
         end: end || 'now',
       },
       metrics,
+    };
+  }
+
+  @Post('queues/:queueId/recalculate')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Recalcular SLA de todos os tickets abertos de uma fila' })
+  @ApiParam({ name: 'queueId', description: 'ID da fila' })
+  @ApiResponse({ status: 200, description: 'SLA recalculado com sucesso' })
+  @ApiResponse({ status: 404, description: 'Fila não encontrada' })
+  async recalculateQueueSla(@Param('queueId') queueId: string) {
+    const recalculatedCount = await this.slaService.recalculateSlaForQueue(queueId);
+
+    return {
+      message: 'SLA recalculado com sucesso',
+      queue_id: queueId,
+      tickets_recalculated: recalculatedCount,
     };
   }
 
