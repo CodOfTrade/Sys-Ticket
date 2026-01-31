@@ -516,4 +516,92 @@ export class SlaService {
       by_priority: byPriority,
     };
   }
+
+  /**
+   * Recalcula o SLA de todos os tickets abertos de uma fila
+   * Chamado quando a configuração de SLA da fila é alterada
+   */
+  async recalculateSlaForQueue(queueId: string): Promise<number> {
+    this.logger.log(`Recalculando SLA para todos os tickets abertos da fila ${queueId}`);
+
+    try {
+      // Buscar a fila para obter service_desk_id
+      const queue = await this.queueRepository.findOne({
+        where: { id: queueId },
+        relations: ['service_desk'],
+      });
+
+      if (!queue) {
+        this.logger.warn(`Fila ${queueId} não encontrada para recálculo de SLA`);
+        return 0;
+      }
+
+      // Buscar todos os tickets abertos (não cancelados) desta fila
+      const openTickets = await this.ticketRepository.find({
+        where: {
+          queue_id: queueId,
+          status: Not(TicketStatus.CANCELLED),
+        },
+      });
+
+      if (openTickets.length === 0) {
+        this.logger.debug(`Nenhum ticket aberto encontrado na fila ${queue.name}`);
+        return 0;
+      }
+
+      this.logger.log(`Encontrados ${openTickets.length} tickets abertos para recalcular SLA`);
+
+      // Obter configuração de SLA da fila
+      const slaConfig = await this.getSlaConfigForTicket(
+        queueId,
+        queue.service_desk.id,
+      );
+
+      let recalculatedCount = 0;
+
+      // Recalcular SLA para cada ticket
+      for (const ticket of openTickets) {
+        try {
+          const slaResult = this.calculateSlaDueDates(
+            ticket.created_at,
+            ticket.priority,
+            slaConfig,
+          );
+
+          // Atualizar campos de SLA do ticket (apenas se não forem null)
+          if (slaResult.first_response_due || slaResult.resolution_due) {
+            await this.ticketRepository.update(ticket.id, {
+              sla_first_response_due: slaResult.first_response_due || undefined,
+              sla_resolution_due: slaResult.resolution_due || undefined,
+            });
+
+            recalculatedCount++;
+
+            this.logger.debug(
+              `SLA recalculado para ticket ${ticket.ticket_number}: ` +
+              `Primeira resposta: ${slaResult.first_response_due}, ` +
+              `Resolução: ${slaResult.resolution_due}`,
+            );
+          } else {
+            this.logger.warn(
+              `SLA não pôde ser calculado para ticket ${ticket.ticket_number} (valores null)`,
+            );
+          }
+        } catch (error) {
+          this.logger.error(
+            `Erro ao recalcular SLA do ticket ${ticket.ticket_number}: ${error.message}`,
+          );
+        }
+      }
+
+      this.logger.log(
+        `Recálculo de SLA concluído: ${recalculatedCount} de ${openTickets.length} tickets atualizados`,
+      );
+
+      return recalculatedCount;
+    } catch (error) {
+      this.logger.error(`Erro ao recalcular SLA da fila ${queueId}: ${error.message}`);
+      throw error;
+    }
+  }
 }

@@ -3,6 +3,8 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  forwardRef,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -11,6 +13,7 @@ import { User, UserRole, UserStatus } from '../users/entities/user.entity';
 import { Ticket, TicketStatus } from '../tickets/entities/ticket.entity';
 import { CreateQueueDto, UpdateQueueDto, AssignToQueueDto } from './dto';
 import { DistributionStrategy } from './enums/distribution-strategy.enum';
+import { SlaService } from '../sla/sla.service';
 
 @Injectable()
 export class QueuesService {
@@ -23,6 +26,8 @@ export class QueuesService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Ticket)
     private readonly ticketRepository: Repository<Ticket>,
+    @Inject(forwardRef(() => SlaService))
+    private readonly slaService: SlaService,
   ) {}
 
   /**
@@ -110,6 +115,12 @@ export class QueuesService {
 
     const { member_ids, ...updateData } = updateQueueDto;
 
+    // Verificar se houve mudança no sla_config para recalcular SLA dos tickets
+    const slaConfigChanged = this.hasSlaConfigChanged(
+      queue.sla_config,
+      updateQueueDto.sla_config,
+    );
+
     // Atualizar campos básicos
     Object.assign(queue, updateData);
 
@@ -140,7 +151,56 @@ export class QueuesService {
       }
     }
 
-    return await this.queueRepository.save(queue);
+    const updatedQueue = await this.queueRepository.save(queue);
+
+    // Se o SLA config mudou, recalcular SLA dos tickets abertos
+    if (slaConfigChanged) {
+      this.logger.log(
+        `Configuração de SLA da fila "${queue.name}" foi alterada. Recalculando SLA dos tickets abertos...`,
+      );
+
+      // Executar recálculo de forma assíncrona (não bloquear a resposta)
+      this.slaService
+        .recalculateSlaForQueue(queue.id)
+        .then((count) => {
+          this.logger.log(
+            `SLA recalculado para ${count} tickets da fila "${queue.name}"`,
+          );
+        })
+        .catch((error) => {
+          this.logger.error(
+            `Erro ao recalcular SLA da fila "${queue.name}": ${error.message}`,
+          );
+        });
+    }
+
+    return updatedQueue;
+  }
+
+  /**
+   * Verifica se houve mudança na configuração de SLA
+   */
+  private hasSlaConfigChanged(
+    oldConfig: any,
+    newConfig: any,
+  ): boolean {
+    // Se newConfig não foi fornecido, não houve mudança
+    if (newConfig === undefined) {
+      return false;
+    }
+
+    // Se um é null e o outro não, houve mudança
+    if ((oldConfig === null) !== (newConfig === null)) {
+      return true;
+    }
+
+    // Se ambos são null, não houve mudança
+    if (oldConfig === null && newConfig === null) {
+      return false;
+    }
+
+    // Comparar JSONs
+    return JSON.stringify(oldConfig) !== JSON.stringify(newConfig);
   }
 
   /**
