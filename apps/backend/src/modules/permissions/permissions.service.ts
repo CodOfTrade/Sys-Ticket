@@ -161,7 +161,7 @@ export class PermissionsService {
 
     user.role = role;
     // Remove custom_role se estiver definindo um role fixo
-    user.custom_role_id = null;
+    user.custom_role_id = undefined as any;
     await this.usersRepository.save(user);
 
     // Registra auditoria
@@ -238,7 +238,7 @@ export class PermissionsService {
 
     const oldCustomRole = user.custom_role;
 
-    user.custom_role_id = null;
+    user.custom_role_id = undefined as any;
     await this.usersRepository.save(user);
 
     // Registra auditoria
