@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
-import { UsersService } from './users.service';
+import { UsersService, PaginatedUsersResult } from './users.service';
 import { User } from './entities/user.entity';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { QueryUsersDto } from './dto/query-users.dto';
@@ -20,7 +20,7 @@ export class UsersController {
   @ApiQuery({ name: 'role', required: false, enum: ['admin', 'manager', 'agent', 'client'] })
   @ApiQuery({ name: 'customRoleId', required: false, type: String })
   @ApiQuery({ name: 'status', required: false, enum: ['active', 'inactive', 'suspended'] })
-  async findAll(@Query() query: QueryUsersDto) {
+  async findAll(@Query() query: QueryUsersDto): Promise<PaginatedUsersResult> {
     return this.usersService.findAllPaginated(query);
   }
 

@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { QueryUsersDto } from './dto/query-users.dto';
 
-interface PaginatedUsersResult {
+export interface PaginatedUsersResult {
   data: User[];
   total: number;
   page: number;
