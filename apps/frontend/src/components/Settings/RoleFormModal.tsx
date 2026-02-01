@@ -149,7 +149,9 @@ export function RoleFormModal({ role, onClose, onSuccess }: RoleFormModalProps) 
       if (isEditing) {
         await permissionService.updateCustomRole(role.id, formData);
       } else {
-        await permissionService.createCustomRole(formData);
+        // Excluir is_active ao criar (backend não aceita esse campo no DTO de criação)
+        const { is_active, ...createData } = formData;
+        await permissionService.createCustomRole(createData);
       }
       onSuccess();
     } catch (error: any) {
