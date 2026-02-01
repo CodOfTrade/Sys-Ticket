@@ -7,16 +7,17 @@ import { NotificationSettings } from '@/components/Settings/NotificationSettings
 import { UsersSettings } from '@/components/Settings/UsersSettings';
 import { RolesSettings } from '@/components/Settings/RolesSettings';
 
-type SettingsTab = 'tickets' | 'branding' | 'users' | 'roles' | 'notifications' | 'general';
+type SettingsTab = 'tickets' | 'branding' | 'users-permissions' | 'notifications' | 'general';
+type UsersPermissionsSubTab = 'users' | 'roles';
 
 export function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('tickets');
+  const [usersPermissionsSubTab, setUsersPermissionsSubTab] = useState<UsersPermissionsSubTab>('users');
 
   const tabs = [
     { id: 'tickets' as SettingsTab, label: 'Tickets', icon: Ticket },
     { id: 'branding' as SettingsTab, label: 'Identidade Visual', icon: Palette },
-    { id: 'users' as SettingsTab, label: 'Usuarios', icon: Users },
-    { id: 'roles' as SettingsTab, label: 'Perfis e Permissoes', icon: Shield },
+    { id: 'users-permissions' as SettingsTab, label: 'Usuarios e Permissoes', icon: Users },
     { id: 'notifications' as SettingsTab, label: 'Notificacoes', icon: Bell },
     { id: 'general' as SettingsTab, label: 'Geral', icon: Sliders },
   ];
@@ -68,8 +69,43 @@ export function Settings() {
           <div className="p-6">
             {activeTab === 'tickets' && <TicketSettingsContainer />}
             {activeTab === 'branding' && <LogoSettings />}
-            {activeTab === 'users' && <UsersSettings />}
-            {activeTab === 'roles' && <RolesSettings />}
+            {activeTab === 'users-permissions' && (
+              <div>
+                {/* Sub-tabs */}
+                <div className="flex gap-1 mb-6 border-b border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => setUsersPermissionsSubTab('users')}
+                    className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors
+                      ${usersPermissionsSubTab === 'users'
+                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                      }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Usuarios
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setUsersPermissionsSubTab('roles')}
+                    className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors
+                      ${usersPermissionsSubTab === 'roles'
+                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                      }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      Perfil de Permissao
+                    </div>
+                  </button>
+                </div>
+
+                {/* Sub-tab Content */}
+                {usersPermissionsSubTab === 'users' && <UsersSettings />}
+                {usersPermissionsSubTab === 'roles' && <RolesSettings />}
+              </div>
+            )}
             {activeTab === 'notifications' && <NotificationSettings />}
             {activeTab === 'general' && <GeneralSettingsContainer />}
           </div>
