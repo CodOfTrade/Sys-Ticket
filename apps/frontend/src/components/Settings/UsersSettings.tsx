@@ -11,10 +11,11 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { userService } from '@/services/user.service';
+import { permissionService } from '@/services/permission.service';
 import { PermissionGate } from '@/components/PermissionGate';
 import { UserFormModal } from './UserFormModal';
 import { UserPermissionsModal } from './UserPermissionsModal';
-import type { User, UserRole, UserStatus } from '@/types/permissions.types';
+import type { User, UserRole, UserStatus, CustomRole } from '@/types/permissions.types';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
@@ -46,12 +47,17 @@ export function UsersSettings() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<UserRole | ''>('');
+  // profileFilter: 'admin' para Administrador, UUID para custom role, '' para todos
+  const [profileFilter, setProfileFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<UserStatus | ''>('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const perPage = 10;
+
+  // Custom roles para o filtro
+  const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(true);
 
   // Modais
   const [showFormModal, setShowFormModal] = useState(false);
@@ -59,14 +65,27 @@ export function UsersSettings() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
+  // Carrega custom roles para o filtro
+  useEffect(() => {
+    permissionService.getAllCustomRoles()
+      .then(setCustomRoles)
+      .catch(console.error)
+      .finally(() => setLoadingRoles(false));
+  }, []);
+
   const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
+      // Determina se esta filtrando por admin ou por custom role
+      const isAdmin = profileFilter === 'admin';
+      const isCustomRole = profileFilter && profileFilter !== 'admin';
+
       const response = await userService.getAll({
         page,
         perPage,
         search: search || undefined,
-        role: roleFilter || undefined,
+        role: isAdmin ? 'admin' : undefined,
+        customRoleId: isCustomRole ? profileFilter : undefined,
         status: statusFilter || undefined,
       });
       setUsers(response.data);
@@ -77,7 +96,7 @@ export function UsersSettings() {
     } finally {
       setLoading(false);
     }
-  }, [page, perPage, search, roleFilter, statusFilter]);
+  }, [page, perPage, search, profileFilter, statusFilter]);
 
   useEffect(() => {
     loadUsers();
@@ -160,21 +179,28 @@ export function UsersSettings() {
             />
           </div>
 
-          {/* Filtro de Role */}
+          {/* Filtro de Perfil */}
           <select
-            value={roleFilter}
+            value={profileFilter}
             onChange={(e) => {
-              setRoleFilter(e.target.value as UserRole | '');
+              setProfileFilter(e.target.value);
               setPage(1);
             }}
+            disabled={loadingRoles}
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                       disabled:opacity-50"
           >
             <option value="">Todos os perfis</option>
             <option value="admin">Administrador</option>
-            <option value="manager">Gerente</option>
-            <option value="agent">Agente</option>
-            <option value="client">Cliente</option>
+            {customRoles.length > 0 && (
+              <option disabled>────────────────</option>
+            )}
+            {customRoles.map((role) => (
+              <option key={role.id} value={role.id}>
+                {role.name}
+              </option>
+            ))}
           </select>
 
           {/* Filtro de Status */}
@@ -281,11 +307,20 @@ export function UsersSettings() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${ROLE_COLORS[user.role]}`}
-                      >
-                        {user.custom_role?.name || ROLE_LABELS[user.role]}
-                      </span>
+                      {user.custom_role ? (
+                        <span
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                          style={{ backgroundColor: user.custom_role.color || '#6B7280' }}
+                        >
+                          {user.custom_role.name}
+                        </span>
+                      ) : (
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${ROLE_COLORS[user.role]}`}
+                        >
+                          {ROLE_LABELS[user.role]}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span

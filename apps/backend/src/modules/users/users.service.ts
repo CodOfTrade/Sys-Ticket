@@ -2,6 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
+import { QueryUsersDto } from './dto/query-users.dto';
+
+interface PaginatedUsersResult {
+  data: User[];
+  total: number;
+  page: number;
+  perPage: number;
+  totalPages: number;
+}
 
 @Injectable()
 export class UsersService {
@@ -10,8 +19,70 @@ export class UsersService {
     private usersRepository: Repository<User>,
   ) {}
 
+  async findAllPaginated(query: QueryUsersDto): Promise<PaginatedUsersResult> {
+    const {
+      page = 1,
+      perPage = 20,
+      search,
+      role,
+      customRoleId,
+      status,
+      sortBy = 'name',
+      sortOrder = 'ASC',
+    } = query;
+
+    const queryBuilder = this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.custom_role', 'custom_role');
+
+    // Filtro de busca por nome ou email
+    if (search) {
+      queryBuilder.andWhere(
+        '(LOWER(user.name) LIKE LOWER(:search) OR LOWER(user.email) LIKE LOWER(:search))',
+        { search: `%${search}%` },
+      );
+    }
+
+    // Filtro por role base
+    if (role) {
+      queryBuilder.andWhere('user.role = :role', { role });
+    }
+
+    // Filtro por custom_role_id
+    if (customRoleId) {
+      queryBuilder.andWhere('user.custom_role_id = :customRoleId', { customRoleId });
+    }
+
+    // Filtro por status
+    if (status) {
+      queryBuilder.andWhere('user.status = :status', { status });
+    }
+
+    // Ordenacao
+    const validSortFields = ['name', 'email', 'role', 'status', 'created_at'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'name';
+    queryBuilder.orderBy(`user.${sortField}`, sortOrder);
+
+    // Contagem total
+    const total = await queryBuilder.getCount();
+
+    // Paginacao
+    const skip = (page - 1) * perPage;
+    queryBuilder.skip(skip).take(perPage);
+
+    const data = await queryBuilder.getMany();
+
+    return {
+      data,
+      total,
+      page,
+      perPage,
+      totalPages: Math.ceil(total / perPage),
+    };
+  }
+
   async findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+    return this.usersRepository.find({ relations: ['custom_role'] });
   }
 
   async findOne(id: string): Promise<User | null> {

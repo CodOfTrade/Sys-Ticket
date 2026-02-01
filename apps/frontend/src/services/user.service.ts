@@ -29,6 +29,7 @@ interface UsersQueryParams {
   perPage?: number;
   search?: string;
   role?: UserRole;
+  customRoleId?: string;
   status?: UserStatus;
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
