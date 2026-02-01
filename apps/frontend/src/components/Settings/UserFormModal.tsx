@@ -26,6 +26,7 @@ const STATUSES: { value: UserStatus; label: string }[] = [
 export function UserFormModal({ user, onClose, onSuccess }: UserFormModalProps) {
   const isEditing = !!user;
   const [loading, setLoading] = useState(false);
+  const [loadingRoles, setLoadingRoles] = useState(true);
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [useCustomRole, setUseCustomRole] = useState(false);
@@ -45,7 +46,16 @@ export function UserFormModal({ user, onClose, onSuccess }: UserFormModalProps) 
 
   useEffect(() => {
     // Carrega roles customizados
-    permissionService.getAllCustomRoles().then(setCustomRoles).catch(console.error);
+    setLoadingRoles(true);
+    permissionService.getAllCustomRoles()
+      .then((roles) => {
+        console.log('Custom roles carregados:', roles);
+        setCustomRoles(roles);
+      })
+      .catch((error) => {
+        console.error('Erro ao carregar perfis customizados:', error);
+      })
+      .finally(() => setLoadingRoles(false));
 
     // Preenche formulario se editando
     if (user) {
@@ -273,25 +283,34 @@ export function UserFormModal({ user, onClose, onSuccess }: UserFormModalProps) 
           ) : (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Perfil Customizado *
+                Perfil Customizado * {loadingRoles && <span className="text-gray-400">(carregando...)</span>}
               </label>
               <select
                 value={formData.custom_role_id}
                 onChange={(e) => setFormData({ ...formData, custom_role_id: e.target.value })}
+                disabled={loadingRoles}
                 className={`w-full px-3 py-2 border rounded-lg
                            bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                            ${errors.custom_role_id ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                           focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                           disabled:opacity-50`}
               >
-                <option value="">Selecione um perfil</option>
+                <option value="">
+                  {loadingRoles ? 'Carregando perfis...' : `Selecione um perfil (${customRoles.length} disponiveis)`}
+                </option>
                 {customRoles.map((role) => (
                   <option key={role.id} value={role.id}>
-                    {role.name}
+                    {role.name} ({role.permissions?.length || 0} permissoes)
                   </option>
                 ))}
               </select>
               {errors.custom_role_id && (
                 <p className="mt-1 text-sm text-red-500">{errors.custom_role_id}</p>
+              )}
+              {!loadingRoles && customRoles.length === 0 && (
+                <p className="mt-1 text-sm text-amber-500">
+                  Nenhum perfil customizado encontrado. Crie um em "Perfis e Permissoes".
+                </p>
               )}
             </div>
           )}
