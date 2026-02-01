@@ -41,8 +41,8 @@ export const userService = {
    */
   async getAll(params?: UsersQueryParams): Promise<UsersListResponse> {
     try {
-      const response = await api.get<UsersListResponse>('/v1/users', { params });
-      return response.data;
+      const response = await api.get<ApiResponse<UsersListResponse>>('/v1/users', { params });
+      return response.data.data || { data: [], total: 0, page: 1, perPage: 20, totalPages: 0 };
     } catch (error) {
       console.error('Erro ao buscar usuarios:', error);
       return { data: [], total: 0, page: 1, perPage: 20, totalPages: 0 };
@@ -55,8 +55,8 @@ export const userService = {
    */
   async getAllSimple(): Promise<UserType[]> {
     try {
-      const response = await api.get<UsersListResponse>('/v1/users', { params: { perPage: 1000 } });
-      return response.data?.data || [];
+      const response = await api.get<ApiResponse<UsersListResponse>>('/v1/users', { params: { perPage: 1000 } });
+      return response.data.data?.data || [];
     } catch (error) {
       console.error('Erro ao buscar usuarios:', error);
       return [];
