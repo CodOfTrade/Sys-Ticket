@@ -2,20 +2,13 @@ import { useState, useEffect } from 'react';
 import { X, Eye, EyeOff } from 'lucide-react';
 import { userService } from '@/services/user.service';
 import { permissionService } from '@/services/permission.service';
-import type { User, UserRole, UserStatus, CustomRole } from '@/types/permissions.types';
+import type { User, UserStatus, CustomRole } from '@/types/permissions.types';
 
 interface UserFormModalProps {
   user: User | null;
   onClose: () => void;
   onSuccess: () => void;
 }
-
-const ROLES: { value: UserRole; label: string }[] = [
-  { value: 'admin', label: 'Administrador' },
-  { value: 'manager', label: 'Gerente' },
-  { value: 'agent', label: 'Agente' },
-  { value: 'client', label: 'Cliente' },
-];
 
 const STATUSES: { value: UserStatus; label: string }[] = [
   { value: 'active', label: 'Ativo' },
@@ -29,17 +22,17 @@ export function UserFormModal({ user, onClose, onSuccess }: UserFormModalProps) 
   const [loadingRoles, setLoadingRoles] = useState(true);
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
   const [showPassword, setShowPassword] = useState(false);
-  const [useCustomRole, setUseCustomRole] = useState(false);
+
+  // Valor do perfil: 'admin' para Administrador, ou UUID do custom_role
+  const [selectedProfile, setSelectedProfile] = useState<string>('');
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    role: 'agent' as UserRole,
     status: 'active' as UserStatus,
     phone: '',
     department: '',
-    custom_role_id: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -63,13 +56,18 @@ export function UserFormModal({ user, onClose, onSuccess }: UserFormModalProps) 
         name: user.name,
         email: user.email,
         password: '',
-        role: user.role,
         status: user.status || 'active',
         phone: user.phone || '',
         department: user.department || '',
-        custom_role_id: user.custom_role_id || '',
       });
-      setUseCustomRole(!!user.custom_role_id);
+      // Define o perfil selecionado
+      if (user.role === 'admin') {
+        setSelectedProfile('admin');
+      } else if (user.custom_role_id) {
+        setSelectedProfile(user.custom_role_id);
+      } else {
+        setSelectedProfile('');
+      }
     }
   }, [user]);
 
@@ -92,8 +90,8 @@ export function UserFormModal({ user, onClose, onSuccess }: UserFormModalProps) 
       newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
     }
 
-    if (useCustomRole && !formData.custom_role_id) {
-      newErrors.custom_role_id = 'Selecione um perfil customizado';
+    if (!selectedProfile) {
+      newErrors.profile = 'Selecione um perfil';
     }
 
     setErrors(newErrors);
@@ -107,14 +105,17 @@ export function UserFormModal({ user, onClose, onSuccess }: UserFormModalProps) 
 
     setLoading(true);
     try {
+      // Determina role e custom_role_id baseado na selecao
+      const isAdmin = selectedProfile === 'admin';
+
       const data: any = {
         name: formData.name,
         email: formData.email,
-        role: formData.role,
+        role: isAdmin ? 'admin' : 'agent', // Admin ou agent como base
         status: formData.status,
         phone: formData.phone || undefined,
         department: formData.department || undefined,
-        custom_role_id: useCustomRole ? formData.custom_role_id : null,
+        custom_role_id: isAdmin ? null : selectedProfile,
       };
 
       if (formData.password) {
@@ -233,87 +234,46 @@ export function UserFormModal({ user, onClose, onSuccess }: UserFormModalProps) 
             )}
           </div>
 
-          {/* Tipo de Role */}
+          {/* Perfil */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Tipo de Perfil
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Perfil * {loadingRoles && <span className="text-gray-400">(carregando...)</span>}
             </label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  checked={!useCustomRole}
-                  onChange={() => setUseCustomRole(false)}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Perfil Fixo</span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  checked={useCustomRole}
-                  onChange={() => setUseCustomRole(true)}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Perfil Customizado</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Role Fixo ou Customizado */}
-          {!useCustomRole ? (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Perfil *
-              </label>
-              <select
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {ROLES.map((role) => (
-                  <option key={role.value} value={role.value}>
-                    {role.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Perfil Customizado * {loadingRoles && <span className="text-gray-400">(carregando...)</span>}
-              </label>
-              <select
-                value={formData.custom_role_id}
-                onChange={(e) => setFormData({ ...formData, custom_role_id: e.target.value })}
-                disabled={loadingRoles}
-                className={`w-full px-3 py-2 border rounded-lg
-                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                           ${errors.custom_role_id ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                           disabled:opacity-50`}
-              >
-                <option value="">
-                  {loadingRoles ? 'Carregando perfis...' : `Selecione um perfil (${customRoles.length} disponiveis)`}
+            <select
+              value={selectedProfile}
+              onChange={(e) => setSelectedProfile(e.target.value)}
+              disabled={loadingRoles}
+              className={`w-full px-3 py-2 border rounded-lg
+                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                         ${errors.profile ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}
+                         focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                         disabled:opacity-50`}
+            >
+              <option value="">
+                {loadingRoles ? 'Carregando perfis...' : 'Selecione um perfil'}
+              </option>
+              {/* Administrador - sempre fixo */}
+              <option value="admin">Administrador (acesso total)</option>
+              {/* Separador visual */}
+              {customRoles.length > 0 && (
+                <option disabled className="text-gray-400">────────────────</option>
+              )}
+              {/* Perfis customizados */}
+              {customRoles.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name} ({role.permissions?.length || 0} permissoes)
                 </option>
-                {customRoles.map((role) => (
-                  <option key={role.id} value={role.id}>
-                    {role.name} ({role.permissions?.length || 0} permissoes)
-                  </option>
-                ))}
-              </select>
-              {errors.custom_role_id && (
-                <p className="mt-1 text-sm text-red-500">{errors.custom_role_id}</p>
-              )}
-              {!loadingRoles && customRoles.length === 0 && (
-                <p className="mt-1 text-sm text-amber-500">
-                  Nenhum perfil customizado encontrado. Crie um em "Perfis e Permissoes".
-                </p>
-              )}
-            </div>
-          )}
+              ))}
+            </select>
+            {errors.profile && (
+              <p className="mt-1 text-sm text-red-500">{errors.profile}</p>
+            )}
+            {!loadingRoles && customRoles.length === 0 && (
+              <p className="mt-1 text-sm text-amber-500">
+                Crie mais perfis em "Perfis e Permissoes" para ter mais opcoes.
+              </p>
+            )}
+          </div>
 
           {/* Status */}
           <div>
